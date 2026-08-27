@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at": "2026-08-27T07:25:09+0100",
+  "created_at": "2026-08-27T07:45:20+0100",
   "system": {
     "hardware": "Apple M1 Max",
     "physical_memory_bytes": 68719476736,
@@ -9,21 +9,33 @@
   },
   "reproducibility": {
     "benchmark_script": "Scripts/benchmark_python_source.py",
-    "benchmark_script_sha256": "b5cb3b2edde136b9891530ced3303a207d4c9224c4a6b3643bc9572d132b90e8",
+    "benchmark_script_sha256": "78601d4a2461151a2d852784bc957505606ac97bbbbaa90b875611db962e3599",
     "reference_support_script": "Scripts/granite_reference.py",
-    "reference_support_script_sha256": "6bb241b948d6a45c6ca36c53edb7ab5e9ddca959c8b34699e61a864d4981f958"
+    "reference_support_script_sha256": "5a942af1567203dda19b18940058ba20ed9baa5e516fc21021999fdfa01b78d9"
   },
   "methodology": {
     "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
     "device": "MPS",
-    "runs_per_precision": 3,
+    "runs_per_variant": 3,
     "input_mode": "One unchunked 6,118.72-second waveform",
+    "input_cast_finding": "On PyTorch 2.13 MPS, pre-casting the 305,936 x 320 feature tensor and releasing its FP32 source silently corrupts later computation. Deferring the cast to Granite's first layer, or retaining the source tensor, is correct.",
     "timing": "Speech pipeline is frontend + model.generate + tokenizer decode. Process wall is /usr/bin/time -lp and includes startup, model/audio loading, a post-run memory probe, and JSON output.",
     "memory": "Peak physical footprint comes from macOS /usr/bin/footprint. Maximum RSS and PyTorch MPS allocator values are retained separately and are not summed.",
     "agreement": "Word agreement is against the native Swift source-weight output on the same audio. Backend precision and one-pass versus bounded chunking also affect it; this is not WER against a human transcript."
   },
-  "precisions": {
-    "bf16": {
+  "known_mps_issues": [
+    {
+      "url": "https://github.com/pytorch/pytorch/issues/193487",
+      "relevance": "PyTorch 2.13 allocator-state-dependent silent wrong matmul results after large allocations."
+    },
+    {
+      "url": "https://github.com/pytorch/pytorch/issues/189495",
+      "relevance": "Silent biased F.linear corruption when 3D leading dimensions exceed 65,536 rows."
+    }
+  ],
+  "variants": {
+    "native_bf16_deferred_cast": {
+      "description": "Native source BF16 weights; Granite performs the input cast in its first layer.",
       "transcript": "Benchmarks/coreml/python-source-bf16.txt",
       "runs": [
         {
@@ -41,25 +53,26 @@
           "device": "mps",
           "stored_weight_dtype": "bfloat16",
           "runtime_precision": "bf16",
-          "model_load_seconds": 0.5521718750242144,
-          "audio_load_seconds": 0.2570915832184255,
-          "frontend_seconds": 0.41897016600705683,
-          "model_generate_seconds": 23.35683195805177,
-          "decode_seconds": 0.012118374928832054,
-          "speech_pipeline_seconds": 23.78792049898766,
-          "realtime_multiple": 257.2196254086352,
+          "input_cast": "deferred",
+          "model_load_seconds": 3.092551541980356,
+          "audio_load_seconds": 0.4288733331486583,
+          "frontend_seconds": 0.6290963331703097,
+          "model_generate_seconds": 22.990609624888748,
+          "decode_seconds": 0.03309170785360038,
+          "speech_pipeline_seconds": 23.652797665912658,
+          "realtime_multiple": 258.68906022977666,
           "token_frame_count": 76484,
-          "word_count": 2523,
+          "word_count": 13593,
           "memory": {
-            "maximum_resident_bytes": 1287815168,
-            "mps_current_allocated_bytes": 1145066240,
+            "maximum_resident_bytes": 1290715136,
+            "mps_current_allocated_bytes": 1340866816,
             "mps_driver_allocated_bytes": 13141065728,
             "mps_recommended_max_bytes": 55662788608,
-            "physical_footprint_bytes": 13990430544,
-            "peak_physical_footprint_bytes": 14293370704
+            "physical_footprint_bytes": 13996672776,
+            "peak_physical_footprint_bytes": 14296270576
           },
-          "memory_probe_seconds": 0.07971724984236062,
-          "elapsed_before_json_seconds": 25.299706166842952,
+          "memory_probe_seconds": 0.08190308301709592,
+          "elapsed_before_json_seconds": 27.864054541103542,
           "environment": {
             "python": "3.10.15",
             "torch": "2.13.0",
@@ -67,12 +80,12 @@
             "platform": "macOS-26.5.2-arm64-arm-64bit",
             "machine": "arm64"
           },
-          "text_sha256": "1ab6ad134bd028e0dc5438a0ef8c00ea5a949d73960c01fbd746659a34e94a74",
+          "text_sha256": "f0c1ef6c5a018944505ceff360046dcd795a71ef848d179c6fa597688d8e8978",
           "external_process": {
-            "process_wall_seconds": 28.13,
-            "process_user_seconds": 3.33,
-            "process_system_seconds": 1.57,
-            "maximum_resident_bytes": 1311506432
+            "process_wall_seconds": 35.76,
+            "process_user_seconds": 3.73,
+            "process_system_seconds": 2.31,
+            "maximum_resident_bytes": 1314422784
           }
         },
         {
@@ -90,25 +103,26 @@
           "device": "mps",
           "stored_weight_dtype": "bfloat16",
           "runtime_precision": "bf16",
-          "model_load_seconds": 0.5584552090149373,
-          "audio_load_seconds": 0.2259208750911057,
-          "frontend_seconds": 0.45086099999025464,
-          "model_generate_seconds": 24.59577391599305,
-          "decode_seconds": 0.00794091704301536,
-          "speech_pipeline_seconds": 25.05457583302632,
-          "realtime_multiple": 244.21566905692555,
+          "input_cast": "deferred",
+          "model_load_seconds": 0.5513858748599887,
+          "audio_load_seconds": 0.22827900014817715,
+          "frontend_seconds": 0.43728508381173015,
+          "model_generate_seconds": 23.42105562495999,
+          "decode_seconds": 0.046682000160217285,
+          "speech_pipeline_seconds": 23.905022708931938,
+          "realtime_multiple": 255.95959788458117,
           "token_frame_count": 76484,
-          "word_count": 2523,
+          "word_count": 13593,
           "memory": {
-            "maximum_resident_bytes": 1293025280,
-            "mps_current_allocated_bytes": 1145066240,
+            "maximum_resident_bytes": 1290797056,
+            "mps_current_allocated_bytes": 1340866816,
             "mps_driver_allocated_bytes": 13141065728,
             "mps_recommended_max_bytes": 55662788608,
-            "physical_footprint_bytes": 13998147360,
-            "peak_physical_footprint_bytes": 14298613536
+            "physical_footprint_bytes": 13996738336,
+            "peak_physical_footprint_bytes": 14297122592
           },
-          "memory_probe_seconds": 0.0769381660502404,
-          "elapsed_before_json_seconds": 26.555996959097683,
+          "memory_probe_seconds": 0.08162316703237593,
+          "elapsed_before_json_seconds": 25.368061792105436,
           "environment": {
             "python": "3.10.15",
             "torch": "2.13.0",
@@ -116,12 +130,12 @@
             "platform": "macOS-26.5.2-arm64-arm-64bit",
             "machine": "arm64"
           },
-          "text_sha256": "1ab6ad134bd028e0dc5438a0ef8c00ea5a949d73960c01fbd746659a34e94a74",
+          "text_sha256": "f0c1ef6c5a018944505ceff360046dcd795a71ef848d179c6fa597688d8e8978",
           "external_process": {
-            "process_wall_seconds": 30.07,
-            "process_user_seconds": 3.36,
-            "process_system_seconds": 1.68,
-            "maximum_resident_bytes": 1316782080
+            "process_wall_seconds": 28.91,
+            "process_user_seconds": 3.32,
+            "process_system_seconds": 1.72,
+            "maximum_resident_bytes": 1314619392
           }
         },
         {
@@ -139,25 +153,26 @@
           "device": "mps",
           "stored_weight_dtype": "bfloat16",
           "runtime_precision": "bf16",
-          "model_load_seconds": 0.6992821670137346,
-          "audio_load_seconds": 0.22058370802551508,
-          "frontend_seconds": 0.42132274992763996,
-          "model_generate_seconds": 24.20656433305703,
-          "decode_seconds": 0.007221583975479007,
-          "speech_pipeline_seconds": 24.63510866696015,
-          "realtime_multiple": 248.37398051368206,
+          "input_cast": "deferred",
+          "model_load_seconds": 0.5567429580260068,
+          "audio_load_seconds": 0.23029016586951911,
+          "frontend_seconds": 0.4181998341809958,
+          "model_generate_seconds": 23.152540874900296,
+          "decode_seconds": 0.031583750154823065,
+          "speech_pipeline_seconds": 23.602324459236115,
+          "realtime_multiple": 259.2422627935533,
           "token_frame_count": 76484,
-          "word_count": 2523,
+          "word_count": 13593,
           "memory": {
-            "maximum_resident_bytes": 1294319616,
-            "mps_current_allocated_bytes": 1145066240,
+            "maximum_resident_bytes": 1289928704,
+            "mps_current_allocated_bytes": 1340866816,
             "mps_driver_allocated_bytes": 13141065728,
             "mps_recommended_max_bytes": 55662788608,
-            "physical_footprint_bytes": 13996394248,
-            "peak_physical_footprint_bytes": 14299678472
+            "physical_footprint_bytes": 13995919088,
+            "peak_physical_footprint_bytes": 14296958704
           },
-          "memory_probe_seconds": 0.08581916708499193,
-          "elapsed_before_json_seconds": 26.2615700410679,
+          "memory_probe_seconds": 0.07653850014321506,
+          "elapsed_before_json_seconds": 25.07358495797962,
           "environment": {
             "python": "3.10.15",
             "torch": "2.13.0",
@@ -165,48 +180,254 @@
             "platform": "macOS-26.5.2-arm64-arm-64bit",
             "machine": "arm64"
           },
-          "text_sha256": "1ab6ad134bd028e0dc5438a0ef8c00ea5a949d73960c01fbd746659a34e94a74",
+          "text_sha256": "f0c1ef6c5a018944505ceff360046dcd795a71ef848d179c6fa597688d8e8978",
           "external_process": {
-            "process_wall_seconds": 30.02,
-            "process_user_seconds": 3.55,
-            "process_system_seconds": 1.82,
-            "maximum_resident_bytes": 1318043648
+            "process_wall_seconds": 27.67,
+            "process_user_seconds": 3.26,
+            "process_system_seconds": 1.5,
+            "maximum_resident_bytes": 1313685504
           }
         }
       ],
       "median": {
-        "model_load_seconds": 0.5584552090149373,
-        "audio_load_seconds": 0.2259208750911057,
-        "frontend_seconds": 0.42132274992763996,
-        "model_generate_seconds": 24.20656433305703,
-        "decode_seconds": 0.00794091704301536,
-        "speech_pipeline_seconds": 24.63510866696015,
-        "realtime_multiple": 248.37398051368206,
-        "maximum_resident_bytes": 1316782080,
-        "mps_current_allocated_bytes": 1145066240,
+        "model_load_seconds": 0.5567429580260068,
+        "audio_load_seconds": 0.23029016586951911,
+        "frontend_seconds": 0.43728508381173015,
+        "model_generate_seconds": 23.152540874900296,
+        "decode_seconds": 0.03309170785360038,
+        "speech_pipeline_seconds": 23.652797665912658,
+        "realtime_multiple": 258.68906022977666,
+        "maximum_resident_bytes": 1314422784,
+        "mps_current_allocated_bytes": 1340866816,
         "mps_driver_allocated_bytes": 13141065728,
-        "physical_footprint_bytes": 13996394248,
-        "peak_physical_footprint_bytes": 14298613536,
-        "process_wall_seconds": 30.02,
-        "process_user_seconds": 3.36,
-        "process_system_seconds": 1.68,
-        "text_sha256": "1ab6ad134bd028e0dc5438a0ef8c00ea5a949d73960c01fbd746659a34e94a74",
-        "word_count": 2523,
+        "physical_footprint_bytes": 13996672776,
+        "peak_physical_footprint_bytes": 14296958704,
+        "process_wall_seconds": 28.91,
+        "process_user_seconds": 3.32,
+        "process_system_seconds": 1.72,
+        "text_sha256": "f0c1ef6c5a018944505ceff360046dcd795a71ef848d179c6fa597688d8e8978",
+        "word_count": 13593,
         "agreement_vs_swift_source": {
           "reference_words": 13615,
-          "hypothesis_words": 2523,
-          "word_edits": 11154,
-          "word_disagreement_percent": 81.92434814542784,
-          "word_agreement_percent": 18.075651854572158,
-          "character_similarity_percent": 18.05228399254325,
-          "bleu": 1.163157059159433,
-          "chrf2": 21.144107887406253
+          "hypothesis_words": 13593,
+          "word_edits": 329,
+          "word_disagreement_percent": 2.416452442159383,
+          "word_agreement_percent": 97.58354755784062,
+          "character_similarity_percent": 98.66616569603607,
+          "bleu": 95.6084479038888,
+          "chrf2": 98.33086852791665
         },
-        "complete_long_form_decode": false,
-        "quality_note": "The documented model-dtype BF16 input cast produced a deterministic but incomplete long-form decode on M1 Max MPS; do not use this row as an accuracy or production baseline."
+        "complete_long_form_decode": true,
+        "agreement_vs_python_fp32": {
+          "reference_words": 13595,
+          "hypothesis_words": 13593,
+          "word_edits": 12,
+          "word_disagreement_percent": 0.08826774549466716,
+          "word_agreement_percent": 99.91173225450534,
+          "character_similarity_percent": 99.94206425074591,
+          "bleu": 99.8143493211917,
+          "chrf2": 99.91438569821689
+        }
       }
     },
-    "fp32": {
+    "fp16_deferred_cast": {
+      "description": "Source BF16 values cast to FP16 at runtime; Granite performs the input cast in its first layer.",
+      "transcript": "Benchmarks/coreml/python-source-fp16.txt",
+      "runs": [
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "fp16",
+          "input_cast": "deferred",
+          "model_load_seconds": 0.5429676251951605,
+          "audio_load_seconds": 0.22100324998609722,
+          "frontend_seconds": 0.4395802500657737,
+          "model_generate_seconds": 19.487640416948125,
+          "decode_seconds": 0.029403750086203218,
+          "speech_pipeline_seconds": 19.9566244171001,
+          "realtime_multiple": 306.600949745644,
+          "token_frame_count": 76484,
+          "word_count": 13595,
+          "memory": {
+            "maximum_resident_bytes": 1353859072,
+            "mps_current_allocated_bytes": 1340866816,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 14042859344,
+            "peak_physical_footprint_bytes": 14342473552
+          },
+          "memory_probe_seconds": 0.09266708302311599,
+          "elapsed_before_json_seconds": 21.558465749956667,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+          "external_process": {
+            "process_wall_seconds": 24.57,
+            "process_user_seconds": 3.54,
+            "process_system_seconds": 1.8,
+            "maximum_resident_bytes": 1360658432
+          }
+        },
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "fp16",
+          "input_cast": "deferred",
+          "model_load_seconds": 0.5486847918946296,
+          "audio_load_seconds": 0.21699695801362395,
+          "frontend_seconds": 0.4239962080027908,
+          "model_generate_seconds": 16.902690957998857,
+          "decode_seconds": 0.03219479089602828,
+          "speech_pipeline_seconds": 17.358881956897676,
+          "realtime_multiple": 352.48353063249465,
+          "token_frame_count": 76484,
+          "word_count": 13595,
+          "memory": {
+            "maximum_resident_bytes": 1355644928,
+            "mps_current_allocated_bytes": 1340866816,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 14042466080,
+            "peak_physical_footprint_bytes": 14342752032
+          },
+          "memory_probe_seconds": 0.08109133294783533,
+          "elapsed_before_json_seconds": 18.812144082970917,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+          "external_process": {
+            "process_wall_seconds": 21.66,
+            "process_user_seconds": 3.46,
+            "process_system_seconds": 1.62,
+            "maximum_resident_bytes": 1360297984
+          }
+        },
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "fp16",
+          "input_cast": "deferred",
+          "model_load_seconds": 0.5491702500730753,
+          "audio_load_seconds": 0.21570966695435345,
+          "frontend_seconds": 0.4138365830294788,
+          "model_generate_seconds": 16.57685716683045,
+          "decode_seconds": 0.029282832983881235,
+          "speech_pipeline_seconds": 17.01997658284381,
+          "realtime_multiple": 359.5022572573742,
+          "token_frame_count": 76484,
+          "word_count": 13595,
+          "memory": {
+            "maximum_resident_bytes": 1354825728,
+            "mps_current_allocated_bytes": 1340866816,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 14043236152,
+            "peak_physical_footprint_bytes": 14343472952
+          },
+          "memory_probe_seconds": 0.08966566692106426,
+          "elapsed_before_json_seconds": 18.483952916925773,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+          "external_process": {
+            "process_wall_seconds": 21.39,
+            "process_user_seconds": 3.5,
+            "process_system_seconds": 1.61,
+            "maximum_resident_bytes": 1361068032
+          }
+        }
+      ],
+      "median": {
+        "model_load_seconds": 0.5486847918946296,
+        "audio_load_seconds": 0.21699695801362395,
+        "frontend_seconds": 0.4239962080027908,
+        "model_generate_seconds": 16.902690957998857,
+        "decode_seconds": 0.029403750086203218,
+        "speech_pipeline_seconds": 17.358881956897676,
+        "realtime_multiple": 352.48353063249465,
+        "maximum_resident_bytes": 1360658432,
+        "mps_current_allocated_bytes": 1340866816,
+        "mps_driver_allocated_bytes": 13141065728,
+        "physical_footprint_bytes": 14042859344,
+        "peak_physical_footprint_bytes": 14342752032,
+        "process_wall_seconds": 21.66,
+        "process_user_seconds": 3.5,
+        "process_system_seconds": 1.62,
+        "text_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+        "word_count": 13595,
+        "agreement_vs_swift_source": {
+          "reference_words": 13615,
+          "hypothesis_words": 13595,
+          "word_edits": 334,
+          "word_disagreement_percent": 2.453176643408006,
+          "word_agreement_percent": 97.546823356592,
+          "character_similarity_percent": 98.63581843668261,
+          "bleu": 95.54169186538088,
+          "chrf2": 98.29069643606248
+        },
+        "complete_long_form_decode": true,
+        "agreement_vs_python_fp32": {
+          "reference_words": 13595,
+          "hypothesis_words": 13595,
+          "word_edits": 1,
+          "word_disagreement_percent": 0.00735564545788893,
+          "word_agreement_percent": 99.99264435454211,
+          "character_similarity_percent": 99.99855160626865,
+          "bleu": 99.98162271407062,
+          "chrf2": 99.9940479858011
+        }
+      }
+    },
+    "promoted_fp32": {
+      "description": "Source BF16 values promoted to FP32 at runtime.",
       "transcript": "Benchmarks/coreml/python-source-fp32.txt",
       "runs": [
         {
@@ -385,8 +606,464 @@
           "bleu": 95.5231424999226,
           "chrf2": 98.2885424036307
         },
-        "complete_long_form_decode": true
+        "complete_long_form_decode": true,
+        "agreement_vs_python_fp32": {
+          "reference_words": 13595,
+          "hypothesis_words": 13595,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "word_agreement_percent": 100.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      }
+    },
+    "native_bf16_documented_precast": {
+      "description": "Native BF16 with the current documented pre-generate input cast; affected by MPS silent corruption.",
+      "transcript": "Benchmarks/coreml/python-source-bf16-precast.txt",
+      "runs": [
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "bf16",
+          "model_load_seconds": 0.5521718750242144,
+          "audio_load_seconds": 0.2570915832184255,
+          "frontend_seconds": 0.41897016600705683,
+          "model_generate_seconds": 23.35683195805177,
+          "decode_seconds": 0.012118374928832054,
+          "speech_pipeline_seconds": 23.78792049898766,
+          "realtime_multiple": 257.2196254086352,
+          "token_frame_count": 76484,
+          "word_count": 2523,
+          "memory": {
+            "maximum_resident_bytes": 1287815168,
+            "mps_current_allocated_bytes": 1145066240,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 13990430544,
+            "peak_physical_footprint_bytes": 14293370704
+          },
+          "memory_probe_seconds": 0.07971724984236062,
+          "elapsed_before_json_seconds": 25.299706166842952,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "1ab6ad134bd028e0dc5438a0ef8c00ea5a949d73960c01fbd746659a34e94a74",
+          "external_process": {
+            "process_wall_seconds": 28.13,
+            "process_user_seconds": 3.33,
+            "process_system_seconds": 1.57,
+            "maximum_resident_bytes": 1311506432
+          }
+        },
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "bf16",
+          "model_load_seconds": 0.5584552090149373,
+          "audio_load_seconds": 0.2259208750911057,
+          "frontend_seconds": 0.45086099999025464,
+          "model_generate_seconds": 24.59577391599305,
+          "decode_seconds": 0.00794091704301536,
+          "speech_pipeline_seconds": 25.05457583302632,
+          "realtime_multiple": 244.21566905692555,
+          "token_frame_count": 76484,
+          "word_count": 2523,
+          "memory": {
+            "maximum_resident_bytes": 1293025280,
+            "mps_current_allocated_bytes": 1145066240,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 13998147360,
+            "peak_physical_footprint_bytes": 14298613536
+          },
+          "memory_probe_seconds": 0.0769381660502404,
+          "elapsed_before_json_seconds": 26.555996959097683,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "1ab6ad134bd028e0dc5438a0ef8c00ea5a949d73960c01fbd746659a34e94a74",
+          "external_process": {
+            "process_wall_seconds": 30.07,
+            "process_user_seconds": 3.36,
+            "process_system_seconds": 1.68,
+            "maximum_resident_bytes": 1316782080
+          }
+        },
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "bf16",
+          "model_load_seconds": 0.6992821670137346,
+          "audio_load_seconds": 0.22058370802551508,
+          "frontend_seconds": 0.42132274992763996,
+          "model_generate_seconds": 24.20656433305703,
+          "decode_seconds": 0.007221583975479007,
+          "speech_pipeline_seconds": 24.63510866696015,
+          "realtime_multiple": 248.37398051368206,
+          "token_frame_count": 76484,
+          "word_count": 2523,
+          "memory": {
+            "maximum_resident_bytes": 1294319616,
+            "mps_current_allocated_bytes": 1145066240,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 13996394248,
+            "peak_physical_footprint_bytes": 14299678472
+          },
+          "memory_probe_seconds": 0.08581916708499193,
+          "elapsed_before_json_seconds": 26.2615700410679,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "1ab6ad134bd028e0dc5438a0ef8c00ea5a949d73960c01fbd746659a34e94a74",
+          "external_process": {
+            "process_wall_seconds": 30.02,
+            "process_user_seconds": 3.55,
+            "process_system_seconds": 1.82,
+            "maximum_resident_bytes": 1318043648
+          }
+        }
+      ],
+      "median": {
+        "model_load_seconds": 0.5584552090149373,
+        "audio_load_seconds": 0.2259208750911057,
+        "frontend_seconds": 0.42132274992763996,
+        "model_generate_seconds": 24.20656433305703,
+        "decode_seconds": 0.00794091704301536,
+        "speech_pipeline_seconds": 24.63510866696015,
+        "realtime_multiple": 248.37398051368206,
+        "maximum_resident_bytes": 1316782080,
+        "mps_current_allocated_bytes": 1145066240,
+        "mps_driver_allocated_bytes": 13141065728,
+        "physical_footprint_bytes": 13996394248,
+        "peak_physical_footprint_bytes": 14298613536,
+        "process_wall_seconds": 30.02,
+        "process_user_seconds": 3.36,
+        "process_system_seconds": 1.68,
+        "text_sha256": "1ab6ad134bd028e0dc5438a0ef8c00ea5a949d73960c01fbd746659a34e94a74",
+        "word_count": 2523,
+        "agreement_vs_swift_source": {
+          "reference_words": 13615,
+          "hypothesis_words": 2523,
+          "word_edits": 11154,
+          "word_disagreement_percent": 81.92434814542784,
+          "word_agreement_percent": 18.075651854572158,
+          "character_similarity_percent": 18.05228399254325,
+          "bleu": 1.163157059159433,
+          "chrf2": 21.144107887406253
+        },
+        "complete_long_form_decode": false,
+        "quality_note": "Pre-casting the very large feature tensor before generate produced a deterministic but incomplete decode on M1 Max MPS. Retaining the source FP32 tensor or deferring the cast makes the same 16-bit runtime complete; do not use this row as an accuracy or production baseline.",
+        "agreement_vs_python_fp32": {
+          "reference_words": 13595,
+          "hypothesis_words": 2523,
+          "word_edits": 11132,
+          "word_disagreement_percent": 81.88304523721956,
+          "word_agreement_percent": 18.116954762780438,
+          "character_similarity_percent": 18.10781842936183,
+          "bleu": 1.1731247663717839,
+          "chrf2": 21.19158660219497
+        }
+      }
+    },
+    "fp16_documented_precast": {
+      "description": "Runtime FP16 with the current documented pre-generate input cast; affected by MPS silent corruption.",
+      "transcript": "Benchmarks/coreml/python-source-fp16-precast.txt",
+      "runs": [
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "fp16",
+          "model_load_seconds": 0.5831617920193821,
+          "audio_load_seconds": 0.21950550004839897,
+          "frontend_seconds": 0.4190612081438303,
+          "model_generate_seconds": 17.08436687500216,
+          "decode_seconds": 0.006201707990840077,
+          "speech_pipeline_seconds": 17.50962979113683,
+          "realtime_multiple": 349.4488503176249,
+          "token_frame_count": 76484,
+          "word_count": 1803,
+          "memory": {
+            "maximum_resident_bytes": 1355235328,
+            "mps_current_allocated_bytes": 1145066240,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 14047168312,
+            "peak_physical_footprint_bytes": 14344767288
+          },
+          "memory_probe_seconds": 0.10071433312259614,
+          "elapsed_before_json_seconds": 19.01865829108283,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "c3f1eb5062c903a537128a4788c329f74d60e0cd067b8ed3ac7459a5bcbd362e",
+          "external_process": {
+            "process_wall_seconds": 21.97,
+            "process_user_seconds": 3.5,
+            "process_system_seconds": 1.61,
+            "maximum_resident_bytes": 1362149376
+          }
+        },
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "fp16",
+          "model_load_seconds": 0.5995973339304328,
+          "audio_load_seconds": 0.22816658299416304,
+          "frontend_seconds": 0.41506445896811783,
+          "model_generate_seconds": 18.87641066708602,
+          "decode_seconds": 0.007780042011290789,
+          "speech_pipeline_seconds": 19.29925516806543,
+          "realtime_multiple": 317.0443598323253,
+          "token_frame_count": 76484,
+          "word_count": 1803,
+          "memory": {
+            "maximum_resident_bytes": 1353367552,
+            "mps_current_allocated_bytes": 1145066240,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 14043252512,
+            "peak_physical_footprint_bytes": 14343718688
+          },
+          "memory_probe_seconds": 0.10209649987518787,
+          "elapsed_before_json_seconds": 20.85322658298537,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "c3f1eb5062c903a537128a4788c329f74d60e0cd067b8ed3ac7459a5bcbd362e",
+          "external_process": {
+            "process_wall_seconds": 23.77,
+            "process_user_seconds": 3.54,
+            "process_system_seconds": 1.66,
+            "maximum_resident_bytes": 1360904192
+          }
+        },
+        {
+          "schema_version": 1,
+          "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+          "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+          "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+          "local_model_path": "${SOURCE_MODEL}",
+          "model_file_bytes": 946180704,
+          "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+          "audio_file": "${BENCHMARK_AUDIO}",
+          "audio_file_bytes": 195799118,
+          "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+          "audio_duration_seconds": 6118.72,
+          "device": "mps",
+          "stored_weight_dtype": "bfloat16",
+          "runtime_precision": "fp16",
+          "model_load_seconds": 0.5871440418995917,
+          "audio_load_seconds": 0.22416037507355213,
+          "frontend_seconds": 0.43790062493644655,
+          "model_generate_seconds": 17.585042166989297,
+          "decode_seconds": 0.005891499808058143,
+          "speech_pipeline_seconds": 18.0288342917338,
+          "realtime_multiple": 339.3852259657978,
+          "token_frame_count": 76484,
+          "word_count": 1803,
+          "memory": {
+            "maximum_resident_bytes": 1354104832,
+            "mps_current_allocated_bytes": 1145066240,
+            "mps_driver_allocated_bytes": 13141065728,
+            "mps_recommended_max_bytes": 55662788608,
+            "physical_footprint_bytes": 14042924808,
+            "peak_physical_footprint_bytes": 14343341832
+          },
+          "memory_probe_seconds": 0.08232108294032514,
+          "elapsed_before_json_seconds": 19.564020291902125,
+          "environment": {
+            "python": "3.10.15",
+            "torch": "2.13.0",
+            "transformers": "5.16.1",
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64"
+          },
+          "text_sha256": "c3f1eb5062c903a537128a4788c329f74d60e0cd067b8ed3ac7459a5bcbd362e",
+          "external_process": {
+            "process_wall_seconds": 22.75,
+            "process_user_seconds": 3.71,
+            "process_system_seconds": 1.78,
+            "maximum_resident_bytes": 1360642048
+          }
+        }
+      ],
+      "median": {
+        "model_load_seconds": 0.5871440418995917,
+        "audio_load_seconds": 0.22416037507355213,
+        "frontend_seconds": 0.4190612081438303,
+        "model_generate_seconds": 17.585042166989297,
+        "decode_seconds": 0.006201707990840077,
+        "speech_pipeline_seconds": 18.0288342917338,
+        "realtime_multiple": 339.3852259657978,
+        "maximum_resident_bytes": 1360904192,
+        "mps_current_allocated_bytes": 1145066240,
+        "mps_driver_allocated_bytes": 13141065728,
+        "physical_footprint_bytes": 14043252512,
+        "peak_physical_footprint_bytes": 14343718688,
+        "process_wall_seconds": 22.75,
+        "process_user_seconds": 3.54,
+        "process_system_seconds": 1.66,
+        "text_sha256": "c3f1eb5062c903a537128a4788c329f74d60e0cd067b8ed3ac7459a5bcbd362e",
+        "word_count": 1803,
+        "agreement_vs_swift_source": {
+          "reference_words": 13615,
+          "hypothesis_words": 1803,
+          "word_edits": 11815,
+          "word_disagreement_percent": 86.77928755049578,
+          "word_agreement_percent": 13.22071244950422,
+          "character_similarity_percent": 12.796427694041823,
+          "bleu": 0.14467267120783942,
+          "chrf2": 15.378472605460761
+        },
+        "complete_long_form_decode": false,
+        "quality_note": "Pre-casting the very large feature tensor before generate produced a deterministic but incomplete decode on M1 Max MPS. Retaining the source FP32 tensor or deferring the cast makes the same 16-bit runtime complete; do not use this row as an accuracy or production baseline.",
+        "agreement_vs_python_fp32": {
+          "reference_words": 13595,
+          "hypothesis_words": 1803,
+          "word_edits": 11792,
+          "word_disagreement_percent": 86.73777123942627,
+          "word_agreement_percent": 13.262228760573734,
+          "character_similarity_percent": 12.837113640972165,
+          "bleu": 0.14656704767827305,
+          "chrf2": 15.42258327563111
+        }
       }
     }
+  },
+  "diagnostics": {
+    "fp16_documented_precast_while_retaining_fp32_source": {
+      "schema_version": 1,
+      "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
+      "source_model_id": "ibm-granite/granite-speech-5.0-470m-turboctc",
+      "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+      "local_model_path": "${SOURCE_MODEL}",
+      "model_file_bytes": 946180704,
+      "model_file_sha256": "8b98a8c34fd5fcb081caef719638eded31bb6d197d62053eefc5c1703aaf1ad4",
+      "audio_file": "${BENCHMARK_AUDIO}",
+      "audio_file_bytes": 195799118,
+      "audio_sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+      "audio_duration_seconds": 6118.72,
+      "device": "mps",
+      "stored_weight_dtype": "bfloat16",
+      "runtime_precision": "fp16",
+      "input_cast": "documented-retain",
+      "retained_input_feature_bytes": 391598080,
+      "model_load_seconds": 0.5759871669579297,
+      "audio_load_seconds": 0.21702850004658103,
+      "frontend_seconds": 0.42374845896847546,
+      "model_generate_seconds": 16.47808862500824,
+      "decode_seconds": 0.030467084143310785,
+      "speech_pipeline_seconds": 16.932304168120027,
+      "realtime_multiple": 361.36369505576596,
+      "token_frame_count": 76484,
+      "word_count": 13595,
+      "memory": {
+        "maximum_resident_bytes": 1357234176,
+        "mps_current_allocated_bytes": 1536666368,
+        "mps_driver_allocated_bytes": 14214807552,
+        "mps_recommended_max_bytes": 55662788608,
+        "physical_footprint_bytes": 15118387000,
+        "peak_physical_footprint_bytes": 15417296696
+      },
+      "memory_probe_seconds": 0.09001520904712379,
+      "elapsed_before_json_seconds": 18.441042457940057,
+      "environment": {
+        "python": "3.10.15",
+        "torch": "2.13.0",
+        "transformers": "5.16.1",
+        "platform": "macOS-26.5.2-arm64-arm-64bit",
+        "machine": "arm64"
+      },
+      "text_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+      "agreement_vs_deferred_fp16": {
+        "reference_words": 13595,
+        "hypothesis_words": 13595,
+        "word_edits": 0,
+        "word_disagreement_percent": 0.0,
+        "word_agreement_percent": 100.0,
+        "character_similarity_percent": 100.0,
+        "bleu": 100.00000000000004,
+        "chrf2": 100.0
+      }
+    },
+    "finding": "Keeping the otherwise-unused 391,598,080-byte FP32 MPS feature tensor alive made the explicitly pre-cast FP16 path byte-identical to the deferred-cast FP16 path. This isolates the failure to MPS allocation/lifetime state rather than FP16 numerical precision."
   }
 }

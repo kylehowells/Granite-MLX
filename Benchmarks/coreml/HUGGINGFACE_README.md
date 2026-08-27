@@ -53,7 +53,9 @@ from an Apple M1 Max with 64 GB unified memory on macOS 26.5.2.
 
 | Runtime | Model artifact | Speech path | Process wall | Peak footprint | Agreement with native Swift source output |
 |---|---:|---:|---:|---:|---:|
-| IBM source / Python PyTorch FP32, one pass | 902.35 MiB | 25.69 s | 30.47 s | 27.48 GB | 97.5395% |
+| IBM source BF16 / Python MPS, one pass | 902.35 MiB | 23.65 s | 28.91 s | 14.30 GB | 97.5835% |
+| IBM source cast to FP16 / Python MPS, one pass | 902.35 MiB | 17.36 s | 21.66 s | 14.34 GB | 97.5468% |
+| IBM source promoted to FP32 / Python MPS, one pass | 902.35 MiB | 25.69 s | 30.47 s | 27.48 GB | 97.5395% |
 | IBM source / native Swift, bounded | 902.35 MiB | 29.77 s | 30.42 s | 2.61 GB | 100.0000% |
 | Granite-MLX Q8 | 466.03 MiB | 24.41 s | 24.88 s | 1.64 GB | 99.8825% |
 | **Core ML Q8 (this repository)** | **659.84 MiB** | **17.32 s** | **22.09 s** | **2.10 GB** | **99.7797%** |
@@ -66,20 +68,29 @@ words and 99.870% character similarity. The formatting-enabled Granite CLI
 path took 19.83 seconds of processing and retained 99.65% lexical agreement
 with the formatted MLX result.
 
-The Python source-weight row is a fresh median of three clean processes using
-IBM's documented `AutoModelForCTC.generate()` path, Transformers 5.16.1,
-PyTorch 2.13.0, and MPS. Its speech path comprises 0.464 seconds of frontend
-processing, 25.195 seconds in `model.generate()`, and 0.031 seconds of tokenizer
-decode. Median model load was 0.594 seconds and audio load was 0.223 seconds.
-Maximum RSS was 1.40 GB, the MPS driver allocator held 26.22 GB, and macOS
-reported a 27.48 GB peak physical footprint. These memory views are reported
-separately and are not summed. All three FP32 transcripts were byte-identical.
+The Python source-weight rows are fresh medians of three clean processes using
+`AutoModelForCTC.generate()`, Transformers 5.16.1, PyTorch 2.13.0, and MPS.
+The checkpoint stores BF16 weights. Runtime FP16 casts those BF16 values to
+FP16; runtime FP32 merely promotes them and does not recover extra information.
 
-The prescribed BF16 model/input cast was also run three times. It used 14.30 GB
-and took 24.64 seconds for the speech path, but on this M1 Max MPS backend it
-produced a deterministic, incomplete 2,523-word long-form decode rather than a
-complete roughly 13,600-word transcript. It is retained in the raw results as
-a compatibility finding and is not used as the valid Python baseline.
+FP16 was the fastest complete Python path: 0.424 seconds of frontend work,
+16.903 seconds in `model.generate()`, 0.029 seconds of decode, and 17.359
+seconds total. It differed from promoted FP32 by one word across 13,595 words
+(99.9926% agreement) while reducing peak physical footprint from 27.48 GB to
+14.34 GB. Native BF16 took 23.65 seconds at 14.30 GB and retained 99.9117%
+agreement with promoted FP32.
+
+There is an important MPS workaround in these valid 16-bit rows. Pre-casting
+the full `[1, 305936, 320]` feature tensor as in the current documented example,
+then releasing its 391.6 MB FP32 source before `generate()`, silently corrupted
+both BF16 and FP16 long-form output. Retaining that source tensor or deferring
+the cast to Granite's first layer produced complete deterministic transcripts.
+The behavior matches PyTorch's known allocator-state-dependent MPS wrong-result
+defect ([#193487](https://github.com/pytorch/pytorch/issues/193487)) and its
+related greater-than-65,536-row biased-linear defect
+([#189495](https://github.com/pytorch/pytorch/issues/189495)). Both corrupted
+paths remain preserved in the benchmark JSON rather than being presented as
+valid accuracy results.
 
 Core ML's CPU+GPU policy was substantially faster than CPU+Neural Engine on the
 tested M1 Max. Granite contains 32 dynamic attention matmuls that the M1 Neural
@@ -136,8 +147,10 @@ transcripts, and a PNG comparison chart are maintained in Granite-MLX's
 [`Benchmarks/coreml`](https://github.com/kylehowells/Granite-MLX/tree/master/Benchmarks/coreml)
 directory. This repository also contains the complete Python source-weight
 [`benchmark JSON`](benchmarks/python-source-results.json) and its deterministic
-[`FP32`](benchmarks/python-source-fp32.txt) and
-[`BF16`](benchmarks/python-source-bf16.txt) transcripts.
+[`BF16`](benchmarks/python-source-bf16.txt),
+[`FP16`](benchmarks/python-source-fp16.txt), and
+[`FP32`](benchmarks/python-source-fp32.txt) transcripts, plus the two pre-cast
+failure-mode transcripts.
 
 ## Files
 

@@ -27,6 +27,44 @@ TIME_PATTERNS = {
     ),
 }
 
+VARIANTS = (
+    {
+        "key": "native_bf16_deferred_cast",
+        "precision": "bf16",
+        "directory": "official-deferred-full-bf16-{index}",
+        "transcript": "python-source-bf16.txt",
+        "description": "Native source BF16 weights; Granite performs the input cast in its first layer.",
+    },
+    {
+        "key": "fp16_deferred_cast",
+        "precision": "fp16",
+        "directory": "official-deferred-full-fp16-{index}",
+        "transcript": "python-source-fp16.txt",
+        "description": "Source BF16 values cast to FP16 at runtime; Granite performs the input cast in its first layer.",
+    },
+    {
+        "key": "promoted_fp32",
+        "precision": "fp32",
+        "directory": "official-full-fp32-{index}",
+        "transcript": "python-source-fp32.txt",
+        "description": "Source BF16 values promoted to FP32 at runtime.",
+    },
+    {
+        "key": "native_bf16_documented_precast",
+        "precision": "bf16",
+        "directory": "official-full-bf16-{index}",
+        "transcript": "python-source-bf16-precast.txt",
+        "description": "Native BF16 with the current documented pre-generate input cast; affected by MPS silent corruption.",
+    },
+    {
+        "key": "fp16_documented_precast",
+        "precision": "fp16",
+        "directory": "official-full-fp16-{index}",
+        "transcript": "python-source-fp16-precast.txt",
+        "description": "Runtime FP16 with the current documented pre-generate input cast; affected by MPS silent corruption.",
+    },
+)
+
 
 def comparison(reference: str, hypothesis: str) -> dict[str, Any]:
     """Return output-agreement diagnostics; these are not ground-truth WER."""
@@ -101,8 +139,13 @@ def main() -> int:
         "methodology": {
             "runtime": "IBM documented Transformers AutoModelForCTC.generate path",
             "device": "MPS",
-            "runs_per_precision": 3,
+            "runs_per_variant": 3,
             "input_mode": "One unchunked 6,118.72-second waveform",
+            "input_cast_finding": (
+                "On PyTorch 2.13 MPS, pre-casting the 305,936 x 320 feature tensor and "
+                "releasing its FP32 source silently corrupts later computation. Deferring the "
+                "cast to Granite's first layer, or retaining the source tensor, is correct."
+            ),
             "timing": (
                 "Speech pipeline is frontend + model.generate + tokenizer decode. Process wall "
                 "is /usr/bin/time -lp and includes startup, model/audio loading, a post-run "
@@ -118,15 +161,27 @@ def main() -> int:
                 "this is not WER against a human transcript."
             ),
         },
-        "precisions": {},
+        "known_mps_issues": [
+            {
+                "url": "https://github.com/pytorch/pytorch/issues/193487",
+                "relevance": "PyTorch 2.13 allocator-state-dependent silent wrong matmul results after large allocations.",
+            },
+            {
+                "url": "https://github.com/pytorch/pytorch/issues/189495",
+                "relevance": "Silent biased F.linear corruption when 3D leading dimensions exceed 65,536 rows.",
+            },
+        ],
+        "variants": {},
     }
 
     args.output.mkdir(parents=True, exist_ok=True)
-    for precision in ("bf16", "fp32"):
+    variant_transcripts: dict[str, str] = {}
+    for variant in VARIANTS:
+        precision = variant["precision"]
         runs: list[dict[str, Any]] = []
         transcripts: list[str] = []
         for index in (1, 2, 3):
-            run_dir = args.raw_root / f"official-full-{precision}-{index}"
+            run_dir = args.raw_root / variant["directory"].format(index=index)
             raw = json.loads((run_dir / "result.json").read_text())
             transcript = raw.pop("text").strip()
             transcripts.append(transcript)
@@ -147,8 +202,9 @@ def main() -> int:
         if len(set(transcripts)) != 1:
             raise RuntimeError(f"{precision} transcript was not deterministic across runs")
         transcript = transcripts[0]
-        transcript_path = args.output / f"python-source-{precision}.txt"
+        transcript_path = args.output / variant["transcript"]
         transcript_path.write_text(transcript + "\n")
+        variant_transcripts[variant["key"]] = transcript
 
         timing_keys = (
             "model_load_seconds",
@@ -187,15 +243,42 @@ def main() -> int:
         summary["complete_long_form_decode"] = complete
         if not complete:
             summary["quality_note"] = (
-                "The documented model-dtype BF16 input cast produced a deterministic but "
-                "incomplete long-form decode on M1 Max MPS; do not use this row as an "
-                "accuracy or production baseline."
+                "Pre-casting the very large feature tensor before generate produced a "
+                "deterministic but incomplete decode on M1 Max MPS. Retaining the source "
+                "FP32 tensor or deferring the cast makes the same 16-bit runtime complete; "
+                "do not use this row as an accuracy or production baseline."
             )
-        report["precisions"][precision] = {
+        report["variants"][variant["key"]] = {
+            "description": variant["description"],
             "transcript": str(transcript_path.relative_to(args.output.parent.parent)),
             "runs": runs,
             "median": summary,
         }
+
+    fp32_transcript = variant_transcripts["promoted_fp32"]
+    for key, transcript in variant_transcripts.items():
+        report["variants"][key]["median"]["agreement_vs_python_fp32"] = comparison(
+            fp32_transcript, transcript
+        )
+
+    retained_dir = args.raw_root / "official-retain-full-fp16-1"
+    retained = json.loads((retained_dir / "result.json").read_text())
+    retained_transcript = retained.pop("text").strip()
+    retained["local_model_path"] = "${SOURCE_MODEL}"
+    retained["audio_file"] = "${BENCHMARK_AUDIO}"
+    retained["text_sha256"] = digest(retained_transcript)
+    retained["agreement_vs_deferred_fp16"] = comparison(
+        variant_transcripts["fp16_deferred_cast"], retained_transcript
+    )
+    report["diagnostics"] = {
+        "fp16_documented_precast_while_retaining_fp32_source": retained,
+        "finding": (
+            "Keeping the otherwise-unused 391,598,080-byte FP32 MPS feature tensor alive "
+            "made the explicitly pre-cast FP16 path byte-identical to the deferred-cast FP16 "
+            "path. This isolates the failure to MPS allocation/lifetime state rather than "
+            "FP16 numerical precision."
+        ),
+    }
 
     output_path = args.output / "python-source-results.json"
     output_path.write_text(json.dumps(report, indent=2) + "\n")

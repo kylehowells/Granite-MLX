@@ -44,7 +44,17 @@ def main() -> int:
     parser.add_argument("--source-model-id", required=True)
     parser.add_argument("--source-revision", required=True)
     parser.add_argument("--device", choices=["cpu", "mps", "cuda"], default="mps")
-    parser.add_argument("--precision", choices=["bf16", "fp32"], default="bf16")
+    parser.add_argument("--precision", choices=["bf16", "fp16", "fp32"], default="bf16")
+    parser.add_argument(
+        "--input-cast",
+        choices=["documented", "documented-retain", "deferred"],
+        default="documented",
+        help=(
+            "Cast frontend features before generate as documented; retain the original FP32 "
+            "MPS tensor while doing so for diagnostics; or leave them FP32 and let Granite's "
+            "first layer perform its mandatory cast."
+        ),
+    )
     args = parser.parse_args()
 
     import torch
@@ -53,7 +63,11 @@ def main() -> int:
 
     started = time.perf_counter()
     model_path = Path(args.model).expanduser()
-    dtype = {"bf16": torch.bfloat16, "fp32": torch.float32}[args.precision]
+    dtype = {
+        "bf16": torch.bfloat16,
+        "fp16": torch.float16,
+        "fp32": torch.float32,
+    }[args.precision]
 
     model_load_started = time.perf_counter()
     processor = AutoProcessor.from_pretrained(
@@ -76,7 +90,13 @@ def main() -> int:
         sampling_rate=clip.sample_rate,
         device=args.device,
     )
-    inputs = inputs.to(args.device, dtype=model.dtype)
+    retained_input_features = None
+    if args.input_cast in {"documented", "documented-retain"}:
+        if args.input_cast == "documented-retain":
+            retained_input_features = inputs["input_features"]
+        inputs = inputs.to(args.device, dtype=model.dtype)
+    else:
+        inputs = inputs.to(args.device)
     synchronize(args.device)
     frontend_seconds = time.perf_counter() - frontend_started
 
@@ -110,6 +130,12 @@ def main() -> int:
         "device": args.device,
         "stored_weight_dtype": "bfloat16",
         "runtime_precision": args.precision,
+        "input_cast": args.input_cast,
+        "retained_input_feature_bytes": (
+            retained_input_features.numel() * retained_input_features.element_size()
+            if retained_input_features is not None
+            else 0
+        ),
         "model_load_seconds": model_load_seconds,
         "audio_load_seconds": audio_load_seconds,
         "frontend_seconds": frontend_seconds,

@@ -195,7 +195,11 @@ def load_reference_model(model_id: str, device: str, dtype: str):
             model_id, trust_remote_code=True
         )
 
-    torch_dtype = {"fp32": torch.float32, "bf16": torch.bfloat16}[dtype]
+    torch_dtype = {
+        "fp32": torch.float32,
+        "fp16": torch.float16,
+        "bf16": torch.bfloat16,
+    }[dtype]
     model = model.to(device=device, dtype=torch_dtype)
     model.eval()
     return model, processor
@@ -570,7 +574,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--silence-gap", type=float, default=1.0, help="Split subtitle cues at this timing gap in seconds.")
     parser.add_argument("--max-duration", type=float, default=8.0, help="Maximum subtitle cue duration in seconds.")
     parser.add_argument("--device", default="cuda" if _has_mps() else "cpu", choices=["cpu", "cuda", "mps"])
-    parser.add_argument("--precision", choices=["fp32", "bf16"], default="bf16")
+    parser.add_argument("--precision", choices=["fp32", "fp16", "bf16"], default="bf16")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument(
         "--memory-report",
