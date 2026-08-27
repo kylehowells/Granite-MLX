@@ -67,6 +67,16 @@ Backend precision and one-pass versus bounded long-form decoding can both
 change output. The Core ML transcript had 30 word edits across 13,615 reference
 words and 99.870% character similarity.
 
+The MLX row records the 122.88/20.48-second profile used in this quiet,
+interleaved backend matrix. Granite-MLX now defaults to 122.88 seconds of
+central audio with 10.24 seconds of context. In a later paired experiment under
+substantially heavier background load, that change reduced MLX median inference
+from 25.281 to 21.952 seconds and peak footprint from 1.652 to 1.627 GB. Its
+absolute timing is deliberately not mixed into this table. The selected MLX
+profile retained 99.7797% agreement with matching Q8 FP16 one-pass output, and
+manual review found localized word/filler changes rather than missing or
+duplicated passages.
+
 These are three-run medians from complete interleaved rounds, not three
 consecutive runs of each model. Every configuration produced a byte-identical
 transcript across rounds. Speech-time coefficient of variation ranged from
@@ -157,12 +167,12 @@ Detailed conversion experiments, negative ANE/INT8 findings, complete JSON,
 transcripts, and the PNG comparison chart are maintained in Granite-MLX's
 [`Benchmarks/coreml`](https://github.com/kylehowells/Granite-MLX/tree/master/Benchmarks/coreml)
 directory. This repository contains the current interleaved
-[backend matrix](benchmarks/backend-matrix-results.json), its deterministic
+[backend matrix](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8/blob/main/benchmarks/backend-matrix-results.json), its deterministic
 transcripts, and the earlier complete Python source-weight
-[`benchmark JSON`](benchmarks/python-source-results.json) and its deterministic
-[`BF16`](benchmarks/python-source-bf16.txt),
-[`FP16`](benchmarks/python-source-fp16.txt), and
-[`FP32`](benchmarks/python-source-fp32.txt) transcripts, plus the two pre-cast
+[`benchmark JSON`](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8/blob/main/benchmarks/python-source-results.json) and its deterministic
+[`BF16`](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8/blob/main/benchmarks/python-source-bf16.txt),
+[`FP16`](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8/blob/main/benchmarks/python-source-fp16.txt), and
+[`FP32`](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8/blob/main/benchmarks/python-source-fp32.txt) transcripts, plus the two pre-cast
 failure-mode transcripts.
 
 ## Files

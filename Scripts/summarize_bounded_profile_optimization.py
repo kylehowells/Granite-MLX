@@ -123,6 +123,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile-root", type=Path, required=True)
     parser.add_argument("--prototype-root", type=Path, required=True)
+    parser.add_argument("--one-pass-transcript", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
@@ -143,8 +144,10 @@ def main() -> int:
         args.profile_root, list(profile_metadata), args.output, profile_metadata)
     prototypes, prototype_text = summarize_group(
         args.prototype_root, list(prototype_metadata), args.output, prototype_metadata)
+    one_pass_text = args.one_pass_transcript.read_text().strip()
     for name, result in profiles.items():
         result["agreement_vs_current"] = comparison(profile_text["current"], profile_text[name])
+        result["agreement_vs_one_pass"] = comparison(one_pass_text, profile_text[name])
     for name, result in prototypes.items():
         result["agreement_vs_baseline"] = comparison(
             prototype_text["baseline"], prototype_text[name])
@@ -165,6 +168,7 @@ def main() -> int:
             "model": "Granite Speech 5.0 TurboCTC MLX mixed-G128/G64 Q8",
             "activation_precision": "FP16 with FP32 softmax stability islands",
             "mlx_cache_limit_mib": 64,
+            "one_pass_reference": str(args.one_pass_transcript),
             "system_load": (
                 "The profile matrix load average rose from 18.23 to 35.03; "
                 "the prototype matrix rose from 25.41 to 64.54 while macOS "
@@ -184,6 +188,7 @@ def main() -> int:
             "peak_memory_change_bytes": (
                 selected["peak_physical_footprint_bytes"]["median"]
                 - current["peak_physical_footprint_bytes"]["median"]),
+            "agreement_vs_one_pass": profiles["low-context"]["agreement_vs_one_pass"],
             "reason": (
                 "The low-context profile was materially faster, used less "
                 "memory, remained deterministic, and had only 13 word edits "

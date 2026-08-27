@@ -32,6 +32,14 @@ transcript had 0.265% word disagreement with bounded MLX and 99.838% character
 similarity. These are reference-output diagnostics, not WER against a human
 transcript.
 
+The MLX row records the 122.88/20.48-second profile used in this quiet backend
+matrix. The CLI now defaults to 122.88/10.24 seconds. In a later paired test
+under much heavier background load, the new MLX profile reduced median
+inference from 25.281 to 21.952 seconds and peak footprint from 1.652 to 1.627
+GB. Its absolute timing is not mixed into this table. It retained 99.7797%
+agreement with matching Q8 FP16 one-pass output, with no missing or duplicated
+passages in manual review.
+
 The Python rows are fresh three-run medians through
 `AutoModelForCTC.generate()` using Transformers 5.16.1 and PyTorch 2.13.0 on
 MPS. The checkpoint is stored as BF16. “FP16” casts those BF16 values to FP16

@@ -4,8 +4,11 @@
 > chunks by default, so the large one-pass memory figures below do not describe
 > its normal behavior. See
 > [`Benchmarks/memory-optimization`](Benchmarks/memory-optimization) for the
-> current bounded-memory results and [`Benchmarks/q8-optimization`](Benchmarks/q8-optimization)
-> for the selected Q8 checkpoint.
+> original bounded-memory experiments,
+> [`Benchmarks/bounded-profile-optimization`](Benchmarks/bounded-profile-optimization)
+> for the current 122.88/10.24-second profile, and
+> [`Benchmarks/backend-matrix`](Benchmarks/backend-matrix) for the current
+> three-round Python, Swift MLX, and Core ML comparison.
 
 Measured 26 August 2026 on a 10-core Apple M1 Max MacBook Pro with 64 GB RAM,
 macOS 26.5.2, Swift 6.2.3, MLX Swift 0.31.4, Python 3.10.15, PyTorch 2.13.0,
@@ -18,6 +21,13 @@ The three Swift rows all use MLX for computation:
 - `converted FP16` loads a pre-normalized MLX checkpoint with FP16 tensors.
 - `converted FP32` loads the same pre-normalized checkpoint with FP32 tensors.
 
+The historical Python row promoted the checkpoint's BF16 values to FP32 at
+runtime. It is therefore a **promoted-FP32 reference**, not an original-FP32
+checkpoint. Promoting BF16 cannot restore precision that was absent from the
+published source weights. Fresh native-BF16, runtime-FP16, and promoted-FP32
+Python measurements are preserved in
+[`Benchmarks/coreml/python-source-results.json`](Benchmarks/coreml/python-source-results.json).
+
 ## 20-second sample
 
 The Swift figures are medians of three separate processes. Python inference is
@@ -26,7 +36,7 @@ the corresponding sums. All four transcripts match byte-for-byte.
 
 | Runtime | Model load (s) | Inference (s) | Inference speed | Startup + inference (s) |
 | --- | ---: | ---: | ---: | ---: |
-| Python/PyTorch original FP32 | 2.44 | 0.351 | 57.0x | 2.77 |
+| Python/PyTorch source promoted to FP32 | 2.44 | 0.351 | 57.0x | 2.77 |
 | Swift/MLX source BF16 | 0.335 | 0.137 | 145.5x | 0.472 total |
 | Swift/MLX converted FP16 | 0.330 | 0.130 | 153.9x | 0.467 total |
 | Swift/MLX converted FP32 | 0.356 | 0.115 | 174.2x | 0.477 total |
@@ -40,7 +50,7 @@ inference, and output handling.
 
 | Runtime | Model load (s) | Inference (s) | Inference speed | Process wall (s) |
 | --- | ---: | ---: | ---: | ---: |
-| Python/PyTorch original FP32 | 3.821 | 39.980 | 153.0x | ~46.22 |
+| Python/PyTorch source promoted to FP32 | 3.821 | 39.980 | 153.0x | ~46.22 |
 | Swift/MLX source BF16 | 0.411 | 26.883 | 227.6x | 27.45 |
 | Swift/MLX converted FP16 | 0.376 | 18.937 | 323.1x | 19.76 |
 | Swift/MLX converted FP32 | 0.626 | 31.812 | 192.3x | 33.90 |
@@ -75,3 +85,24 @@ checkpoint precision. `time` also reported a roughly 45 GB peak memory
 footprint for one-pass inference, reflecting MLX/Metal allocation accounting;
 chunked inference remains important for lower-memory Macs even though one-pass
 inference works on this 64 GB machine.
+
+## Current bounded Q8 release profile
+
+The current MLX default uses 122.88 seconds of central audio, 10.24 seconds of
+context on each side, FP16 activations, and a 64 MiB MLX cache limit. In a
+three-round rotated comparison it reduced median speech inference from 25.281
+to 21.952 seconds and peak physical footprint from 1.652 to 1.627 GB versus
+the previous 20.48-second-context profile.
+
+The selected bounded transcript has 30 word edits against the matching Q8
+FP16 unchunked transcript: 99.7797% word agreement and 99.8598% character
+similarity across 13,615 unchunked reference words. The previously reported 13
+edits compare the new profile with the previous **chunked** profile, not with
+one-pass output. These are implementation-agreement diagnostics, not WER.
+
+A manual review found no missing sentences, duplicated passages, or
+topic-level corruption. The differences are isolated article, filler, and
+single-word alternatives. Several are improvements (`netfli` → `netflix`,
+`i is` → `i guess`), while two technical terms differ from one-pass output
+(`dk` → `dek` and `dot` → `start`). Only `dot` → `start` was introduced by
+the context reduction; the prior bounded profile already emitted `dek`.

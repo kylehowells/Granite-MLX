@@ -274,8 +274,11 @@ blocks. The original 20.48-second-context memory experiment reduced macOS peak
 footprint from 34.67 GB to 1.64 GB and took 24.41 seconds. A later interleaved
 profile test found that one 10.24-second attention block of context was 13.2%
 faster and used 25 MB less peak memory. It changed 13 words relative to the
-20.48-second-context transcript across 13,610 reference words. These
-comparisons are diagnostics, not ground-truth WER. See
+20.48-second-context transcript across 13,610 reference words. Compared
+directly with matching Q8 FP16 unchunked output, the selected profile has 30
+word edits across 13,615 words (99.7797% agreement). Manual review found only
+localized word/filler changes rather than missing or duplicated passages.
+These comparisons are diagnostics, not ground-truth WER. See
 [`Benchmarks/memory-optimization`](Benchmarks/memory-optimization) and
 [`Benchmarks/bounded-profile-optimization`](Benchmarks/bounded-profile-optimization).
 

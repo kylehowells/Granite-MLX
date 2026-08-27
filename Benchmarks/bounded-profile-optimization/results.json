@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "created_at": "2026-08-27T15:38:22+0100",
+  "created_at": "2026-08-27T19:00:49+0100",
   "audio": {
     "file_name": "granite-cme295-lecture1-16k-mono.wav",
     "duration_seconds": 6118.72,
@@ -12,6 +12,7 @@
     "model": "Granite Speech 5.0 TurboCTC MLX mixed-G128/G64 Q8",
     "activation_precision": "FP16 with FP32 softmax stability islands",
     "mlx_cache_limit_mib": 64,
+    "one_pass_reference": "Benchmarks/q8-optimization/transcripts/q8-g128-fp16-full.txt",
     "system_load": "The profile matrix load average rose from 18.23 to 35.03; the prototype matrix rose from 25.41 to 64.54 while macOS media analysis and indexing were active. Use paired relative results rather than cross-session absolute timing."
   },
   "chunk_profiles": {
@@ -124,6 +125,13 @@
         "word_edits": 0,
         "word_agreement_percent": 100.0,
         "character_similarity_percent": 100.0
+      },
+      "agreement_vs_one_pass": {
+        "reference_words": 13615,
+        "candidate_words": 13610,
+        "word_edits": 23,
+        "word_agreement_percent": 99.83106867425634,
+        "character_similarity_percent": 99.89303112216135
       }
     },
     "low-context": {
@@ -235,6 +243,13 @@
         "word_edits": 13,
         "word_agreement_percent": 99.90448199853049,
         "character_similarity_percent": 99.93783252371038
+      },
+      "agreement_vs_one_pass": {
+        "reference_words": 13615,
+        "candidate_words": 13605,
+        "word_edits": 30,
+        "word_agreement_percent": 99.77965479250827,
+        "character_similarity_percent": 99.85978403850879
       }
     },
     "same-memory": {
@@ -346,6 +361,13 @@
         "word_edits": 35,
         "word_agreement_percent": 99.7428361498898,
         "character_similarity_percent": 99.85253509520162
+      },
+      "agreement_vs_one_pass": {
+        "reference_words": 13615,
+        "candidate_words": 13612,
+        "word_edits": 36,
+        "word_agreement_percent": 99.73558575100992,
+        "character_similarity_percent": 99.84388325937061
       }
     }
   },
@@ -801,6 +823,13 @@
     "new_mlx_default_context_seconds": 10.24,
     "inference_speed_improvement_percent": 13.16698812102276,
     "peak_memory_change_bytes": -25346000.0,
+    "agreement_vs_one_pass": {
+      "reference_words": 13615,
+      "candidate_words": 13605,
+      "word_edits": 30,
+      "word_agreement_percent": 99.77965479250827,
+      "character_similarity_percent": 99.85978403850879
+    },
     "reason": "The low-context profile was materially faster, used less memory, remained deterministic, and had only 13 word edits versus the prior default. Compilation and cache retention did not improve speed without increasing memory."
   }
 }
