@@ -12,7 +12,10 @@ import argparse
 import datetime
 import importlib.util
 import json
+import os
 import re
+import resource
+import subprocess
 import sys
 import time
 import types
@@ -54,6 +57,52 @@ def load_audio(path: Path, target_sample_rate: int = SAMPLE_RATE) -> AudioClip:
         sample_rate = target_sample_rate
 
     return AudioClip(path=path, samples=samples, sample_rate=sample_rate)
+
+
+def memory_report(device: str) -> dict[str, Any]:
+    """Collect process and MPS allocator memory after transcription.
+
+    macOS process footprint and MPS allocator values describe different memory
+    accounting views, so they are reported separately rather than summed.
+    """
+
+    report: dict[str, Any] = {
+        "maximum_resident_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+    }
+    if device == "mps":
+        import torch
+
+        torch.mps.synchronize()
+        report.update(
+            {
+                "mps_current_allocated_bytes": torch.mps.current_allocated_memory(),
+                "mps_driver_allocated_bytes": torch.mps.driver_allocated_memory(),
+                "mps_recommended_max_bytes": torch.mps.recommended_max_memory(),
+            }
+        )
+
+    if sys.platform == "darwin" and Path("/usr/bin/footprint").is_file():
+        completed = subprocess.run(
+            [
+                "/usr/bin/footprint",
+                "-p",
+                str(os.getpid()),
+                "-f",
+                "bytes",
+                "--noCategories",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        for key, output_key in (
+            ("phys_footprint", "physical_footprint_bytes"),
+            ("phys_footprint_peak", "peak_physical_footprint_bytes"),
+        ):
+            match = re.search(rf"^\s*{key}:\s+(\d+) B$", completed.stdout, re.MULTILINE)
+            if match:
+                report[output_key] = int(match.group(1))
+    return report
 
 
 def load_reference_model(model_id: str, device: str, dtype: str):
@@ -523,6 +572,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--device", default="cuda" if _has_mps() else "cpu", choices=["cpu", "cuda", "mps"])
     parser.add_argument("--precision", choices=["fp32", "bf16"], default="bf16")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--memory-report",
+        action="store_true",
+        help="Record macOS process-footprint and MPS allocator memory in JSON output.",
+    )
     parser.add_argument("--version", action="version", version="granite-reference 0.1.0")
     return parser
 
@@ -537,6 +591,7 @@ def _has_mps() -> bool:
 
 
 def main(argv: Iterable[str] | None = None) -> int:
+    process_started = time.perf_counter()
     args = build_parser().parse_args(argv)
     missing = [str(path) for path in args.audio if not path.is_file()]
     if missing:
@@ -563,7 +618,9 @@ def main(argv: Iterable[str] | None = None) -> int:
         all_results = []
 
         for index, audio_path in enumerate(args.audio):
+            audio_load_started = time.perf_counter()
             clip = load_audio(audio_path)
+            audio_load_seconds = time.perf_counter() - audio_load_started
             if args.verbose:
                 print(f"Transcribing {audio_path} ({clip.duration:.2f}s) ...", file=sys.stderr)
             if args.chunk_duration:
@@ -589,7 +646,17 @@ def main(argv: Iterable[str] | None = None) -> int:
                     "device": args.device,
                     "precision": args.precision,
                     "model_load_seconds": round(model_load_seconds, 6),
+                    "audio_load_seconds": round(audio_load_seconds, 6),
                 }
+            )
+            if args.memory_report:
+                memory_probe_started = time.perf_counter()
+                result["memory"] = memory_report(args.device)
+                result["memory_probe_seconds"] = round(
+                    time.perf_counter() - memory_probe_started, 6
+                )
+            result["elapsed_before_output_seconds"] = round(
+                time.perf_counter() - process_started, 6
             )
             all_results.append(result)
 

@@ -17,6 +17,7 @@ keeps 20.48 seconds of context on each side and advances by 286.72 seconds.
 
 | Backend | Speech inference | Process wall | Peak footprint | Raw comparison |
 |---|---:|---:|---:|---:|
+| IBM source / Python PyTorch FP32, one pass | 25.69 s | 30.47 s | 27.48 GB | 2.461% vs native Swift source output |
 | MLX release Q8 | 24.41 s | 24.88 s | 1.64 GB | 0.169% vs its one-pass output |
 | **Core ML Q8/G1, 16,384** | **17.32 s** | **22.09 s** | 2.10 GB | 0.213% vs Core ML FP16 |
 
@@ -25,6 +26,28 @@ while increasing measured peak footprint by about 456 MB. Its raw transcript
 had 0.265% word disagreement with the bounded MLX transcript and 99.838%
 character similarity. These are reference-output diagnostics, not WER against
 a human transcript.
+
+The Python row is a fresh three-run median through IBM's documented
+`AutoModelForCTC.generate()` API using Transformers 5.16.1 and PyTorch 2.13.0
+on MPS. Its 25.69-second speech pipeline comprises 0.464 seconds of frontend
+processing, 25.195 seconds in `model.generate()`, and 0.031 seconds of
+tokenizer decode. Median model load was 0.594 seconds, audio load was 0.223
+seconds, maximum RSS was 1.40 GB, and the MPS driver allocator held 26.22 GB.
+The 27.48 GB number is macOS's peak physical footprint, measured independently
+with `/usr/bin/footprint`; the memory views are not added together.
+
+Python FP32 emitted 13,595 words and had 97.5395% word agreement and 98.6344%
+character similarity against the 13,615-word bounded native-Swift source-weight
+output. The difference includes MPS versus MLX numerical behavior and one-pass
+versus bounded long-form decoding, so it is not model accuracy or human-reference
+WER. All three Python FP32 transcripts were byte-identical.
+
+The prescribed BF16 model/input cast was also tested three times. It was
+slightly faster and used 14.30 GB, but on this M1 Max MPS path it produced a
+deterministic, incomplete 2,523-word decode; it is therefore retained as a
+compatibility finding, not presented as a valid accuracy baseline. Complete
+per-run timings, memory counters, environment metadata, transcript hashes, and
+both transcripts are in `python-source-results.json` and the adjacent TXT files.
 
 With the user-facing Q8 punctuation model enabled, Core ML took 18.65 seconds
 for speech and 1.05 seconds for formatting. Processing finished in 19.83
