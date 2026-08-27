@@ -1,6 +1,6 @@
 # ``GraniteMLX``
 
-Run Granite Speech 5.0 TurboCTC locally in native Swift with MLX.
+Run Granite Speech 5.0 TurboCTC locally in native Swift with MLX or Core ML.
 
 ## Overview
 
@@ -11,7 +11,8 @@ and export utilities for Apple Silicon applications.
 The high-level pipeline has four independent stages:
 
 1. ``GraniteAudioInput`` decodes a local media file to mono 16 kHz audio.
-2. ``GraniteRecognizer`` produces raw CTC text and approximate token/word times.
+2. ``GraniteRecognizer`` or ``GraniteCoreMLRecognizer`` produces raw CTC text
+   and approximate token/word times.
 3. A ``GraniteTranscriptFormatter`` adds non-destructive presentation details.
 4. ``GraniteSubtitleSegmenter`` and ``GraniteTranscriptExporter`` create
    display or subtitle output.
@@ -49,6 +50,30 @@ Library calls are synchronous. Run model loading and inference away from an
 application's main actor. For long recordings, specify the block-aligned chunk
 profile shown above; unlike the CLI, the lower-level recognizer API uses a
 single pass when `audioChunkDuration` is omitted.
+
+### Use a converted Core ML graph
+
+``GraniteCoreMLRecognizer`` loads a fixed-shape converted ML Program and the
+matching Granite tokenizer/config directory. It shares audio preparation, CTC
+decoding, timestamps, progress, and cancellation behavior with the MLX path:
+
+```swift
+let coreML = try GraniteCoreMLRecognizer(
+    modelURL: URL(fileURLWithPath: "/path/to/granite-q8.mlpackage"),
+    tokenizerURL: URL(fileURLWithPath: "/path/to/granite-tokenizer"),
+    computeUnits: .cpuAndGPU
+)
+let raw = try coreML.transcribe(
+    audio,
+    audioChunkContext: 20.48,
+    cancellationToken: cancellation
+)
+```
+
+Omitting the Core ML chunk duration fills the graph after reserving context.
+Compiled packages are cached under `~/Library/Caches/GraniteMLX/CoreML` by
+default. Converted packages are currently supplied by applications rather than
+downloaded through ``GraniteModelCatalog``.
 
 ### Apply presentation formatting
 
@@ -119,6 +144,9 @@ The default cache is the Swift Hugging Face materialization directory. Set
 - ``GraniteAudioInput``
 - ``GraniteFeatureExtractor``
 - ``GraniteRecognizer``
+- ``GraniteCoreMLRecognizer``
+- ``GraniteCoreMLComputeUnits``
+- ``GraniteCoreMLPerformance``
 - ``GraniteTranscription``
 - ``GraniteWord``
 - ``GraniteTokenTiming``
@@ -151,4 +179,5 @@ The default cache is the Swift Hugging Face materialization directory. Set
 - ``GraniteOperationError``
 - ``GraniteAudioError``
 - ``GraniteRecognizerError``
+- ``GraniteCoreMLRecognizerError``
 - ``GraniteModelManagementError``

@@ -3,6 +3,42 @@ import XCTest
 @testable import GraniteMLX
 
 final class GraniteMLXTests: XCTestCase {
+    func testCoreMLComputeUnitPoliciesAndDiagnosticCodesAreStable() {
+        XCTAssertEqual(
+            GraniteCoreMLComputeUnits.allCases.map(\.rawValue),
+            ["all", "cpu-gpu", "cpu-ne", "cpu"])
+        XCTAssertEqual(
+            GraniteCoreMLRecognizerError.invalidTokenizerDirectory(
+                URL(fileURLWithPath: "/tmp/tokenizer"), details: "fixture")
+                .diagnosticCode,
+            "GMLX-COREML-001")
+        XCTAssertEqual(
+            GraniteCoreMLRecognizerError.invalidModel(
+                URL(fileURLWithPath: "/tmp/model.mlpackage"), details: "fixture")
+                .diagnosticCode,
+            "GMLX-COREML-002")
+        XCTAssertEqual(
+            GraniteCoreMLRecognizerError.inputTooLong(actualFrames: 2, maximumFrames: 1)
+                .diagnosticCode,
+            "GMLX-COREML-003")
+        XCTAssertEqual(
+            GraniteCoreMLRecognizerError.predictionFailed(details: "fixture")
+                .diagnosticCode,
+            "GMLX-COREML-004")
+    }
+
+    func testCoreMLPerformanceStartsEmptyAndRoundTripsJSON() throws {
+        let performance = GraniteCoreMLPerformance()
+        XCTAssertEqual(performance.chunkCount, 0)
+        XCTAssertEqual(performance.predictionSeconds, 0)
+        XCTAssertEqual(performance.predictionDurations, [])
+        XCTAssertEqual(
+            try JSONDecoder().decode(
+                GraniteCoreMLPerformance.self,
+                from: JSONEncoder().encode(performance)),
+            performance)
+    }
+
     func testLocalPunctuationFormatterMatchesMLXReference() throws {
         guard let path = ProcessInfo.processInfo.environment["GRANITE_PUNCTUATION_MODEL"] else {
             throw XCTSkip("Set GRANITE_PUNCTUATION_MODEL to run the local formatter parity test.")

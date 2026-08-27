@@ -15,7 +15,8 @@ Swift library; transcription runs locally after the selected model is cached.
 
 ## Highlights
 
-- Native Swift inference with MLX; no Python runtime is required.
+- Native Swift inference with MLX, plus an experimental fixed-shape Core ML
+  backend; no Python runtime is required after conversion.
 - Audio and video input through AVFoundation with an `ffmpeg` fallback.
 - Automatic, visible model downloads plus cache listing and removal commands.
 - Bounded-memory long-form transcription by default.
@@ -135,6 +136,34 @@ collision. For multiple inputs without `--output-dir`, stdout is JSON Lines so
 each result remains distinct. JSON preserves `raw_text`, user-facing `text`,
 optional `formatted_text`, timed words and subtitle segments, model settings,
 and performance metadata. All progress and benchmark records go to stderr.
+
+### Experimental Core ML backend
+
+Granite-MLX also includes a native Swift Core ML recognizer for converted,
+fixed-shape ML Programs. On the development M1 Max, a macOS 15 Q8 palettized
+16,384-frame graph transcribed the 101m59s lecture in 17.32 seconds of speech
+inference versus 24.41 seconds for the release MLX Q8 profile. Process wall was
+22.09 versus 24.88 seconds. The Core ML transcript had 0.265% word disagreement
+with the MLX output, while peak footprint increased from 1.64 to 2.10 GB.
+
+Core ML model packages are not yet part of the downloadable model catalog. Use
+a converted package and the matching source tokenizer/config directory:
+
+```bash
+granite-mlx lecture.wav \
+  --backend coreml \
+  --coreml-model /path/to/granite-coreml-q8-g1-16384.mlpackage \
+  --model /path/to/granite-speech-5.0-470m-turboctc
+```
+
+When no chunk duration is supplied, the Core ML backend automatically uses the
+largest central chunk that fits the selected graph after reserving context.
+CPU+GPU is the default and fastest compute policy measured on M1 Max. Use
+`--coreml-compute-units all`, `cpu-ne`, or `cpu` to test another policy.
+
+Conversion, quantization, reproducible commands, negative ANE/INT8 findings,
+checked JSON, and the benchmark PNG are in
+[`Benchmarks/coreml`](Benchmarks/coreml).
 
 ### Model downloads and disk usage
 

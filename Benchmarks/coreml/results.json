@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "date": "2026-08-27",
+  "system": {
+    "hardware": "Apple M1 Max, 64 GB unified memory",
+    "os": "macOS 26.5.2",
+    "coremltools": "9.0",
+    "swift_backend": "Core ML ML Program",
+    "compute_units": "cpu-gpu"
+  },
+  "audio": {
+    "short_seconds": 20.0,
+    "long_seconds": 6118.72,
+    "long_description": "Stanford CME295 lecture, mono 16 kHz"
+  },
+  "winning_configuration": {
+    "weight_compression": "8-bit uniform palettization",
+    "granularity": "per grouped channel",
+    "group_size": 1,
+    "minimum_deployment_target": "macOS 15",
+    "feature_frames": 16384,
+    "fixed_audio_seconds": 327.68,
+    "central_chunk_seconds": 286.72,
+    "context_seconds_each_side": 20.48,
+    "package_bytes": 691894962,
+    "package_mib": 659.8424549102783,
+    "chunk_count": 22,
+    "model_load_seconds": 4.558099031448364,
+    "inference_seconds": 17.31956696510315,
+    "prediction_seconds": 16.78021787526086,
+    "process_wall_seconds": 22.09,
+    "maximum_resident_bytes": 1616461824,
+    "peak_memory_footprint_bytes": 2095384280,
+    "realtime_multiple": 353.28345533674275,
+    "accuracy_vs_coreml_fp16": {
+      "reference_words": 13615,
+      "candidate_words": 13617,
+      "word_edits": 29,
+      "word_disagreement_percent": 0.2130003672420125,
+      "character_similarity_percent": 99.86704241635957
+    },
+    "accuracy_vs_mlx_default": {
+      "reference_words": 13610,
+      "candidate_words": 13617,
+      "word_edits": 36,
+      "word_disagreement_percent": 0.26451138868479057,
+      "character_similarity_percent": 99.83811519838115
+    }
+  },
+  "mlx_release_baseline": {
+    "model": "mixed-G128/G64 Q8",
+    "central_chunk_seconds": 122.88,
+    "context_seconds_each_side": 20.48,
+    "inference_seconds": 24.406649947166443,
+    "process_wall_seconds": 24.88,
+    "peak_memory_footprint_bytes": 1643218408,
+    "realtime_multiple": 250.6988879360877,
+    "word_disagreement_vs_own_one_pass_percent": 0.16893132574366507
+  },
+  "formatted_default_run": {
+    "speech_inference_seconds": 18.651487946510315,
+    "punctuation_inference_seconds": 1.0524910688400269,
+    "processing_seconds": 19.829254984855652,
+    "process_wall_seconds": 24.4,
+    "peak_memory_footprint_bytes": 2099431272,
+    "realtime_multiple": 310.53220241623404,
+    "formatted_character_similarity_vs_mlx_percent": 99.38836630531067,
+    "formatted_word_disagreement_vs_mlx_percent": 2.24834680382072,
+    "lexical_word_agreement_vs_mlx_percent": 99.64827434601011
+  },
+  "compute_unit_experiment_fp16_1024": [
+    {"compute_units": "cpu-gpu", "warm_median_seconds": 0.0531708124326542, "audio_speed_x": 385.1737271447532},
+    {"compute_units": "all", "warm_median_seconds": 0.10241464606951922, "audio_speed_x": 199.97139848628822},
+    {"compute_units": "cpu-ne", "warm_median_seconds": 0.10337245848495513, "audio_speed_x": 198.11853466734243},
+    {"compute_units": "cpu", "warm_median_seconds": 0.13193991663865745, "audio_speed_x": 155.22216870947688}
+  ],
+  "full_audio_weight_experiments": [
+    {"name": "FP16", "feature_frames": 8192, "package_bytes": 1009080564, "inference_seconds": 32.21177303791046, "peak_footprint_bytes": 2052884400, "word_disagreement_vs_fp16_percent": 0.0},
+    {"name": "Q8 palette G32", "feature_frames": 8192, "package_bytes": 511080882, "inference_seconds": 19.935172080993652, "peak_footprint_bytes": 1527416368, "word_disagreement_vs_fp16_percent": 0.9768637532133676},
+    {"name": "Q8 palette G4", "feature_frames": 8192, "package_bytes": 551909943, "inference_seconds": 20.223214983940125, "peak_footprint_bytes": 1591920224, "word_disagreement_vs_fp16_percent": 0.2350348879911862},
+    {"name": "Q8 palette G1", "feature_frames": 8192, "package_bytes": 691894962, "inference_seconds": 21.0063419342041, "peak_footprint_bytes": 1705985728, "word_disagreement_vs_fp16_percent": 0.13220712449504224},
+    {"name": "Q6 palette G1", "feature_frames": 8192, "package_bytes": 425941304, "inference_seconds": 23.073514938354492, "peak_footprint_bytes": 4737486760, "word_disagreement_vs_fp16_percent": 0.5067939772309952}
+  ],
+  "shape_experiments_q8_g1": [
+    {"feature_frames": 8192, "central_chunk_seconds": 122.88, "chunks": 50, "inference_seconds": 21.0063419342041, "prediction_seconds": 20.37373287603259, "peak_footprint_bytes": 1705985728, "word_disagreement_vs_fp16_percent": 0.13220712449504224},
+    {"feature_frames": 16384, "central_chunk_seconds": 286.72, "chunks": 22, "inference_seconds": 17.31956696510315, "prediction_seconds": 16.78021787526086, "peak_footprint_bytes": 2095384280, "word_disagreement_vs_fp16_percent": 0.2130003672420125},
+    {"feature_frames": 24576, "central_chunk_seconds": 450.56, "chunks": 14, "inference_seconds": 21.508410930633545, "prediction_seconds": 20.91569795832038, "peak_footprint_bytes": 2496939880, "word_disagreement_vs_fp16_percent": 0.2130003672420125},
+    {"feature_frames": 32768, "central_chunk_seconds": 614.4, "chunks": 10, "inference_seconds": 18.322582006454468, "prediction_seconds": 17.714180000126362, "peak_footprint_bytes": 2880145256, "word_disagreement_vs_fp16_percent": 0.1909658464928388}
+  ],
+  "negative_results": {
+    "ane": {
+      "preferred_neural_engine_ops": 722,
+      "cpu_ops": 89,
+      "dynamic_attention_matmuls_unsupported_by_ane": 32,
+      "finding": "The M1 ANE compiler cannot place q-k and attention-value dynamic matmuls. CPU/ANE partitioning was about 1.94x slower than CPU/GPU."
+    },
+    "linear_int8_weights": {
+      "feature_frames": 8192,
+      "warm_median_seconds": 4.849164312472567,
+      "fp16_warm_median_seconds": 0.34410131291951984,
+      "finding": "Core ML linear INT8 weight quantization selected a slow generic path on M1 Max."
+    },
+    "activation_int8": {
+      "calibration_op_group_size": 512,
+      "conversion_seconds": 119.263,
+      "result": "SIGSEGV while loading or predicting",
+      "finding": "The Core ML Tools 9 INT8 activation graph was not usable on this M1 Max."
+    },
+    "fp8_activations": {
+      "result": "not available",
+      "finding": "Core ML Tools 9 does not expose an FP8 activation compression path for this ML Program."
+    },
+    "split_ctc_head": {
+      "full_fp16_1024_seconds": 0.0528,
+      "hidden_encoder_1024_seconds": 0.05,
+      "finding": "The final CTC projection plus argmax is only about 2.8 ms, so splitting or specializing that head cannot close a material gap."
+    }
+  }
+}

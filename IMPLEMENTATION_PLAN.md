@@ -283,6 +283,41 @@ capitalization, and segmentation model derived from
 - [x] Test cache reuse, isolated partial/corrupt states, interruption/resume,
   coded network/download errors, and first-download progress reporting.
 
+### Native Core ML backend experiment
+
+- [x] Implement a standalone PyTorch Granite graph that loads IBM's checkpoint
+  directly and avoids dependency on a matching Transformers model class.
+- [x] Convert fixed-shape FP16 Core ML ML Programs with greedy CTC frame IDs as
+  output and verify exact short-fixture frame parity.
+- [x] Implement `GraniteCoreMLRecognizer` with the shared Swift frontend,
+  tokenizer, CTC timestamps, chunk/context handling, progress, cancellation,
+  coded errors, timing breakdowns, and persistent compiled-model caching.
+- [x] Add `--backend coreml`, `--coreml-model`, and
+  `--coreml-compute-units`; make omitted Core ML chunk settings fill the fixed
+  graph automatically.
+- [x] Measure CPU, CPU+GPU, CPU+ANE, and automatic placement. Select CPU+GPU on
+  M1 Max after identifying 32 ANE-unsupported dynamic attention matmuls.
+- [x] Test Core ML linear INT8 and uniform/k-means palette weight compression
+  across per-tensor and grouped-channel configurations.
+- [x] Select macOS 15 uniform Q8 grouped-channel size 1 as the accuracy-first
+  quantization profile.
+- [x] Search 8,192, 16,384, 24,576, and 32,768 feature-frame graphs. Select
+  16,384 frames as the measured speed/memory sweet spot.
+- [x] Beat the release MLX backend on the 101m59s fixture: 17.32s versus 24.41s
+  speech inference, with 0.265% word disagreement versus MLX output.
+- [x] Re-run the complete formatting-enabled CLI path: 19.83s processing,
+  24.40s process wall, and 99.65% lexical agreement with formatted MLX output.
+- [x] Test and reject the current INT8 activation graph (runtime crash), note
+  that Core ML Tools 9 offers no usable FP8 activation conversion for this
+  graph, and measure that splitting the final CTC head cannot materially help.
+- [x] Check in conversion/quantization/benchmark scripts, JSON results, a PNG
+  comparison chart, documentation, unit coverage, and an opt-in real-model CLI
+  parity test.
+- [ ] Publish the selected Core ML package with matching tokenizer assets and
+  add it to the CLI's automatic model download/cache-management catalog.
+- [ ] Validate the Core ML backend on newer Apple Silicon generations and on
+  physical iPhone/iPad hardware before making it the general default.
+
 ### Local long-form benchmark corpus
 
 The primary long-form performance fixtures are stored outside this repository:
@@ -548,6 +583,17 @@ the manager from listing or deleting unrelated Swift Hub models. A fresh
 punctuation-Q4 download was observed through completion and then removed again,
 and cache-hit, noninteractive-removal protection, debug tests, release build,
 and cached default transcription were verified.
+
+The experimental native Core ML backend is also working. A macOS 15 Q8
+palettized, per-channel 16,384-frame graph runs the full 101m59s lecture in
+17.32 seconds of speech inference on the M1 Max, 29% faster than the 24.41s
+bounded MLX release profile. It uses 2.10 GB peak footprint rather than 1.64
+GB and differs from the MLX transcript by 0.265% of reference words. The
+formatting-enabled path completes processing in 19.83 seconds and retains
+99.65% lexical agreement with formatted MLX output. Reproducible scripts,
+negative ANE/INT8 results, machine-readable measurements, and a PNG comparison
+are in `Benchmarks/coreml`. Core ML remains opt-in until the selected package
+is published and integrated with automatic model management.
 - [ ] Homebrew formula installation works.
 - [x] Default model download and cache behavior are documented.
 

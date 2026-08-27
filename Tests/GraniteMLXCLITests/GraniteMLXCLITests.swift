@@ -138,6 +138,17 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertNotEqual(invalid.status, 0)
         XCTAssertEqual(invalid.stdout, "")
         XCTAssertTrue(invalid.stderr.contains("GMLX-CLI-002"))
+
+        let missingCoreMLModel = try runCLI(["file.wav", "--backend", "coreml"])
+        XCTAssertNotEqual(missingCoreMLModel.status, 0)
+        XCTAssertTrue(missingCoreMLModel.stderr.contains("GMLX-CLI-014"))
+
+        let invalidComputeUnits = try runCLI([
+            "file.wav", "--backend", "coreml", "--coreml-model", "Granite.mlpackage",
+            "--coreml-compute-units", "gpu-only",
+        ])
+        XCTAssertNotEqual(invalidComputeUnits.status, 0)
+        XCTAssertTrue(invalidComputeUnits.stderr.contains("GMLX-CLI-015"))
     }
 
     func testModelListReportsAbsentPartialCompleteAndWarmCache() throws {
@@ -266,6 +277,26 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertTrue(result.stderr.contains("Inference"))
         XCTAssertFalse(result.stdout.contains("Inference"))
         XCTAssertFalse(result.stdout.contains("Download"))
+    }
+
+    func testOptInCoreMLBackendMatchesReferenceTranscript() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let model = environment["GRANITE_TEST_COREML_MODEL"],
+              let tokenizer = environment["GRANITE_TEST_COREML_TOKENIZER"],
+              let audio = environment["GRANITE_TEST_COREML_AUDIO"] else {
+            throw XCTSkip(
+                "Set GRANITE_TEST_COREML_MODEL, GRANITE_TEST_COREML_TOKENIZER, and GRANITE_TEST_COREML_AUDIO to run Core ML parity.")
+        }
+        let result = try runCLI([
+            audio, "--backend", "coreml", "--coreml-model", model,
+            "--model", tokenizer, "--no-punctuate", "--no-chunking",
+            "--output-format", "txt",
+        ], timeout: 180)
+        XCTAssertEqual(result.status, 0, result.stderr)
+        XCTAssertEqual(
+            result.stdout.trimmingCharacters(in: .whitespacesAndNewlines),
+            "hello hello everyone and welcome to cme 295 transformers and large language models so my name is afshin and i will be teaching this class with shervin who is in the back and")
+        XCTAssertEqual(result.stderr, "")
     }
 
     func testCorruptInputWithoutFFmpegHasCodedError() throws {

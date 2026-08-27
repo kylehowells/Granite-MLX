@@ -86,6 +86,12 @@ private struct BenchmarkResult: Encodable {
     let mlxCacheMemoryBytes: Int
     let mlxPeakMemoryBytes: Int
     let mlxCacheLimitBytes: Int
+    let coremlChunkCount: Int?
+    let coremlFeatureExtractionSeconds: Double?
+    let coremlInputCopySeconds: Double?
+    let coremlPredictionSeconds: Double?
+    let coremlPredictionDurations: [Double]?
+    let coremlOutputCopySeconds: Double?
 }
 
 private struct TranscriptionDocument: Encodable {
@@ -158,6 +164,7 @@ struct TranscribeCommand: ParsableCommand {
           granite-mlx lecture.mp4 --output-format all --output-dir ./transcripts
           granite-mlx a.wav b.mp3 --output-dir ./transcripts
           granite-mlx recording.wav --model apache-q6 --no-punctuate
+          granite-mlx a.wav --backend coreml --coreml-model G.mlpackage --model ./model
 
         SRT is written to stdout by default. Use --output-format txt for plain
         text, or --output-dir to create files. The first run downloads and
@@ -168,6 +175,12 @@ struct TranscribeCommand: ParsableCommand {
     var inputs: [String]
     @Option(help: "Catalog alias, local model directory, or Hugging Face repository ID.")
     var model: String = GraniteModelLoader.defaultModelID
+    @Option(help: "Speech backend: mlx or coreml.")
+    var backend: String = "mlx"
+    @Option(help: "Fixed-shape .mlpackage used by --backend coreml.")
+    var coremlModel: String?
+    @Option(help: "Core ML compute units: cpu-gpu, all, cpu-ne, or cpu.")
+    var coremlComputeUnits: String = GraniteCoreMLComputeUnits.cpuAndGPU.rawValue
     @Option(help: "Catalog alias, local punctuation model directory, or Hugging Face repository ID.")
     var punctuationModel: String = PunctuationModelLoader.defaultModelID
     @Option(help: "Hugging Face access token for private or gated repositories; overrides HF_TOKEN.")
@@ -200,10 +213,10 @@ struct TranscribeCommand: ParsableCommand {
     var middleCTCVocabularyTile: Int = 0
     @Option(help: "Limit MLX's recycled-buffer cache in MiB.")
     var mlxCacheLimitMB: Int = 64
-    @Option(help: "Bound encoder memory with independent audio chunks; 0 runs one pass. Multiples of 10.24s preserve attention-block alignment.")
-    var audioChunkDuration: Double = 122.88
-    @Option(help: "Extra context on each side of an audio chunk; only central emissions are retained.")
-    var audioChunkContext: Double = 20.48
+    @Option(help: "Central audio seconds per chunk. Defaults to 122.88 for MLX or the largest input that fits the selected Core ML graph. Multiples of 10.24s preserve attention-block alignment.")
+    var audioChunkDuration: Double?
+    @Option(help: "Extra context on each side of a chunk. Defaults to 20.48s, or less when required by a small Core ML graph.")
+    var audioChunkContext: Double?
     @Flag(help: "Disable temporal chunking and run the complete recording in one encoder pass.")
     var noChunking = false
     @Option(help: "Diagnostic: write the first input's frontend tensor as safetensors and exit.")
@@ -223,12 +236,21 @@ struct TranscribeCommand: ParsableCommand {
         guard silenceGap >= 0 else { throw ValidationError("[GMLX-CLI-005] --silence-gap must be non-negative; received \(silenceGap).") }
         guard maxDuration > 0 else { throw ValidationError("[GMLX-CLI-006] --max-duration must be greater than zero; received \(maxDuration).") }
         guard mlxCacheLimitMB >= 0 else { throw ValidationError("[GMLX-CLI-007] --mlx-cache-limit-mb must be non-negative; received \(mlxCacheLimitMB).") }
-        guard (noChunking ? 0 : audioChunkDuration) >= 0,
-              (noChunking ? 0 : audioChunkContext) >= 0 else {
-            throw ValidationError("[GMLX-CLI-008] Audio chunk duration and context must be non-negative; duration=\(audioChunkDuration), context=\(audioChunkContext).")
+        guard (noChunking ? 0 : (audioChunkDuration ?? 0)) >= 0,
+              (noChunking ? 0 : (audioChunkContext ?? 0)) >= 0 else {
+            throw ValidationError("[GMLX-CLI-008] Audio chunk duration and context must be non-negative; duration=\(String(describing: audioChunkDuration)), context=\(String(describing: audioChunkContext)).")
         }
         guard GraniteActivationPrecision(rawValue: activationPrecision) != nil else {
             throw ValidationError("[GMLX-CLI-009] Unsupported activation precision `\(activationPrecision)`. Use baseline, fp16, fp8-emulated, or int8-emulated.")
+        }
+        guard ["mlx", "coreml"].contains(backend.lowercased()) else {
+            throw ValidationError("[GMLX-CLI-013] Unsupported speech backend `\(backend)`. Use mlx or coreml.")
+        }
+        if backend.lowercased() == "coreml", coremlModel == nil {
+            throw ValidationError("[GMLX-CLI-014] --backend coreml requires --coreml-model MODEL.mlpackage.")
+        }
+        guard GraniteCoreMLComputeUnits(rawValue: coremlComputeUnits.lowercased()) != nil else {
+            throw ValidationError("[GMLX-CLI-015] Unsupported Core ML compute-unit policy `\(coremlComputeUnits)`. Use cpu-gpu, all, cpu-ne, or cpu.")
         }
     }
 
@@ -237,8 +259,6 @@ struct TranscribeCommand: ParsableCommand {
         let cancellationToken = interruptHandler.cancellationToken
         let format = OutputFormat(rawValue: outputFormat.lowercased())!
         let precision = GraniteActivationPrecision(rawValue: activationPrecision)!
-        let chunkDuration = noChunking ? 0 : audioChunkDuration
-        let chunkContext = noChunking ? 0 : audioChunkContext
         let outputDirectory: URL?
         do { outputDirectory = try prepareOutputDirectory() }
         catch {
@@ -252,17 +272,57 @@ struct TranscribeCommand: ParsableCommand {
         Memory.clearCache()
         let downloadReporter = ConsoleDownloadProgressReporter()
         let modelStart = Date()
-        let recognizer: GraniteRecognizer
-        do {
-            recognizer = try GraniteRecognizer(
-                modelSource: model, hfToken: effectiveHFToken,
-                progressHandler: downloadReporter.handler,
-                cancellationToken: cancellationToken)
-        } catch {
-            throw CLIRuntimeError.wrapping(
-                error, code: "GMLX-CLI-020", operation: "Speech model initialization")
+        let mlxRecognizer: GraniteRecognizer?
+        let coreMLRecognizer: GraniteCoreMLRecognizer?
+        if backend.lowercased() == "coreml" {
+            mlxRecognizer = nil
+            do {
+                coreMLRecognizer = try GraniteCoreMLRecognizer(
+                    modelURL: URL(fileURLWithPath: coremlModel!).standardizedFileURL,
+                    tokenizerURL: URL(fileURLWithPath: model).standardizedFileURL,
+                    computeUnits: GraniteCoreMLComputeUnits(
+                        rawValue: coremlComputeUnits.lowercased())!)
+            } catch {
+                throw CLIRuntimeError.wrapping(
+                    error, code: "GMLX-CLI-020", operation: "Core ML speech model initialization")
+            }
+        } else {
+            coreMLRecognizer = nil
+            do {
+                mlxRecognizer = try GraniteRecognizer(
+                    modelSource: model, hfToken: effectiveHFToken,
+                    progressHandler: downloadReporter.handler,
+                    cancellationToken: cancellationToken)
+            } catch {
+                throw CLIRuntimeError.wrapping(
+                    error, code: "GMLX-CLI-020", operation: "MLX speech model initialization")
+            }
         }
         let modelLoadSeconds = Date().timeIntervalSince(modelStart)
+        let chunkContext: Double
+        if noChunking {
+            chunkContext = 0
+        } else if let audioChunkContext {
+            chunkContext = audioChunkContext
+        } else if let coreMLRecognizer {
+            chunkContext = min(20.48, coreMLRecognizer.maximumAudioDuration / 4)
+        } else {
+            chunkContext = 20.48
+        }
+        let chunkDuration: Double
+        if noChunking {
+            chunkDuration = 0
+        } else if let audioChunkDuration {
+            chunkDuration = audioChunkDuration
+        } else if let coreMLRecognizer {
+            chunkDuration = max(
+                0, coreMLRecognizer.maximumAudioDuration - 2 * chunkContext)
+        } else {
+            chunkDuration = 122.88
+        }
+        let speechModelDescription = coremlModel ?? model
+        let speechWeightBits = mlxRecognizer?.artifact.configuration.quantization?.bits
+        let runtimePrecision = coreMLRecognizer == nil ? precision.rawValue : "coreml-fp16"
 
         let formatter: (any GraniteTranscriptFormatter)?
         let punctuationLoadSeconds: Double
@@ -288,7 +348,8 @@ struct TranscribeCommand: ParsableCommand {
                 let audio = try GraniteAudioInput.load(
                     url: URL(fileURLWithPath: inputs[0]),
                     cancellationToken: cancellationToken)
-                let features = recognizer.features(for: audio)
+                let features = mlxRecognizer?.features(for: audio)
+                    ?? coreMLRecognizer!.features(for: audio)
                 MLX.eval(features)
                 try MLX.save(arrays: ["features": features], metadata: [:], url: URL(fileURLWithPath: dumpFeatures))
                 if verbose { stderr("Wrote frontend tensor \(features.shape) to \(dumpFeatures)") }
@@ -299,11 +360,14 @@ struct TranscribeCommand: ParsableCommand {
             return
         }
         if let activationAudit {
+            guard let mlxRecognizer else {
+                throw ValidationError("[GMLX-CLI-016] --activation-audit is currently available only with --backend mlx.")
+            }
             do {
                 let audio = try GraniteAudioInput.load(
                     url: URL(fileURLWithPath: inputs[0]),
                     cancellationToken: cancellationToken)
-                let stages = recognizer.activationAudit(audio, activationPrecision: precision)
+                let stages = mlxRecognizer.activationAudit(audio, activationPrecision: precision)
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
                 try encoder.encode(stages).write(to: URL(fileURLWithPath: activationAudit))
@@ -336,14 +400,23 @@ struct TranscribeCommand: ParsableCommand {
 
             Memory.peakMemory = 0
             let inferenceStart = Date()
-            let rawResult = try recognizer.transcribe(
-                audio,
-                activationPrecision: precision,
-                ctcVocabularyTileSize: ctcVocabularyTile,
-                middleCTCVocabularyTileSize: middleCTCVocabularyTile,
-                audioChunkDuration: chunkDuration,
-                audioChunkContext: chunkContext,
-                cancellationToken: cancellationToken)
+            let rawResult: GraniteTranscription
+            if let coreMLRecognizer {
+                rawResult = try coreMLRecognizer.transcribe(
+                    audio,
+                    audioChunkDuration: chunkDuration,
+                    audioChunkContext: chunkContext,
+                    cancellationToken: cancellationToken)
+            } else {
+                rawResult = try mlxRecognizer!.transcribe(
+                    audio,
+                    activationPrecision: precision,
+                    ctcVocabularyTileSize: ctcVocabularyTile,
+                    middleCTCVocabularyTileSize: middleCTCVocabularyTile,
+                    audioChunkDuration: chunkDuration,
+                    audioChunkContext: chunkContext,
+                    cancellationToken: cancellationToken)
+            }
             let inferenceSeconds = Date().timeIntervalSince(inferenceStart)
 
             let punctuationStart = Date()
@@ -362,9 +435,10 @@ struct TranscribeCommand: ParsableCommand {
                 silenceGap: silenceGap,
                 maxDuration: maxDuration)
             let memory = Memory.snapshot()
+            let coreMLPerformance = coreMLRecognizer?.lastPerformance
             let report = BenchmarkResult(
                 audioFile: inputURL.path,
-                model: model,
+                model: speechModelDescription,
                 audioDurationSeconds: audio.duration,
                 audioLoadSeconds: audioLoadSeconds,
                 modelLoadSeconds: modelLoadSeconds,
@@ -375,7 +449,7 @@ struct TranscribeCommand: ParsableCommand {
                 totalSeconds: Date().timeIntervalSince(totalStart),
                 realTimeFactor: (inferenceSeconds + punctuationInferenceSeconds) / max(audio.duration, 1e-9),
                 realtimeMultiple: audio.duration / max(inferenceSeconds + punctuationInferenceSeconds, 1e-9),
-                activationPrecision: precision.rawValue,
+                activationPrecision: runtimePrecision,
                 ctcVocabularyTileSize: ctcVocabularyTile,
                 middleCTCVocabularyTileSize: middleCTCVocabularyTile,
                 audioChunkDurationSeconds: chunkDuration,
@@ -383,19 +457,25 @@ struct TranscribeCommand: ParsableCommand {
                 mlxActiveMemoryBytes: memory.activeMemory,
                 mlxCacheMemoryBytes: memory.cacheMemory,
                 mlxPeakMemoryBytes: memory.peakMemory,
-                mlxCacheLimitBytes: Memory.cacheLimit)
+                mlxCacheLimitBytes: Memory.cacheLimit,
+                coremlChunkCount: coreMLPerformance?.chunkCount,
+                coremlFeatureExtractionSeconds: coreMLPerformance?.featureExtractionSeconds,
+                coremlInputCopySeconds: coreMLPerformance?.inputCopySeconds,
+                coremlPredictionSeconds: coreMLPerformance?.predictionSeconds,
+                coremlPredictionDurations: coreMLPerformance?.predictionDurations,
+                coremlOutputCopySeconds: coreMLPerformance?.outputCopySeconds)
             let document = TranscriptionDocument(
                 audioFile: inputURL.path,
                 text: result.text,
                 rawText: result.rawText,
                 formattedText: result.formattedText,
                 durationSeconds: result.duration,
-                model: model,
-                weightQuantizationBits: recognizer.artifact.configuration.quantization?.bits,
+                model: speechModelDescription,
+                weightQuantizationBits: speechWeightBits,
                 punctuationModel: punctuate ? punctuationModel : nil,
                 punctuationPrecision: formatter?.formatterInfo.precision,
                 punctuationQuantizationBits: formatter?.formatterInfo.quantizationBits,
-                activationPrecision: precision.rawValue,
+                activationPrecision: runtimePrecision,
                 timingNote: "Word timings are approximate CTC emission-frame alignments.",
                 words: result.words,
                 segments: segments,
