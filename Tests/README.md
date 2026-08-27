@@ -58,8 +58,9 @@ GRANITE_TEST_COREML_AUDIO=/path/to/granite-reference-test-20s.wav \
 swift test --filter GraniteMLXCLITests/testOptInPublishedCoreMLFreshDownloadWarmRunAndRemoval
 ```
 
-It downloads `apache-coreml-q8` into an isolated cache, verifies the known
-20-second transcript using `GRANITE_MLX_BACKEND=coreml`, checks warm reuse and
-compiled-cache accounting, removes both caches, and confirms the model is
-absent afterward. It intentionally transfers and compiles about 700 MB, so it
-does not run as part of the ordinary offline suite.
+It downloads `apache-coreml-q8` into an isolated cache, saves Core ML as the
+default in an isolated configuration, verifies the known 20-second transcript,
+checks warm reuse and compiled-cache accounting, removes both model caches,
+and confirms the model is absent afterward. It intentionally transfers and
+compiles about 700 MB, so it does not run as part of the ordinary offline
+suite.

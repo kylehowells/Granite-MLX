@@ -158,12 +158,17 @@ automatically when Core ML is selected:
 ```bash
 granite-mlx lecture.wav --backend coreml
 granite-mlx models download apache-coreml-q8
-GRANITE_MLX_BACKEND=coreml granite-mlx lecture.wav
+granite-mlx config set backend coreml
+granite-mlx lecture.wav
 ```
 
-`--backend` overrides `GRANITE_MLX_BACKEND`, and MLX remains the default when
-neither is supplied. Advanced users can still run a local converted package
-with `--coreml-model /path/to/model.mlpackage --model /path/to/tokenizer`.
+The saved setting is stored in
+`~/Library/Application Support/Granite-MLX/config.json`. Use
+`granite-mlx config set backend mlx` to change it back, `config show` to inspect
+it, or `config unset backend` to restore the built-in MLX default. An explicit
+`--backend` overrides the saved setting for one run. Advanced users can still
+run a local converted package with
+`--coreml-model /path/to/model.mlpackage --model /path/to/tokenizer`.
 
 When no chunk duration is supplied, the Core ML backend automatically uses the
 largest central chunk that fits the selected graph after reserving context.

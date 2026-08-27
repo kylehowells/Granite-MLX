@@ -47,7 +47,15 @@ final class GraniteMLXCLITests: XCTestCase {
         let process = Process()
         process.executableURL = executable
         process.arguments = arguments
-        process.environment = ProcessInfo.processInfo.environment.merging(additions) { _, new in new }
+        var environment = ProcessInfo.processInfo.environment.merging(additions) { _, new in new }
+        if additions["GRANITE_MLX_TEST_CONFIG_PATH"] == nil {
+            environment["GRANITE_MLX_TEST_CONFIG_PATH"] = FileManager.default
+                .temporaryDirectory
+                .appendingPathComponent(
+                    "granite-mlx-tests-\(ProcessInfo.processInfo.processIdentifier)-absent-config.json")
+                .path
+        }
+        process.environment = environment
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
         process.standardOutput = stdoutPipe
@@ -127,7 +135,8 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertEqual(help.status, 0)
         XCTAssertTrue(help.stdout.contains("COMMON EXAMPLES"))
         XCTAssertTrue(help.stdout.contains("models download"))
-        XCTAssertTrue(help.stdout.contains("GRANITE_MLX_BACKEND"))
+        XCTAssertTrue(help.stdout.contains("config set backend coreml"))
+        XCTAssertFalse(help.stdout.contains("GRANITE_MLX_BACKEND"))
         XCTAssertEqual(help.stderr, "")
 
         let version = try runCLI(["--version"])
@@ -146,10 +155,18 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertNotEqual(conflictingCoreMLModel.status, 0)
         XCTAssertTrue(conflictingCoreMLModel.stderr.contains("GMLX-CLI-014"))
 
-        let invalidEnvironmentBackend = try runCLI(
-            ["file.wav"], environment: ["GRANITE_MLX_BACKEND": "tensor-core"])
-        XCTAssertNotEqual(invalidEnvironmentBackend.status, 0)
-        XCTAssertTrue(invalidEnvironmentBackend.stderr.contains("GMLX-CLI-013"))
+        let invalidBackend = try runCLI([
+            "file.wav", "--backend", "tensor-core",
+        ])
+        XCTAssertNotEqual(invalidBackend.status, 0)
+        XCTAssertTrue(invalidBackend.stderr.contains("GMLX-CLI-013"))
+
+        let legacyEnvironmentIsIgnored = try runCLI([
+            "file.wav", "--model", "apache-coreml-q8",
+        ], environment: ["GRANITE_MLX_BACKEND": "coreml"])
+        XCTAssertNotEqual(legacyEnvironmentIsIgnored.status, 0)
+        XCTAssertTrue(legacyEnvironmentIsIgnored.stderr.contains("GMLX-CLI-017"))
+        XCTAssertTrue(legacyEnvironmentIsIgnored.stderr.contains("backend `mlx`"))
 
         let invalidComputeUnits = try runCLI([
             "file.wav", "--backend", "coreml", "--coreml-model", "Granite.mlpackage",
@@ -164,6 +181,84 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertNotEqual(mismatchedBackendModel.status, 0)
         XCTAssertTrue(mismatchedBackendModel.stderr.contains("GMLX-CLI-017"))
         XCTAssertTrue(mismatchedBackendModel.stderr.contains("--backend mlx"))
+    }
+
+    func testPersistentBackendConfigurationLifecycleAndPrecedence() throws {
+        let temporary = try temporaryDirectory()
+        let config = temporary.appendingPathComponent("settings/config.json")
+        let environment = ["GRANITE_MLX_TEST_CONFIG_PATH": config.path]
+
+        let initial = try runCLI(["config", "show"], environment: environment)
+        XCTAssertEqual(initial.status, 0, initial.stderr)
+        XCTAssertTrue(initial.stdout.contains("Default backend: mlx (built-in)"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: config.path))
+
+        let saved = try runCLI(
+            ["config", "set", "backend", "coreml"], environment: environment)
+        XCTAssertEqual(saved.status, 0, saved.stderr)
+        XCTAssertTrue(saved.stdout.contains("Default backend set to coreml"))
+        let stored = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(contentsOf: config)) as? [String: Any])
+        XCTAssertEqual(stored["schema_version"] as? Int, 1)
+        XCTAssertEqual(stored["default_backend"] as? String, "coreml")
+
+        let shown = try runCLI(
+            ["config", "show", "--json"], environment: environment)
+        XCTAssertEqual(shown.status, 0, shown.stderr)
+        let shownRecord = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(shown.stdout.utf8)) as? [String: Any])
+        XCTAssertEqual(shownRecord["backend"] as? String, "coreml")
+        XCTAssertEqual(shownRecord["source"] as? String, "saved")
+
+        let value = try runCLI(["config", "get", "backend"], environment: environment)
+        XCTAssertEqual(value.status, 0, value.stderr)
+        XCTAssertEqual(value.stdout.trimmingCharacters(in: .whitespacesAndNewlines), "coreml")
+
+        let savedDefaultApplies = try runCLI([
+            "file.wav", "--model", "apache-q8",
+        ], environment: environment)
+        XCTAssertNotEqual(savedDefaultApplies.status, 0)
+        XCTAssertTrue(savedDefaultApplies.stderr.contains("GMLX-CLI-017"))
+        XCTAssertTrue(savedDefaultApplies.stderr.contains("backend `coreml`"))
+
+        let explicitBackendWins = try runCLI([
+            "file.wav", "--backend", "mlx", "--model", "apache-coreml-q8",
+        ], environment: environment)
+        XCTAssertNotEqual(explicitBackendWins.status, 0)
+        XCTAssertTrue(explicitBackendWins.stderr.contains("GMLX-CLI-017"))
+        XCTAssertTrue(explicitBackendWins.stderr.contains("backend `mlx`"))
+
+        let invalidKey = try runCLI(
+            ["config", "set", "theme", "coreml"], environment: environment)
+        XCTAssertNotEqual(invalidKey.status, 0)
+        XCTAssertTrue(invalidKey.stderr.contains("GMLX-CONFIG-005"))
+        let invalidValue = try runCLI(
+            ["config", "set", "backend", "metal"], environment: environment)
+        XCTAssertNotEqual(invalidValue.status, 0)
+        XCTAssertTrue(invalidValue.stderr.contains("GMLX-CONFIG-006"))
+
+        let unset = try runCLI(
+            ["config", "unset", "backend"], environment: environment)
+        XCTAssertEqual(unset.status, 0, unset.stderr)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: config.path))
+        let restored = try runCLI(
+            ["config", "get", "backend"], environment: environment)
+        XCTAssertEqual(restored.stdout.trimmingCharacters(in: .whitespacesAndNewlines), "mlx")
+
+        try FileManager.default.createDirectory(
+            at: config.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("{broken".utf8).write(to: config)
+        let corrupt = try runCLI(["config", "show"], environment: environment)
+        XCTAssertNotEqual(corrupt.status, 0)
+        XCTAssertTrue(corrupt.stderr.contains("GMLX-CONFIG-002"), corrupt.stderr)
+        XCTAssertTrue(corrupt.stderr.contains(config.path), corrupt.stderr)
+        let repaired = try runCLI(
+            ["config", "set", "backend", "mlx"], environment: environment)
+        XCTAssertEqual(repaired.status, 0, repaired.stderr)
+        XCTAssertEqual(
+            try runCLI(["config", "get", "backend"], environment: environment)
+                .stdout.trimmingCharacters(in: .whitespacesAndNewlines),
+            "mlx")
     }
 
     func testModelListReportsAbsentPartialCompleteAndWarmCache() throws {
@@ -328,8 +423,13 @@ final class GraniteMLXCLITests: XCTestCase {
         let environment = [
             "GRANITE_MLX_HUB_DIRECTORY": hub.path,
             "GRANITE_MLX_COREML_CACHE_DIRECTORY": compiled.path,
-            "GRANITE_MLX_BACKEND": "coreml",
+            "GRANITE_MLX_TEST_CONFIG_PATH": temporary
+                .appendingPathComponent("config.json").path,
         ]
+
+        let configured = try runCLI(
+            ["config", "set", "backend", "coreml"], environment: environment)
+        XCTAssertEqual(configured.status, 0, configured.stderr)
 
         let download = try runCLI(
             ["models", "download", "apache-coreml-q8"],

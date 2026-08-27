@@ -144,18 +144,19 @@ struct GraniteMLXCLI: ParsableCommand {
           granite-mlx interview.m4a --output-format all --output-dir ./transcripts
           granite-mlx recording.wav --no-punctuate --output-format txt
           granite-mlx recording.wav --backend coreml
+          granite-mlx config set backend coreml
           granite-mlx models list
           granite-mlx models download apache-coreml-q8 punctuation-q8
 
         `transcribe` is the default command, so `granite-mlx recording.wav` and
         `granite-mlx transcribe recording.wav` are equivalent.
 
-        MLX is the default speech backend. Use --backend coreml for one run, or
-        set GRANITE_MLX_BACKEND=coreml to make Core ML the shell default.
+        MLX is the built-in speech backend. Use --backend coreml for one run, or
+        `granite-mlx config set backend coreml` to save it as your default.
         The published Core ML model requires macOS 15 or newer.
         """,
         version: "0.1.0",
-        subcommands: [TranscribeCommand.self, ModelsCommand.self],
+        subcommands: [TranscribeCommand.self, ModelsCommand.self, ConfigCommand.self],
         defaultSubcommand: TranscribeCommand.self
     )
 }
@@ -179,17 +180,17 @@ struct TranscribeCommand: ParsableCommand {
         text, or --output-dir to create files. The first run downloads and
         caches the selected models with progress on stderr.
 
-        MLX uses apache-q8 by default; Core ML uses apache-coreml-q8. Set
-        GRANITE_MLX_BACKEND=coreml to change the default backend without adding
-        --backend to every command. An explicit --backend always wins. The
-        published Core ML model requires macOS 15 or newer.
+        MLX uses apache-q8 by default; Core ML uses apache-coreml-q8. Run
+        `granite-mlx config set backend coreml` to save Core ML as your default.
+        An explicit --backend always wins. The published Core ML model requires
+        macOS 15 or newer.
         """)
 
     @Argument(help: "Audio or video file(s) to transcribe.")
     var inputs: [String]
     @Option(help: "Backend-compatible catalog alias, local repository directory, or Hugging Face repository ID. Defaults to apache-q8 for MLX or apache-coreml-q8 for Core ML.")
     var model: String?
-    @Option(help: "Speech backend: mlx or coreml. Overrides GRANITE_MLX_BACKEND; default is mlx.")
+    @Option(help: "Speech backend: mlx or coreml. Overrides the saved user setting for this run.")
     var backend: String?
     @Option(help: "Advanced: local fixed-shape .mlpackage override for Core ML. Use --model for its tokenizer directory.")
     var coremlModel: String?
@@ -266,7 +267,7 @@ struct TranscribeCommand: ParsableCommand {
             }
         }
         if selectedBackend == .mlx, coremlModel != nil {
-            throw ValidationError("[GMLX-CLI-014] --coreml-model requires --backend coreml (or GRANITE_MLX_BACKEND=coreml).")
+            throw ValidationError("[GMLX-CLI-014] --coreml-model requires the Core ML backend. Pass --backend coreml or save it with `granite-mlx config set backend coreml`.")
         }
         if let model,
            let catalogModel = GraniteModelCatalog.models.first(where: {
@@ -578,8 +579,9 @@ struct TranscribeCommand: ParsableCommand {
     }
 
     private func resolvedBackend() throws -> GraniteSpeechBackend {
+        let savedBackend = try CLIConfigurationStore.load().defaultBackend
         let value = backend
-            ?? ProcessInfo.processInfo.environment["GRANITE_MLX_BACKEND"]
+            ?? savedBackend?.rawValue
             ?? GraniteSpeechBackend.mlx.rawValue
         guard let backend = GraniteSpeechBackend(rawValue: value.lowercased()) else {
             throw ValidationError(
