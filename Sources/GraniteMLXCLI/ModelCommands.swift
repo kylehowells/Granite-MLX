@@ -93,6 +93,7 @@ struct ModelsCommand: ParsableCommand {
         EXAMPLES:
           granite-mlx models list
           granite-mlx models download apache-q8 punctuation-q8
+          granite-mlx models download apache-coreml-q8
           granite-mlx models remove apache-fp16
         """,
         subcommands: [ModelsListCommand.self, ModelsDownloadCommand.self, ModelsRemoveCommand.self],

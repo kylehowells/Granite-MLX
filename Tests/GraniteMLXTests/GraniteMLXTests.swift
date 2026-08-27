@@ -236,7 +236,7 @@ final class GraniteMLXTests: XCTestCase {
           "recommended_compute_units": "cpu-gpu",
           "recommended_chunk_duration_seconds": 286.72,
           "recommended_chunk_context_seconds": 20.48,
-          "weight_sha256": "fixture"
+          "weight_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
         }
         """.utf8).write(
             to: directory.appendingPathComponent("coreml_config.json"))
@@ -250,6 +250,13 @@ final class GraniteMLXTests: XCTestCase {
         XCTAssertEqual(artifact.configuration.quantization.bits, 8)
         XCTAssertEqual(artifact.configuration.featureFrames, 16_384)
         XCTAssertGreaterThan(GraniteModelCache.directorySize(directory), 100 * 1_024 * 1_024)
+
+        try Data("{}".utf8).write(
+            to: directory.appendingPathComponent("coreml_config.json"))
+        XCTAssertEqual(
+            GraniteModelCache.state(at: directory, kind: .coreMLSpeech),
+            .partial)
+        XCTAssertThrowsError(try GraniteCoreMLModelLoader.load(from: directory))
     }
 
     func testModelCacheDirectorySizeDoesNotFollowSymlinks() throws {

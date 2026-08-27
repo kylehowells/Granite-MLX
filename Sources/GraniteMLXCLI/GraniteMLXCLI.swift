@@ -222,9 +222,9 @@ struct TranscribeCommand: ParsableCommand {
     var benchmark = false
     @Option(help: "MLX-only encoder activations: baseline, fp16, fp8-emulated, or int8-emulated.")
     var activationPrecision: String = GraniteActivationPrecision.fp16.rawValue
-    @Option(help: "Stream final CTC argmax in vocabulary tiles; 0 materializes all logits.")
+    @Option(help: "MLX-only: stream final CTC argmax in vocabulary tiles; 0 materializes all logits.")
     var ctcVocabularyTile: Int = 0
-    @Option(help: "Stream middle CTC softmax/projection in vocabulary tiles; 0 materializes all logits.")
+    @Option(help: "MLX-only: stream middle CTC softmax/projection in vocabulary tiles; 0 materializes all logits.")
     var middleCTCVocabularyTile: Int = 0
     @Option(help: "Limit MLX's recycled-buffer cache in MiB.")
     var mlxCacheLimitMB: Int = 64
@@ -232,7 +232,7 @@ struct TranscribeCommand: ParsableCommand {
     var audioChunkDuration: Double?
     @Option(help: "Extra context on each side of a chunk. Defaults to 10.24s for MLX or up to 20.48s for Core ML.")
     var audioChunkContext: Double?
-    @Flag(help: "Disable temporal chunking and run the complete recording in one encoder pass.")
+    @Flag(help: "Disable temporal chunking; the input must fit the selected backend model's one-pass limit.")
     var noChunking = false
     @Option(help: "Diagnostic: write the first input's frontend tensor as safetensors and exit.")
     var dumpFeatures: String?
@@ -579,10 +579,16 @@ struct TranscribeCommand: ParsableCommand {
     }
 
     private func resolvedBackend() throws -> GraniteSpeechBackend {
-        let savedBackend = try CLIConfigurationStore.load().defaultBackend
-        let value = backend
-            ?? savedBackend?.rawValue
-            ?? GraniteSpeechBackend.mlx.rawValue
+        // An explicit invocation must remain usable even when the optional
+        // saved configuration is corrupt, because the command-line value has
+        // documented precedence over that file.
+        let value: String
+        if let backend {
+            value = backend
+        } else {
+            value = try CLIConfigurationStore.load().defaultBackend?.rawValue
+                ?? GraniteSpeechBackend.mlx.rawValue
+        }
         guard let backend = GraniteSpeechBackend(rawValue: value.lowercased()) else {
             throw ValidationError(
                 "[GMLX-CLI-013] Unsupported speech backend `\(value)`. Use mlx or coreml.")

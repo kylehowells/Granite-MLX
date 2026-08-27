@@ -68,6 +68,9 @@ model.safetensors
 *.pt
 *.pth
 *.ckpt
+*.mlpackage/
+*.mlmodel
+*.mlmodelc/
 
 # Generated media, transcripts, and ad-hoc benchmark output
 *.wav

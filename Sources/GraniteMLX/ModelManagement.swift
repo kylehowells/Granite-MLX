@@ -543,6 +543,28 @@ public enum GraniteModelCache {
             if !missing.isEmpty {
                 return "missing_files=\(missing.joined(separator: ","))"
             }
+            let configurationURL = directory.appendingPathComponent(
+                "coreml_config.json")
+            let configuration: GraniteCoreMLModelConfiguration
+            do {
+                let decoder = JSONDecoder()
+                decoder.keyDecodingStrategy = .convertFromSnakeCase
+                configuration = try decoder.decode(
+                    GraniteCoreMLModelConfiguration.self,
+                    from: Data(contentsOf: configurationURL))
+            } catch {
+                return "invalid_coreml=configuration_decode_failed; error=\(String(reflecting: error))"
+            }
+            guard configuration.modelType == "granite_speech5_coreml_ctc",
+                  configuration.backend == "coreml",
+                  configuration.featureFrames > 0,
+                  configuration.outputFrames > 0,
+                  configuration.audioSeconds > 0,
+                  configuration.quantization.bits > 0,
+                  configuration.weightSha256.count == 64,
+                  configuration.weightSha256.allSatisfy({ $0.isHexDigit }) else {
+                return "invalid_coreml=configuration_values; model_type=\(configuration.modelType); backend=\(configuration.backend); feature_frames=\(configuration.featureFrames); output_frames=\(configuration.outputFrames); weight_sha256_length=\(configuration.weightSha256.count)"
+            }
             guard let package = coreMLPackageURL(at: directory) else {
                 return "invalid_coreml=model_package is absent, unsafe, or not an mlpackage"
             }

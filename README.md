@@ -16,7 +16,7 @@ Swift library; transcription runs locally after the selected model is cached.
 ## Highlights
 
 - Native Swift inference with MLX, plus an optimized fixed-shape Core ML
-  backend; no Python runtime is required after conversion.
+  backend; using the CLI or library does not require a Python runtime.
 - Audio and video input through AVFoundation with an `ffmpeg` fallback.
 - Automatic, visible model downloads plus cache listing and removal commands.
 - Bounded-memory long-form transcription by default.
@@ -415,8 +415,24 @@ let transcript = raw.applyingFormatting(formatting)
 print(transcript.text)
 ```
 
+Applications on macOS 15 or newer can select the published Core ML speech
+backend while retaining the same audio, transcript, timing, and formatting
+types:
+
+```swift
+let coreMLRecognizer = try GraniteCoreMLRecognizer(
+    modelSource: GraniteCoreMLModelLoader.defaultModelID,
+    computeUnits: .cpuAndGPU,
+    cancellationToken: cancellation
+)
+let coreMLRaw = try coreMLRecognizer.transcribe(
+    audio,
+    cancellationToken: cancellation
+)
+```
+
 These calls are synchronous, so GUI applications should execute them away from
-the main actor. `GraniteRecognizer.transcribe`, `GraniteAudioInput.load`, model
+the main actor. MLX and Core ML transcription, `GraniteAudioInput.load`, model
 downloads, and formatting accept progress/cancellation hooks. Errors conform
 to `GraniteDiagnosticError` and expose stable `GMLX-*` support codes. The full
 API guide is in the bundled DocC catalog at

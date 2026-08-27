@@ -58,6 +58,9 @@ Program and matching Granite tokenizer/config on first use. It shares audio
 preparation, CTC decoding, timestamps, progress, and cancellation behavior
 with the MLX path:
 
+> Important: The published Core ML checkpoint requires macOS 15 or newer. The
+> MLX backend remains available on macOS 14.
+
 ```swift
 let coreML = try GraniteCoreMLRecognizer(
     modelSource: GraniteCoreMLModelLoader.defaultModelID,
@@ -122,8 +125,8 @@ but they are not frame-accurate forced alignment.
 Create one ``GraniteCancellationToken`` for an application operation and pass
 it through loading, recognition, and formatting. Calling
 ``GraniteCancellationToken/cancel()`` requests cooperative cancellation.
-Already-submitted Metal work cannot stop immediately, but cancellation is
-checked between stages and chunks.
+Already-submitted MLX work or a Core ML prediction cannot stop immediately,
+but cancellation is checked between stages and chunks.
 
 Audio loading, transcription, and formatting accept a
 ``GraniteOperationProgressHandler``. Model downloads use the more detailed

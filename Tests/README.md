@@ -50,6 +50,17 @@ This test uses an isolated temporary model directory, interrupts the first
 download, resumes it, validates the completed cache, and deletes the temporary
 directory afterward.
 
+For an entirely local Core ML transcript-parity check, provide the converted
+package, its matching tokenizer/config directory, and the known 20-second
+audio fixture:
+
+```bash
+GRANITE_TEST_COREML_MODEL=/path/to/GraniteSpeech.mlpackage \
+GRANITE_TEST_COREML_TOKENIZER=/path/to/granite-tokenizer \
+GRANITE_TEST_COREML_AUDIO=/path/to/granite-reference-test-20s.wav \
+swift test --filter GraniteMLXCLITests/testOptInCoreMLBackendMatchesReferenceTranscript
+```
+
 The published Core ML release lifecycle is a separate opt-in network gate:
 
 ```bash

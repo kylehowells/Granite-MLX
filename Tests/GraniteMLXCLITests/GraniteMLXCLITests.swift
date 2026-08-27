@@ -252,6 +252,18 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertNotEqual(corrupt.status, 0)
         XCTAssertTrue(corrupt.stderr.contains("GMLX-CONFIG-002"), corrupt.stderr)
         XCTAssertTrue(corrupt.stderr.contains(config.path), corrupt.stderr)
+
+        let explicitBackendBypassesCorruptSavedConfiguration = try runCLI([
+            "file.wav", "--backend", "mlx", "--model", "apache-coreml-q8",
+        ], environment: environment)
+        XCTAssertNotEqual(explicitBackendBypassesCorruptSavedConfiguration.status, 0)
+        XCTAssertTrue(
+            explicitBackendBypassesCorruptSavedConfiguration.stderr.contains("GMLX-CLI-017"),
+            explicitBackendBypassesCorruptSavedConfiguration.stderr)
+        XCTAssertFalse(
+            explicitBackendBypassesCorruptSavedConfiguration.stderr.contains("GMLX-CONFIG-002"),
+            explicitBackendBypassesCorruptSavedConfiguration.stderr)
+
         let repaired = try runCLI(
             ["config", "set", "backend", "mlx"], environment: environment)
         XCTAssertEqual(repaired.status, 0, repaired.stderr)
