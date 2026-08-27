@@ -10,6 +10,7 @@ Swift library; transcription runs locally after the selected model is cached.
 
 [CLI guide](#cli-guide) ·
 [Swift library](#using-granitemlx-as-a-swift-library) ·
+[API documentation](https://kylehowells.github.io/Granite-MLX/documentation/granitemlx/) ·
 [Model management](#model-downloads-and-disk-usage) ·
 [Testing](#testing)
 
@@ -518,6 +519,8 @@ are supplied through environment variables and are never committed.
 as errors and enforces the source documentation contract. Every source-defined
 public symbol must have a `///` description; callable parameters, return values,
 thrown errors, and named enum associated values must also be documented.
+The documentation for `master` is published automatically to
+[GitHub Pages](https://kylehowells.github.io/Granite-MLX/documentation/granitemlx/).
 
 ## License
 

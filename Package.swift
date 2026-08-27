@@ -12,6 +12,7 @@ let package = Package(
         .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.31.4"),
         .package(url: "https://github.com/huggingface/swift-transformers.git", exact: "1.3.3"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.8.2"),
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", exact: "1.5.0"),
     ],
     targets: [
         .target(
