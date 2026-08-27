@@ -34,7 +34,38 @@ final class GraniteMLXTests: XCTestCase {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let expected = try String(contentsOfFile: referencePath, encoding: .utf8)
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        XCTAssertEqual(formatter.format(input).text, expected)
+        let patchedExpected = PunctuationFormatter.preservingOriginalWords(
+            originalText: input, formattedSentences: [expected])
+        XCTAssertEqual(formatter.format(input).text, patchedExpected.text)
+    }
+
+    func testFormatterPreservesUnknownPercentAndHyphenCharacters() {
+        let result = PunctuationFormatter.preservingOriginalWords(
+            originalText: "so 50% is midterm 99% negative v -one",
+            formattedSentences: ["So 50<Unk> is midterm, 99<unk> negative.", "V <Unk>one."])
+        XCTAssertEqual(result.text, "So 50% is midterm, 99% negative. V -one.")
+        XCTAssertEqual(result.sentences, [
+            "So 50% is midterm, 99% negative.",
+            "V -one.",
+        ])
+        XCTAssertFalse(result.text.localizedCaseInsensitiveContains("<unk>"))
+        XCTAssertEqual(result.sentenceWordRanges, [0 ..< 6, 6 ..< 8])
+    }
+
+    func testFormatterRejectsLexicalReplacement() {
+        let result = PunctuationFormatter.preservingOriginalWords(
+            originalText: "hello granite",
+            formattedSentences: ["Hello goodbye."])
+        XCTAssertEqual(result.text, "Hello granite")
+        XCTAssertEqual(result.sentences, ["Hello granite"])
+    }
+
+    func testFormatterFallsBackWhenWordCountsDoNotAlign() {
+        let result = PunctuationFormatter.preservingOriginalWords(
+            originalText: "do not replace words",
+            formattedSentences: ["Do not replace these words."])
+        XCTAssertEqual(result.text, "do not replace words")
+        XCTAssertEqual(result.sentences, ["do not replace words"])
     }
 
     func testAudioDuration() {
@@ -137,11 +168,83 @@ final class GraniteMLXTests: XCTestCase {
 
         try Data(#"{"model_type":"granite_speech5_ctc"}"#.utf8)
             .write(to: directory.appendingPathComponent("config.json"))
+        try writeMinimalSafetensors(
+            to: directory.appendingPathComponent("model.safetensors"),
+            tensors: ["encoder.input_linear.weight", "encoder.out.weight"])
         XCTAssertEqual(GraniteModelCache.detectedKind(at: directory), .speech)
 
         try Data(#"{"architecture":"bert-punctuation-capitalization-segmentation"}"#.utf8)
             .write(to: directory.appendingPathComponent("mlx_config.json"))
+        try writeMinimalSafetensors(
+            to: directory.appendingPathComponent("model.safetensors"),
+            tensors: ["embeddings.word.weight", "decoder.post.1.weight"])
         XCTAssertEqual(GraniteModelCache.detectedKind(at: directory), .punctuation)
+    }
+
+    func testModelCacheStatesDistinguishAbsentPartialAndDownloaded() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        XCTAssertEqual(GraniteModelCache.state(at: directory, kind: .speech), .absent)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try Data().write(to: directory.appendingPathComponent("model.safetensors"))
+        XCTAssertEqual(GraniteModelCache.state(at: directory, kind: .speech), .partial)
+        try Data("{}".utf8).write(to: directory.appendingPathComponent("tokenizer.json"))
+        try Data(#"{"model_type":"granite_speech5_ctc"}"#.utf8)
+            .write(to: directory.appendingPathComponent("config.json"))
+        XCTAssertEqual(GraniteModelCache.state(at: directory, kind: .speech), .partial)
+        try writeMinimalSafetensors(
+            to: directory.appendingPathComponent("model.safetensors"),
+            tensors: ["encoder.input_linear.weight", "encoder.out.weight"])
+        XCTAssertEqual(GraniteModelCache.state(at: directory, kind: .speech), .downloaded)
+        XCTAssertEqual(GraniteModelCache.state(at: directory, kind: .punctuation), .partial)
+    }
+
+    func testCancellationTokenHasStableDiagnosticCode() throws {
+        let token = GraniteCancellationToken()
+        XCTAssertFalse(token.isCancelled)
+        token.cancel()
+        XCTAssertTrue(token.isCancelled)
+        XCTAssertThrowsError(try token.checkCancellation(operation: "Unit test")) { error in
+            let diagnostic = error as? any GraniteDiagnosticError
+            XCTAssertEqual(diagnostic?.diagnosticCode, "GMLX-OP-001")
+            XCTAssertTrue(error.localizedDescription.contains("Unit test"))
+        }
+    }
+
+    func testPreCancelledModelDownloadDoesNotStartNetworkWork() {
+        let token = GraniteCancellationToken()
+        token.cancel()
+        XCTAssertThrowsError(try GraniteModelCache.download(
+            "example/not-contacted", kind: .speech,
+            cancellationToken: token)) { error in
+            XCTAssertEqual((error as? any GraniteDiagnosticError)?.diagnosticCode, "GMLX-OP-001")
+        }
+    }
+
+    func testAudioLoadReportsProgressAndHonorsCancellation() throws {
+        let missing = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString).appendingPathExtension("wav")
+        XCTAssertThrowsError(try GraniteAudioInput.load(url: missing)) { error in
+            XCTAssertEqual((error as? any GraniteDiagnosticError)?.diagnosticCode, "GMLX-AUDIO-001")
+        }
+        let token = GraniteCancellationToken()
+        token.cancel()
+        XCTAssertThrowsError(try GraniteAudioInput.load(
+            url: URL(fileURLWithPath: #filePath), cancellationToken: token)) { error in
+            XCTAssertEqual((error as? any GraniteDiagnosticError)?.diagnosticCode, "GMLX-OP-001")
+        }
+    }
+
+    private func writeMinimalSafetensors(to url: URL, tensors: [String]) throws {
+        let entries = tensors.map { key in
+            "\"\(key)\":{\"dtype\":\"F32\",\"shape\":[],\"data_offsets\":[0,0]}"
+        }.joined(separator: ",")
+        let header = Data("{\(entries)}".utf8)
+        var length = UInt64(header.count).littleEndian
+        var data = withUnsafeBytes(of: &length) { Data($0) }
+        data.append(header)
+        try data.write(to: url)
     }
 
     func testQuantizationConfigurationDecodes() throws {

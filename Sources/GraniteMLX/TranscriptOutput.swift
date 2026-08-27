@@ -1,11 +1,17 @@
 import Foundation
 
+/// A subtitle cue containing one or more timed words.
 public struct GraniteSubtitleSegment: Codable, Sendable, Equatable {
+    /// Rendered cue text.
     public let text: String
+    /// Cue onset in seconds.
     public let start: Double
+    /// Cue end in seconds.
     public let end: Double
+    /// Timed words represented by the cue.
     public let words: [GraniteWord]
 
+    /// Creates a subtitle cue.
     public init(text: String, start: Double, end: Double, words: [GraniteWord]) {
         self.text = text
         self.start = start
@@ -14,7 +20,9 @@ public struct GraniteSubtitleSegment: Codable, Sendable, Equatable {
     }
 }
 
+/// Groups timed words into readable subtitle cues.
 public enum GraniteSubtitleSegmenter {
+    /// Segments words at formatter boundaries, pauses, and configured limits.
     public static func segments(
         words: [GraniteWord],
         sentenceWordRanges: [Range<Int>] = [],
@@ -53,11 +61,14 @@ public enum GraniteSubtitleSegmenter {
     }
 }
 
+/// Renders transcription output in plain-text and subtitle formats.
 public enum GraniteTranscriptExporter {
+    /// Renders user-facing transcript text with a trailing newline.
     public static func text(_ transcription: GraniteTranscription) -> String {
         transcription.text + "\n"
     }
 
+    /// Renders SubRip subtitle cues.
     public static func srt(
         segments: [GraniteSubtitleSegment],
         duration: Double,
@@ -68,6 +79,7 @@ public enum GraniteTranscriptExporter {
             isWebVTT: false)
     }
 
+    /// Renders WebVTT subtitle cues.
     public static func webVTT(
         segments: [GraniteSubtitleSegment],
         duration: Double,

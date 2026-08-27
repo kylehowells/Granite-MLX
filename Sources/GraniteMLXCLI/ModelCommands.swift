@@ -101,6 +101,8 @@ private struct ModelListRecord: Encodable {
     let precision: String?
     let isDefault: Bool
     let isDownloaded: Bool
+    let cacheState: String
+    let stateDetails: String?
     let expectedBytes: Int64?
     let downloadedBytes: Int64?
     let cacheDirectory: String
@@ -111,7 +113,7 @@ struct ModelsListCommand: ParsableCommand {
         commandName: "list",
         abstract: "List available models, download status, and disk usage.")
 
-    @Flag(help: "Show only models currently downloaded.")
+    @Flag(help: "Show only complete or partial model cache entries.")
     var downloadedOnly = false
 
     @Flag(help: "Write machine-readable JSON.")
@@ -127,7 +129,9 @@ struct ModelsListCommand: ParsableCommand {
                 alias: model.alias, repositoryID: model.repositoryID,
                 kind: model.kind.rawValue, family: model.family,
                 precision: model.precision, isDefault: model.isDefault,
-                isDownloaded: installed != nil,
+                isDownloaded: installed?.state == .downloaded,
+                cacheState: installed?.state.rawValue ?? GraniteModelCacheState.absent.rawValue,
+                stateDetails: installed?.stateDetails,
                 expectedBytes: model.expectedBytes,
                 downloadedBytes: installed?.sizeBytes,
                 cacheDirectory: (try? GraniteModelCache.directory(for: model.repositoryID).path) ?? "")
@@ -138,7 +142,10 @@ struct ModelsListCommand: ParsableCommand {
             return ModelListRecord(
                 alias: installed.catalogAlias, repositoryID: installed.repositoryID,
                 kind: installed.kind.rawValue, family: nil, precision: nil,
-                isDefault: false, isDownloaded: true, expectedBytes: nil,
+                isDefault: false, isDownloaded: installed.state == .downloaded,
+                cacheState: installed.state.rawValue,
+                stateDetails: installed.stateDetails,
+                expectedBytes: nil,
                 downloadedBytes: installed.sizeBytes,
                 cacheDirectory: installed.directory.path)
         })
@@ -153,18 +160,28 @@ struct ModelsListCommand: ParsableCommand {
 
         print("Granite-MLX model cache: \(GraniteModelCache.rootDirectory.path)")
         print("")
-        print("\(padded("STATUS", to: 12)) \(padded("DEF", to: 4)) \(padded("TYPE", to: 11)) \(padded("PRECISION", to: 9)) \(padded("SIZE", to: 10)) MODEL")
+        print("\(padded("STATE", to: 7)) \(padded("DEF", to: 4)) \(padded("TYPE", to: 11)) \(padded("PRECISION", to: 9)) \(padded("SIZE", to: 10)) MODEL")
         for record in records {
-            let status = record.isDownloaded ? "downloaded" : "available"
+            let status = switch record.cacheState {
+            case GraniteModelCacheState.downloaded.rawValue: "[x]"
+            case GraniteModelCacheState.partial.rawValue: "[-]"
+            default: "[ ]"
+            }
             let defaultMarker = record.isDefault ? "yes" : ""
             let bytes = record.downloadedBytes ?? record.expectedBytes ?? 0
             let size = bytes > 0 ? formatBytes(bytes) : "unknown"
             let name = record.alias.map { "\($0)  [\(record.repositoryID)]" } ?? record.repositoryID
-            print("\(padded(status, to: 12)) \(padded(defaultMarker, to: 4)) \(padded(record.kind, to: 11)) \(padded(record.precision ?? "custom", to: 9)) \(padded(size, to: 10)) \(name)")
+            print("\(padded(status, to: 7)) \(padded(defaultMarker, to: 4)) \(padded(record.kind, to: 11)) \(padded(record.precision ?? "custom", to: 9)) \(padded(size, to: 10)) \(name)")
+            if record.cacheState == GraniteModelCacheState.partial.rawValue,
+               let details = record.stateDetails {
+                print("        Repair with `granite-mlx models download \(record.alias ?? record.repositoryID)`. Details: \(details)")
+            }
         }
         let total = cached.values.reduce(Int64(0)) { $0 + $1.sizeBytes }
         print("")
-        print("Downloaded: \(cached.count) model(s), \(formatBytes(total)) total")
+        let completeCount = cached.values.filter { $0.state == .downloaded }.count
+        let partialCount = cached.values.filter { $0.state == .partial }.count
+        print("Cache: \(completeCount) complete, \(partialCount) partial, \(formatBytes(total)) total")
         print("Use `granite-mlx models download <alias>` or `granite-mlx models remove <alias>`." )
     }
 }
@@ -177,20 +194,27 @@ struct ModelsDownloadCommand: ParsableCommand {
     @Argument(help: "Catalog alias or Hugging Face repository ID.")
     var models: [String]
 
-    @Option(help: "Hugging Face access token for private or gated repositories.")
+    @Option(help: "Hugging Face access token for private or gated repositories; overrides HF_TOKEN.")
     var hfToken: String?
 
     func validate() throws {
         guard !models.isEmpty else {
-            throw ValidationError("Provide at least one model alias or repository ID.")
+            throw ValidationError("[GMLX-CLI-101] Provide at least one model alias or repository ID.")
         }
     }
 
     func run() throws {
         let reporter = ConsoleDownloadProgressReporter(showCacheHits: true)
+        let effectiveHFToken = hfToken ?? ProcessInfo.processInfo.environment["HF_TOKEN"]
         for model in models {
-            _ = try GraniteModelCache.download(
-                model, hfToken: hfToken, progressHandler: reporter.handler)
+            do {
+                _ = try GraniteModelCache.download(
+                    model, hfToken: effectiveHFToken,
+                    progressHandler: reporter.handler)
+            } catch {
+                throw CLIRuntimeError.wrapping(
+                    error, code: "GMLX-CLI-102", operation: "Downloading model \(model)")
+            }
         }
     }
 }
@@ -211,7 +235,7 @@ struct ModelsRemoveCommand: ParsableCommand {
 
     func validate() throws {
         guard all != !models.isEmpty else {
-            throw ValidationError("Specify model names or --all, but not both.")
+            throw ValidationError("[GMLX-CLI-103] Specify model names or --all, but not both.")
         }
     }
 
@@ -236,7 +260,7 @@ struct ModelsRemoveCommand: ParsableCommand {
         let bytes = targets.reduce(Int64(0)) { $0 + $1.sizeBytes }
         if !yes {
             guard isatty(STDIN_FILENO) != 0 else {
-                throw ValidationError("Removal requires --yes when stdin is not interactive.")
+                throw ValidationError("[GMLX-CLI-104] Removal requires --yes when stdin is not interactive.")
             }
             print("Remove \(targets.count) model(s) and reclaim \(formatBytes(bytes))? [y/N] ", terminator: "")
             guard let response = readLine()?.lowercased(), response == "y" || response == "yes" else {

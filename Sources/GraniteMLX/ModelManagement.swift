@@ -1,21 +1,32 @@
 import Foundation
 import Hub
 
+/// Functional role of a managed GraniteMLX checkpoint.
 public enum GraniteManagedModelKind: String, Codable, Sendable {
+    /// Granite speech-recognition model.
     case speech
+    /// Punctuation, capitalization, and sentence-boundary model.
     case punctuation
 }
 
+/// Metadata for a checkpoint published and supported by GraniteMLX.
 public struct GranitePublishedModel: Codable, Sendable, Equatable {
+    /// Short command-line alias such as `apache-q8`.
     public let alias: String
+    /// Hugging Face `owner/repository` identifier.
     public let repositoryID: String
+    /// Functional role of the model.
     public let kind: GraniteManagedModelKind
+    /// Source-model family or license-oriented family label.
     public let family: String
+    /// Weight precision or quantization label.
     public let precision: String
     /// Expected total materialized size, rounded from the published artifact.
     public let expectedBytes: Int64
+    /// Whether this checkpoint is selected by default for its role.
     public let isDefault: Bool
 
+    /// Creates published-model metadata.
     public init(
         alias: String,
         repositoryID: String,
@@ -35,22 +46,36 @@ public struct GranitePublishedModel: Codable, Sendable, Equatable {
     }
 }
 
+/// Stages emitted while checking or downloading model files.
 public enum GraniteModelDownloadPhase: String, Codable, Sendable {
+    /// Repository metadata and local state are being checked.
     case checking
+    /// Repository files are being downloaded or resumed.
     case downloading
+    /// A complete local checkpoint was found and reused.
     case cacheHit = "cache_hit"
+    /// Download and validation completed successfully.
     case complete
 }
 
+/// Progress information for model download and cache operations.
 public struct GraniteModelDownloadProgress: Sendable {
+    /// Hugging Face repository identifier.
     public let repositoryID: String
+    /// Functional role of the model.
     public let kind: GraniteManagedModelKind
+    /// Materialized local checkpoint directory.
     public let cacheDirectory: URL
+    /// Current download stage.
     public let phase: GraniteModelDownloadPhase
+    /// Completion in the inclusive range `0...1`.
     public let fractionCompleted: Double
+    /// Approximate final cache size when known.
     public let estimatedTotalBytes: Int64?
+    /// Current transfer throughput when supplied by the Hub client.
     public let bytesPerSecond: Double?
 
+    /// Creates a model-download progress value.
     public init(
         repositoryID: String,
         kind: GraniteManagedModelKind,
@@ -70,37 +95,105 @@ public struct GraniteModelDownloadProgress: Sendable {
     }
 }
 
+/// Receives model download and cache progress updates.
 public typealias GraniteModelDownloadProgressHandler = @Sendable (GraniteModelDownloadProgress) -> Void
 
-public struct GraniteCachedModel: Codable, Sendable {
-    public let repositoryID: String
-    public let kind: GraniteManagedModelKind
-    public let directory: URL
-    public let sizeBytes: Int64
-    public let catalogAlias: String?
+/// On-disk state of a catalog checkpoint.
+public enum GraniteModelCacheState: String, Codable, Sendable {
+    /// No materialized files are present.
+    case absent
+    /// Some files exist, but the checkpoint is incomplete or invalid.
+    case partial
+    /// All required files and recognized configuration are present.
+    case downloaded
 }
 
-public enum GraniteModelManagementError: Error, LocalizedError {
-    case invalidRepositoryID(String)
-    case unknownModel(String)
-    case notDownloaded(String)
-    case insufficientDiskSpace(required: Int64, available: Int64)
+/// A Granite-compatible checkpoint found in the local Swift Hub cache.
+public struct GraniteCachedModel: Codable, Sendable {
+    /// Hugging Face repository identifier.
+    public let repositoryID: String
+    /// Functional role of the checkpoint.
+    public let kind: GraniteManagedModelKind
+    /// Materialized checkpoint directory.
+    public let directory: URL
+    /// Logical size of files beneath ``directory``.
+    public let sizeBytes: Int64
+    /// Matching catalog alias, if this is a published GraniteMLX checkpoint.
+    public let catalogAlias: String?
+    /// Completeness state of the materialized checkpoint.
+    public let state: GraniteModelCacheState
+    /// Technical explanation when ``state`` is ``GraniteModelCacheState/partial``.
+    public let stateDetails: String?
+}
 
+/// Errors produced by model catalog, download, validation, and cache operations.
+public enum GraniteModelManagementError: Error, GraniteDiagnosticError {
+    /// Repository ID does not have the required `owner/repository` form.
+    case invalidRepositoryID(String)
+    /// Alias or ID cannot be resolved.
+    case unknownModel(String)
+    /// No local files are present for the requested model.
+    case notDownloaded(String)
+    /// Available disk capacity is too low for the expected checkpoint.
+    case insufficientDiskSpace(required: Int64, available: Int64)
+    /// Hub download or repository lookup failed.
+    case downloadFailed(repositoryID: String, cacheDirectory: URL, details: String)
+    /// Download returned without producing a complete compatible checkpoint.
+    case incompleteModel(repositoryID: String, cacheDirectory: URL, details: String)
+    /// Removing a materialized checkpoint failed.
+    case removalFailed(repositoryID: String, cacheDirectory: URL, details: String)
+
+    /// Stable diagnostic identifier for the failure.
+    public var diagnosticCode: String {
+        switch self {
+        case .invalidRepositoryID: "GMLX-MODEL-001"
+        case .unknownModel: "GMLX-MODEL-002"
+        case .notDownloaded: "GMLX-MODEL-003"
+        case .insufficientDiskSpace: "GMLX-MODEL-004"
+        case .downloadFailed: "GMLX-MODEL-005"
+        case .incompleteModel: "GMLX-MODEL-006"
+        case .removalFailed: "GMLX-MODEL-007"
+        }
+    }
+
+    /// Low-level context useful for diagnostics.
+    public var technicalDetails: String? {
+        switch self {
+        case .invalidRepositoryID(let value), .unknownModel(let value), .notDownloaded(let value):
+            "model=\(value)"
+        case .insufficientDiskSpace(let required, let available):
+            "required_bytes=\(required); available_bytes=\(available)"
+        case .downloadFailed(let id, let directory, let details),
+             .incompleteModel(let id, let directory, let details),
+             .removalFailed(let id, let directory, let details):
+            "repository=\(id); cache=\(directory.path); underlying=\(details)"
+        }
+    }
+
+    /// User-facing localized failure description containing the diagnostic code.
     public var errorDescription: String? {
         switch self {
         case .invalidRepositoryID(let value):
-            "Invalid Hugging Face repository ID: \(value). Expected owner/repository."
+            "[\(diagnosticCode)] Invalid Hugging Face repository ID `\(value)`; expected `owner/repository`. Technical details: \(technicalDetails!)."
         case .unknownModel(let value):
-            "Unknown model alias or repository ID: \(value). Run `granite-mlx models list`."
+            "[\(diagnosticCode)] Unknown model alias or repository ID `\(value)`. Run `granite-mlx models list`. Technical details: \(technicalDetails!)."
         case .notDownloaded(let value):
-            "Model is not downloaded: \(value)"
-        case .insufficientDiskSpace(let required, let available):
-            "Insufficient disk space. Approximately \(required) bytes are required; \(available) bytes are available."
+            "[\(diagnosticCode)] Model `\(value)` has no local cache files to remove. Technical details: \(technicalDetails!)."
+        case .insufficientDiskSpace:
+            "[\(diagnosticCode)] There is not enough free disk space for this model. Remove an unused model with `granite-mlx models remove`, or free disk space. Technical details: \(technicalDetails!)."
+        case .downloadFailed(let id, _, _):
+            "[\(diagnosticCode)] Could not download `\(id)`. Check the network connection, repository ID, and authentication. Partial files are retained so a later download can resume. Technical details: \(technicalDetails!)."
+        case .incompleteModel(let id, _, _):
+            "[\(diagnosticCode)] `\(id)` is incomplete or incompatible after download. Run `granite-mlx models download \(id)` to repair it, or remove it first. Technical details: \(technicalDetails!)."
+        case .removalFailed(let id, _, _):
+            "[\(diagnosticCode)] Could not remove cached model `\(id)`. Check file permissions and whether another process is using it. Technical details: \(technicalDetails!)."
         }
     }
 }
 
+/// Catalog of GraniteMLX speech and punctuation checkpoints.
 public enum GraniteModelCatalog {
+    /// All officially published GraniteMLX checkpoints.
     public static let models: [GranitePublishedModel] = [
         speech("apache-fp16", "granite-speech-5.0-470m-turboctc-mlx-fp16", "Apache 2.0", "FP16", 947_220_480),
         speech("apache-q8", "granite-speech-5.0-470m-turboctc-mlx-q8", "Apache 2.0", "Q8", 489_840_640, isDefault: true),
@@ -119,6 +212,7 @@ public enum GraniteModelCatalog {
         punctuation("punctuation-q4", "Q4", 32_440_320),
     ]
 
+    /// Resolves a catalog alias or validates a custom Hugging Face repository ID.
     public static func resolve(_ aliasOrID: String) throws -> (id: String, model: GranitePublishedModel?) {
         if let model = models.first(where: {
             $0.alias.caseInsensitiveCompare(aliasOrID) == .orderedSame
@@ -132,6 +226,7 @@ public enum GraniteModelCatalog {
         return (aliasOrID, nil)
     }
 
+    /// Returns catalog metadata matching a full repository ID.
     public static func model(for repositoryID: String) -> GranitePublishedModel? {
         models.first { $0.repositoryID.caseInsensitiveCompare(repositoryID) == .orderedSame }
     }
@@ -157,13 +252,16 @@ public enum GraniteModelCatalog {
     }
 }
 
+/// Inspects, downloads, validates, and removes GraniteMLX model cache entries.
 public enum GraniteModelCache {
+    /// Root of the Swift Hub materialized model cache.
     public static var rootDirectory: URL {
         let hub = HubApi()
         return hub.localRepoLocation(.init(id: "placeholder/repository"))
             .deletingLastPathComponent().deletingLastPathComponent()
     }
 
+    /// Returns the materialized cache directory for a Hugging Face repository ID.
     public static func directory(for repositoryID: String) throws -> URL {
         guard isValidRepositoryID(repositoryID) else {
             throw GraniteModelManagementError.invalidRepositoryID(repositoryID)
@@ -171,11 +269,31 @@ public enum GraniteModelCache {
         return HubApi().localRepoLocation(.init(id: repositoryID)).standardizedFileURL
     }
 
-    public static func isDownloaded(_ repositoryID: String, kind: GraniteManagedModelKind? = nil) -> Bool {
-        guard let directory = try? directory(for: repositoryID) else { return false }
-        return detectedKind(at: directory).map { kind == nil || $0 == kind } ?? false
+    /// Returns the current completeness state for a model cache entry.
+    public static func state(
+        of repositoryID: String,
+        kind: GraniteManagedModelKind? = nil
+    ) -> GraniteModelCacheState {
+        guard let directory = try? directory(for: repositoryID) else { return .absent }
+        return state(at: directory, kind: kind)
     }
 
+    static func state(
+        at directory: URL,
+        kind: GraniteManagedModelKind? = nil
+    ) -> GraniteModelCacheState {
+        guard FileManager.default.fileExists(atPath: directory.path) else { return .absent }
+        return detectedKind(at: directory).map { detected in
+            kind == nil || detected == kind ? .downloaded : .partial
+        } ?? .partial
+    }
+
+    /// Indicates whether a complete compatible checkpoint is cached.
+    public static func isDownloaded(_ repositoryID: String, kind: GraniteManagedModelKind? = nil) -> Bool {
+        state(of: repositoryID, kind: kind) == .downloaded
+    }
+
+    /// Lists complete and partial catalog checkpoints plus compatible custom checkpoints.
     public static func downloadedModels() -> [GraniteCachedModel] {
         let manager = FileManager.default
         guard let owners = try? manager.contentsOfDirectory(
@@ -194,17 +312,39 @@ public enum GraniteModelCache {
                     kind: kind,
                     directory: repository,
                     sizeBytes: directorySize(repository),
-                    catalogAlias: GraniteModelCatalog.model(for: repositoryID)?.alias))
+                    catalogAlias: GraniteModelCatalog.model(for: repositoryID)?.alias,
+                    state: .downloaded,
+                    stateDetails: nil))
             }
+        }
+        let existingIDs = Set(result.map { $0.repositoryID.lowercased() })
+        for model in GraniteModelCatalog.models where !existingIDs.contains(model.repositoryID.lowercased()) {
+            guard let directory = try? directory(for: model.repositoryID),
+                  FileManager.default.fileExists(atPath: directory.path) else { continue }
+            result.append(GraniteCachedModel(
+                repositoryID: model.repositoryID, kind: model.kind,
+                directory: directory, sizeBytes: directorySize(directory),
+                catalogAlias: model.alias, state: .partial,
+                stateDetails: cacheValidationDetails(at: directory, kind: model.kind)))
         }
         return result.sorted { $0.repositoryID.localizedCaseInsensitiveCompare($1.repositoryID) == .orderedAscending }
     }
 
+    /// Downloads or resumes a checkpoint and validates the materialized result.
+    ///
+    /// - Parameters:
+    ///   - aliasOrID: Catalog alias or Hugging Face repository ID.
+    ///   - requestedKind: Explicit model role for custom repositories.
+    ///   - hfToken: Optional Hugging Face token. When `nil`, Hub environment-token resolution applies.
+    ///   - cancellationToken: Optional cooperative cancellation token.
+    ///   - progressHandler: Optional download progress callback.
+    /// - Returns: Validated materialized checkpoint directory.
     @discardableResult
     public static func download(
         _ aliasOrID: String,
         kind requestedKind: GraniteManagedModelKind? = nil,
         hfToken: String? = nil,
+        cancellationToken: GraniteCancellationToken? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil
     ) throws -> URL {
         let resolved = try GraniteModelCatalog.resolve(aliasOrID)
@@ -218,6 +358,7 @@ public enum GraniteModelCache {
                 phase: phase, fractionCompleted: fraction,
                 estimatedTotalBytes: expectedBytes, bytesPerSecond: speed))
         }
+        try cancellationToken?.checkCancellation(operation: "Model download")
         if isDownloaded(id, kind: kind) {
             event(.cacheHit, 1, nil)
             return destination
@@ -228,13 +369,24 @@ public enum GraniteModelCache {
         let patterns = kind == .punctuation
             ? ["*.safetensors", "*.json", "*.model", "*.yaml"]
             : ["*.safetensors", "*.json", "*.txt", "*.model"]
-        let downloaded = try GraniteModelLoader.runBlocking {
-            try await hub.snapshot(from: id, matching: patterns) { progress, speed in
-                event(.downloading, progress.fractionCompleted, speed)
+        let downloaded: URL
+        do {
+            downloaded = try GraniteModelLoader.runBlocking(cancellationToken: cancellationToken) {
+                try await hub.snapshot(from: id, matching: patterns) { progress, speed in
+                    event(.downloading, progress.fractionCompleted, speed)
+                }
             }
+        } catch let error as GraniteOperationError { throw error }
+        catch {
+            throw GraniteModelManagementError.downloadFailed(
+                repositoryID: id, cacheDirectory: destination,
+                details: String(reflecting: error))
         }
+        try cancellationToken?.checkCancellation(operation: "Model download")
         guard detectedKind(at: downloaded) == kind else {
-            throw GraniteRecognizerError.invalidModel(downloaded)
+            throw GraniteModelManagementError.incompleteModel(
+                repositoryID: id, cacheDirectory: downloaded,
+                details: cacheValidationDetails(at: downloaded, kind: kind))
         }
         event(.complete, 1, nil)
         return downloaded
@@ -246,16 +398,26 @@ public enum GraniteModelCache {
     public static func remove(_ aliasOrID: String) throws -> GraniteCachedModel {
         let resolved = try GraniteModelCatalog.resolve(aliasOrID)
         let destination = try directory(for: resolved.id)
-        guard let kind = detectedKind(at: destination) else {
+        guard FileManager.default.fileExists(atPath: destination.path) else {
             throw GraniteModelManagementError.notDownloaded(resolved.id)
         }
+        let kind = detectedKind(at: destination) ?? resolved.model?.kind ?? inferredKind(from: resolved.id)
+        let cacheState = state(of: resolved.id, kind: kind)
         let record = GraniteCachedModel(
             repositoryID: resolved.id, kind: kind, directory: destination,
-            sizeBytes: directorySize(destination), catalogAlias: resolved.model?.alias)
-        try FileManager.default.removeItem(at: destination)
+            sizeBytes: directorySize(destination), catalogAlias: resolved.model?.alias,
+            state: cacheState,
+            stateDetails: cacheState == .partial ? cacheValidationDetails(at: destination, kind: kind) : nil)
+        do { try FileManager.default.removeItem(at: destination) }
+        catch {
+            throw GraniteModelManagementError.removalFailed(
+                repositoryID: resolved.id, cacheDirectory: destination,
+                details: String(reflecting: error))
+        }
         return record
     }
 
+    /// Recursively computes logical file size without following symbolic links.
     public static func directorySize(_ directory: URL) -> Int64 {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileSizeKey, .isSymbolicLinkKey]
         guard let enumerator = FileManager.default.enumerator(
@@ -285,19 +447,79 @@ public enum GraniteModelCache {
         guard manager.fileExists(atPath: weights.path) else { return nil }
         let tokenizer = directory.appendingPathComponent("tokenizer.json")
         guard manager.fileExists(atPath: tokenizer.path) else { return nil }
+        let kind: GraniteManagedModelKind?
         let punctuationConfig = directory.appendingPathComponent("mlx_config.json")
         if let data = try? Data(contentsOf: punctuationConfig),
            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
            object["architecture"] as? String == "bert-punctuation-capitalization-segmentation" {
-            return .punctuation
+            kind = .punctuation
+        } else {
+            let speechConfig = directory.appendingPathComponent("config.json")
+            if let data = try? Data(contentsOf: speechConfig),
+               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               object["model_type"] as? String == "granite_speech5_ctc" {
+                kind = .speech
+            } else {
+                kind = nil
+            }
         }
-        let speechConfig = directory.appendingPathComponent("config.json")
-        if let data = try? Data(contentsOf: speechConfig),
-           let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           object["model_type"] as? String == "granite_speech5_ctc" {
-            return .speech
+        guard let kind, safetensorsValidationDetails(at: weights, kind: kind) == nil else {
+            return nil
         }
-        return nil
+        return kind
+    }
+
+    private static func cacheValidationDetails(
+        at directory: URL, kind: GraniteManagedModelKind
+    ) -> String {
+        let required = kind == .speech
+            ? ["model.safetensors", "config.json", "tokenizer.json"]
+            : ["model.safetensors", "mlx_config.json", "tokenizer.json"]
+        let missing = required.filter {
+            !FileManager.default.fileExists(atPath: directory.appendingPathComponent($0).path)
+        }
+        if !missing.isEmpty { return "missing_files=\(missing.joined(separator: ","))" }
+        let weights = directory.appendingPathComponent("model.safetensors")
+        if let details = safetensorsValidationDetails(at: weights, kind: kind) {
+            return details
+        }
+        return "required files exist but configuration architecture or model kind is invalid"
+    }
+
+    static func safetensorsValidationDetails(
+        at weights: URL, kind: GraniteManagedModelKind
+    ) -> String? {
+        do {
+            let handle = try FileHandle(forReadingFrom: weights)
+            defer { try? handle.close() }
+            guard let prefix = try handle.read(upToCount: 8), prefix.count == 8 else {
+                return "invalid_safetensors=missing 8-byte header length"
+            }
+            var headerLength: UInt64 = 0
+            for (offset, byte) in prefix.enumerated() {
+                headerLength |= UInt64(byte) << UInt64(offset * 8)
+            }
+            let attributes = try FileManager.default.attributesOfItem(atPath: weights.path)
+            let fileSize = (attributes[.size] as? NSNumber)?.uint64Value ?? 0
+            guard headerLength > 0, headerLength <= 64 * 1_024 * 1_024,
+                  headerLength <= fileSize.saturatingSubtract(8) else {
+                return "invalid_safetensors=header_length_\(headerLength); file_bytes=\(fileSize)"
+            }
+            guard let header = try handle.read(upToCount: Int(headerLength)),
+                  header.count == Int(headerLength),
+                  let object = try JSONSerialization.jsonObject(with: header) as? [String: Any] else {
+                return "invalid_safetensors=header is truncated or is not a JSON object"
+            }
+            let required = kind == .speech
+                ? ["encoder.input_linear.weight", "encoder.out.weight"]
+                : ["embeddings.word.weight", "decoder.post.1.weight"]
+            let missing = required.filter { object[$0] == nil }
+            return missing.isEmpty
+                ? nil
+                : "invalid_safetensors=missing_required_tensors; tensors=\(missing.joined(separator: ","))"
+        } catch {
+            return "invalid_safetensors=unreadable; error=\(String(reflecting: error))"
+        }
     }
 
     private static func inferredKind(from repositoryID: String) -> GraniteManagedModelKind {
@@ -318,5 +540,11 @@ public enum GraniteModelCache {
             throw GraniteModelManagementError.insufficientDiskSpace(
                 required: expectedBytes + reserve, available: available)
         }
+    }
+}
+
+private extension UInt64 {
+    func saturatingSubtract(_ value: UInt64) -> UInt64 {
+        self >= value ? self - value : 0
     }
 }

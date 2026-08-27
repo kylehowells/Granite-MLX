@@ -8,19 +8,29 @@ import MLX
 /// Conformer is enabled. The filterbank follows torchaudio's default HTK mel
 /// scale and power spectrogram settings used by the Granite processor.
 public struct GraniteFeatureExtractor: @unchecked Sendable {
+    /// Expected input sample rate.
     public let sampleRate: Int
+    /// FFT window size including padding.
     public let fftSize: Int
+    /// Hann-window sample count.
     public let windowLength: Int
+    /// Samples advanced between spectrogram frames.
     public let hopLength: Int
+    /// Number of mel filterbank channels.
     public let melCount: Int
+    /// Number of adjacent frames stacked for each model step.
     public let stackFactor: Int
+    /// Whether first-order deltas are appended.
     public let includeDeltas: Bool
+    /// Delta calculation window length.
     public let deltaWindowLength: Int
+    /// Log-mel dynamic-range floor in decibels.
     public let logMelFloorDB: Float
 
     private let window: MLXArray
     private let filterbank: MLXArray
 
+    /// Creates a Granite-compatible feature extractor.
     public init(
         sampleRate: Int = 16_000, fftSize: Int = 512, windowLength: Int = 400,
         hopLength: Int = 160, melCount: Int = 80, stackFactor: Int = 2,

@@ -7,6 +7,33 @@ func stderr(_ message: String) {
     FileHandle.standardError.write(Data((message + "\n").utf8))
 }
 
+struct CLIRuntimeError: Error, LocalizedError {
+    let code: String
+    let message: String
+    let details: String
+
+    var errorDescription: String? {
+        "[\(code)] \(message) Technical details: \(details)"
+    }
+
+    static func wrapping(_ error: Error, code: String, operation: String) -> CLIRuntimeError {
+        if let diagnostic = error as? any GraniteDiagnosticError {
+            let prefix = "[\(diagnostic.diagnosticCode)] "
+            let localized = diagnostic.errorDescription ?? "\(operation) failed."
+            let withoutPrefix = localized.hasPrefix(prefix) ? String(localized.dropFirst(prefix.count)) : localized
+            let concise = withoutPrefix.components(separatedBy: " Technical details:").first ?? withoutPrefix
+            return CLIRuntimeError(
+                code: diagnostic.diagnosticCode,
+                message: concise,
+                details: diagnostic.technicalDetails ?? String(reflecting: error))
+        }
+        return CLIRuntimeError(
+            code: code,
+            message: "\(operation) failed.",
+            details: "error_type=\(String(reflecting: type(of: error))); underlying=\(String(reflecting: error))")
+    }
+}
+
 private enum OutputFormat: String, CaseIterable {
     case txt, srt, vtt, json, all
 }
@@ -76,6 +103,18 @@ struct GraniteMLXCLI: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "granite-mlx",
         abstract: "Run Granite Speech 5.0 locally on audio or video files.",
+        discussion: """
+        COMMON EXAMPLES:
+          granite-mlx recording.wav
+          granite-mlx lecture.mp4 --output-format vtt
+          granite-mlx interview.m4a --output-format all --output-dir ./transcripts
+          granite-mlx recording.wav --no-punctuate --output-format txt
+          granite-mlx models list
+          granite-mlx models download apache-q8 punctuation-q8
+
+        `transcribe` is the default command, so `granite-mlx recording.wav` and
+        `granite-mlx transcribe recording.wav` are equivalent.
+        """,
         version: "0.1.0",
         subcommands: [TranscribeCommand.self, ModelsCommand.self],
         defaultSubcommand: TranscribeCommand.self
@@ -85,7 +124,15 @@ struct GraniteMLXCLI: ParsableCommand {
 struct TranscribeCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "transcribe",
-        abstract: "Transcribe audio or video with Granite Speech 5.0.")
+        abstract: "Transcribe audio or video with Granite Speech 5.0.",
+        discussion: """
+        EXAMPLES:
+          granite-mlx recording.wav
+          granite-mlx lecture.mp4 --output-format srt
+          granite-mlx lecture.mp4 --output-format all --output-dir ./transcripts
+          granite-mlx a.wav b.mp3 --output-dir ./transcripts
+          granite-mlx recording.wav --model apache-q6 --no-punctuate
+        """)
 
     @Argument(help: "Audio or video file(s) to transcribe.")
     var inputs: [String]
@@ -93,7 +140,7 @@ struct TranscribeCommand: ParsableCommand {
     var model: String = GraniteModelLoader.defaultModelID
     @Option(help: "Local punctuation model directory or Hugging Face model identifier.")
     var punctuationModel: String = PunctuationModelLoader.defaultModelID
-    @Option(help: "Hugging Face access token for private or gated model repositories.")
+    @Option(help: "Hugging Face access token for private or gated repositories; overrides HF_TOKEN.")
     var hfToken: String?
     @Flag(inversion: .prefixedNo, help: "Restore punctuation, capitalization, and sentence boundaries.")
     var punctuate = true
@@ -135,23 +182,23 @@ struct TranscribeCommand: ParsableCommand {
     var activationAudit: String?
 
     func validate() throws {
-        guard !inputs.isEmpty else { throw ValidationError("At least one input file is required.") }
+        guard !inputs.isEmpty else { throw ValidationError("[GMLX-CLI-001] At least one input file is required.") }
         guard OutputFormat(rawValue: outputFormat.lowercased()) != nil else {
-            throw ValidationError("Unsupported output format. Use txt, srt, vtt, json, or all.")
+            throw ValidationError("[GMLX-CLI-002] Unsupported output format `\(outputFormat)`. Use txt, srt, vtt, json, or all.")
         }
         if outputFormat.lowercased() == "all", outputDir == nil {
-            throw ValidationError("--output-format all requires --output-dir.")
+            throw ValidationError("[GMLX-CLI-003] --output-format all requires --output-dir.")
         }
-        guard maxWords > 0 else { throw ValidationError("--max-words must be greater than zero.") }
-        guard silenceGap >= 0 else { throw ValidationError("--silence-gap must be non-negative.") }
-        guard maxDuration > 0 else { throw ValidationError("--max-duration must be greater than zero.") }
-        guard mlxCacheLimitMB >= 0 else { throw ValidationError("--mlx-cache-limit-mb must be non-negative.") }
+        guard maxWords > 0 else { throw ValidationError("[GMLX-CLI-004] --max-words must be greater than zero; received \(maxWords).") }
+        guard silenceGap >= 0 else { throw ValidationError("[GMLX-CLI-005] --silence-gap must be non-negative; received \(silenceGap).") }
+        guard maxDuration > 0 else { throw ValidationError("[GMLX-CLI-006] --max-duration must be greater than zero; received \(maxDuration).") }
+        guard mlxCacheLimitMB >= 0 else { throw ValidationError("[GMLX-CLI-007] --mlx-cache-limit-mb must be non-negative; received \(mlxCacheLimitMB).") }
         guard (noChunking ? 0 : audioChunkDuration) >= 0,
               (noChunking ? 0 : audioChunkContext) >= 0 else {
-            throw ValidationError("Audio chunk duration and context must be non-negative.")
+            throw ValidationError("[GMLX-CLI-008] Audio chunk duration and context must be non-negative; duration=\(audioChunkDuration), context=\(audioChunkContext).")
         }
         guard GraniteActivationPrecision(rawValue: activationPrecision) != nil else {
-            throw ValidationError("Unsupported activation precision. Use baseline, fp16, fp8-emulated, or int8-emulated.")
+            throw ValidationError("[GMLX-CLI-009] Unsupported activation precision `\(activationPrecision)`. Use baseline, fp16, fp8-emulated, or int8-emulated.")
         }
     }
 
@@ -160,25 +207,42 @@ struct TranscribeCommand: ParsableCommand {
         let precision = GraniteActivationPrecision(rawValue: activationPrecision)!
         let chunkDuration = noChunking ? 0 : audioChunkDuration
         let chunkContext = noChunking ? 0 : audioChunkContext
-        let outputDirectory = try prepareOutputDirectory()
+        let outputDirectory: URL?
+        do { outputDirectory = try prepareOutputDirectory() }
+        catch {
+            throw CLIRuntimeError.wrapping(
+                error, code: "GMLX-CLI-010", operation: "Output directory preparation")
+        }
         let resolver = OutputPathResolver()
+        let effectiveHFToken = hfToken ?? ProcessInfo.processInfo.environment["HF_TOKEN"]
 
         Memory.cacheLimit = mlxCacheLimitMB * 1_024 * 1_024
         Memory.clearCache()
         let downloadReporter = ConsoleDownloadProgressReporter()
         let modelStart = Date()
-        let recognizer = try GraniteRecognizer(
-            modelSource: model, hfToken: hfToken,
-            progressHandler: downloadReporter.handler)
+        let recognizer: GraniteRecognizer
+        do {
+            recognizer = try GraniteRecognizer(
+                modelSource: model, hfToken: effectiveHFToken,
+                progressHandler: downloadReporter.handler)
+        } catch {
+            throw CLIRuntimeError.wrapping(
+                error, code: "GMLX-CLI-020", operation: "Speech model initialization")
+        }
         let modelLoadSeconds = Date().timeIntervalSince(modelStart)
 
-        let formatter: PunctuationFormatter?
+        let formatter: (any GraniteTranscriptFormatter)?
         let punctuationLoadSeconds: Double
         if punctuate {
             let start = Date()
-            formatter = try PunctuationFormatter(
-                modelSource: punctuationModel, hfToken: hfToken,
-                progressHandler: downloadReporter.handler)
+            do {
+                formatter = try GraniteTranscriptFormatterFactory.load(
+                    modelSource: punctuationModel, hfToken: effectiveHFToken,
+                    progressHandler: downloadReporter.handler)
+            } catch {
+                throw CLIRuntimeError.wrapping(
+                    error, code: "GMLX-CLI-021", operation: "Punctuation model initialization")
+            }
             punctuationLoadSeconds = Date().timeIntervalSince(start)
         } else {
             formatter = nil
@@ -186,20 +250,30 @@ struct TranscribeCommand: ParsableCommand {
         }
 
         if let dumpFeatures {
-            let audio = try GraniteAudioInput.load(url: URL(fileURLWithPath: inputs[0]))
-            let features = recognizer.features(for: audio)
-            MLX.eval(features)
-            try MLX.save(arrays: ["features": features], metadata: [:], url: URL(fileURLWithPath: dumpFeatures))
-            if verbose { stderr("Wrote frontend tensor \(features.shape) to \(dumpFeatures)") }
+            do {
+                let audio = try GraniteAudioInput.load(url: URL(fileURLWithPath: inputs[0]))
+                let features = recognizer.features(for: audio)
+                MLX.eval(features)
+                try MLX.save(arrays: ["features": features], metadata: [:], url: URL(fileURLWithPath: dumpFeatures))
+                if verbose { stderr("Wrote frontend tensor \(features.shape) to \(dumpFeatures)") }
+            } catch {
+                throw CLIRuntimeError.wrapping(
+                    error, code: "GMLX-CLI-011", operation: "Frontend tensor export")
+            }
             return
         }
         if let activationAudit {
-            let audio = try GraniteAudioInput.load(url: URL(fileURLWithPath: inputs[0]))
-            let stages = recognizer.activationAudit(audio, activationPrecision: precision)
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            try encoder.encode(stages).write(to: URL(fileURLWithPath: activationAudit))
-            if verbose { stderr("Wrote activation audit to \(activationAudit)") }
+            do {
+                let audio = try GraniteAudioInput.load(url: URL(fileURLWithPath: inputs[0]))
+                let stages = recognizer.activationAudit(audio, activationPrecision: precision)
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                try encoder.encode(stages).write(to: URL(fileURLWithPath: activationAudit))
+                if verbose { stderr("Wrote activation audit to \(activationAudit)") }
+            } catch {
+                throw CLIRuntimeError.wrapping(
+                    error, code: "GMLX-CLI-012", operation: "Activation audit export")
+            }
             return
         }
 
@@ -209,7 +283,9 @@ struct TranscribeCommand: ParsableCommand {
             if outputDirectory == nil { stderr("Multiple stdout results are emitted as JSON Lines.") }
         }
 
+        var failedInputs = 0
         for (index, input) in inputs.enumerated() {
+            do {
             let totalStart = Date()
             let inputURL = URL(fileURLWithPath: input).standardizedFileURL
             let audioStart = Date()
@@ -231,7 +307,9 @@ struct TranscribeCommand: ParsableCommand {
             let inferenceSeconds = Date().timeIntervalSince(inferenceStart)
 
             let punctuationStart = Date()
-            let formatting = formatter?.format(rawResult.rawText)
+            let formatting = try formatter?.format(
+                rawResult.rawText, cancellationToken: nil,
+                progressHandler: nil)
             let result = formatting.map(rawResult.applyingFormatting) ?? rawResult
             let punctuationInferenceSeconds = Date().timeIntervalSince(punctuationStart)
             if formatting != nil, result.words.count != rawResult.words.count, verbose {
@@ -275,8 +353,8 @@ struct TranscribeCommand: ParsableCommand {
                 model: model,
                 weightQuantizationBits: recognizer.artifact.configuration.quantization?.bits,
                 punctuationModel: punctuate ? punctuationModel : nil,
-                punctuationPrecision: formatter?.artifact.configuration.precision,
-                punctuationQuantizationBits: formatter?.artifact.configuration.quantization?.bits,
+                punctuationPrecision: formatter?.formatterInfo.precision,
+                punctuationQuantizationBits: formatter?.formatterInfo.quantizationBits,
                 activationPrecision: precision.rawValue,
                 timingNote: "Word timings are approximate CTC emission-frame alignments.",
                 words: result.words,
@@ -293,6 +371,22 @@ struct TranscribeCommand: ParsableCommand {
             }
             if benchmark { stderr(try encodedJSON(report, pretty: false)) }
             Memory.clearCache()
+            } catch let error as GraniteOperationError {
+                if case .cancelled = error { throw error }
+                failedInputs += 1
+                stderr(CLIRuntimeError.wrapping(
+                    error, code: "GMLX-CLI-030", operation: "Processing input \(input)").localizedDescription)
+                Memory.clearCache()
+            } catch {
+                failedInputs += 1
+                stderr(CLIRuntimeError.wrapping(
+                    error, code: "GMLX-CLI-030", operation: "Processing input \(input)").localizedDescription)
+                Memory.clearCache()
+            }
+        }
+        if failedInputs > 0 {
+            stderr("[GMLX-CLI-031] Completed batch with \(failedInputs) failed input(s) out of \(inputs.count). Successfully generated outputs were retained. Technical details: failures=\(failedInputs); total=\(inputs.count)")
+            throw ExitCode.failure
         }
     }
 

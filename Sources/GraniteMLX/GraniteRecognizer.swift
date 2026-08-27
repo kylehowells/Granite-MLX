@@ -2,9 +2,13 @@ import Foundation
 import MLX
 import MLXNN
 
+/// Affine weight-quantization settings for a Granite checkpoint.
 public struct GraniteQuantizationConfiguration: Decodable, Sendable, Equatable {
+    /// Default number of source values sharing a scale and bias.
     public var groupSize: Int
+    /// Packed weight bit width.
     public var bits: Int
+    /// MLX quantization mode.
     public var mode: QuantizationMode
     /// Optional per-module overrides. Keys use the flattened MLX module path,
     /// for example `encoder.input_linear`.
@@ -15,6 +19,7 @@ public struct GraniteQuantizationConfiguration: Decodable, Sendable, Equatable {
         case groupSizes = "group_sizes"
     }
 
+    /// Creates an affine quantization configuration.
     public init(
         groupSize: Int, bits: Int, mode: QuantizationMode,
         groupSizes: [String: Int] = [:]
@@ -25,6 +30,7 @@ public struct GraniteQuantizationConfiguration: Decodable, Sendable, Equatable {
         self.groupSizes = groupSizes
     }
 
+    /// Decodes quantization settings from a converted checkpoint configuration.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         groupSize = try container.decode(Int.self, forKey: .groupSize)
@@ -33,26 +39,43 @@ public struct GraniteQuantizationConfiguration: Decodable, Sendable, Equatable {
         groupSizes = try container.decodeIfPresent([String: Int].self, forKey: .groupSizes) ?? [:]
     }
 
+    /// Returns the per-module group size override or the default group size.
     public func groupSize(for modulePath: String) -> Int {
         groupSizes[modulePath] ?? groupSize
     }
 }
 
+/// Runtime architecture configuration for Granite Speech 5.0 TurboCTC.
 public struct GraniteModelConfiguration: Decodable, Sendable {
+    /// Checkpoint architecture identifier.
     public var modelType: String = "granite_speech5_ctc"
+    /// CTC tokenizer vocabulary size.
     public var vocabSize: Int = 16_384
+    /// Encoder hidden width.
     public var hiddenSize: Int = 1_024
+    /// Number of Conformer layers.
     public var numHiddenLayers: Int = 16
+    /// Required input audio sample rate.
     public var sampleRate: Int = 16_000
+    /// CTC output frames per second.
     public var outputFrameRate: Double = 12.5
+    /// Feed-forward hidden width.
     public var intermediateSize: Int = 4_096
+    /// Number of attention heads.
     public var numAttentionHeads: Int = 8
+    /// Width of each attention head.
     public var headDimension: Int = 128
+    /// Local attention context size.
     public var contextSize: Int = 128
+    /// Convolution module expansion multiplier.
     public var convExpansionFactor: Int = 2
+    /// Depthwise convolution kernel width.
     public var convKernelSize: Int = 7
+    /// Encoder layers that perform temporal subsampling.
     public var subsampleLayers: [Int] = [0, 1]
+    /// Relative-position embedding capacity.
     public var maxPositionEmbeddings: Int = 512
+    /// Weight quantization settings, or `nil` for floating-point weights.
     public var quantization: GraniteQuantizationConfiguration?
 
     private enum CodingKeys: String, CodingKey {
@@ -69,8 +92,10 @@ public struct GraniteModelConfiguration: Decodable, Sendable {
         case maxPositionEmbeddings = "max_position_embeddings"
     }
 
+    /// Creates the default Granite Speech 5.0 configuration.
     public init() {}
 
+    /// Decodes architecture settings from a converted checkpoint configuration.
     public init(from decoder: Decoder) throws {
         let root = try decoder.container(keyedBy: CodingKeys.self)
         modelType = try root.decodeIfPresent(String.self, forKey: .modelType) ?? modelType
@@ -93,11 +118,16 @@ public struct GraniteModelConfiguration: Decodable, Sendable {
     }
 }
 
+/// A decoded word with approximate CTC timing.
 public struct GraniteWord: Codable, Sendable, Equatable {
+    /// Decoded word text.
     public let text: String
+    /// Word onset in seconds.
     public let start: Double
+    /// Word end in seconds.
     public let end: Double
 
+    /// Creates a timed word.
     public init(text: String, start: Double, end: Double) {
         self.text = text
         self.start = start
@@ -105,16 +135,24 @@ public struct GraniteWord: Codable, Sendable, Equatable {
     }
 }
 
+/// Speech-recognition output containing raw, formatted, and timed forms.
 public struct GraniteTranscription: Codable, Sendable {
     /// User-facing text. This is raw text until `applyingFormatting` is called.
     public let text: String
+    /// Exact unformatted CTC text.
     public let rawText: String
+    /// Punctuated text when formatting has been applied.
     public let formattedText: String?
+    /// Timestamped CTC token emissions.
     public let tokens: [GraniteTokenTiming]
+    /// Whitespace-grouped words with approximate timings.
     public let words: [GraniteWord]
+    /// Input audio duration in seconds.
     public let duration: Double
+    /// Model path or identifier used by the recognizer.
     public let model: String
 
+    /// Creates a transcription result.
     public init(
         text: String,
         rawText: String? = nil,
@@ -133,6 +171,7 @@ public struct GraniteTranscription: Codable, Sendable {
         self.model = model
     }
 
+    /// Returns a copy whose visible text and word spelling use formatter output.
     public func applyingFormatting(_ formatting: PunctuationFormattingResult) -> GraniteTranscription {
         let formattedWords = formatting.text.split(whereSeparator: \.isWhitespace).map(String.init)
         let timedWords: [GraniteWord]
@@ -158,6 +197,7 @@ public struct GraniteTranscription: Codable, Sendable {
     }
 }
 
+/// Storage precision used between Granite encoder stages.
 public enum GraniteActivationPrecision: String, Codable, Sendable, CaseIterable {
     /// Preserve the reference implementation's frontend dtype.
     case baseline
@@ -170,23 +210,52 @@ public enum GraniteActivationPrecision: String, Codable, Sendable, CaseIterable 
     case int8Emulated = "int8-emulated"
 }
 
+/// A diagnostic snapshot of one evaluated activation tensor.
 public struct GraniteActivationStage: Codable, Sendable {
+    /// Runtime stage name.
     public let name: String
+    /// Tensor dimensions.
     public let shape: [Int]
+    /// MLX scalar type name.
     public let dtype: String
+    /// Evaluated tensor byte count.
     public let evaluatedBytes: Int
+    /// Minimum scalar value.
     public let minimum: Float
+    /// Maximum scalar value.
     public let maximum: Float
 }
 
-public enum GraniteRecognizerError: Error, LocalizedError {
-    case notImplemented(String)
+/// Errors produced while loading or running the Granite recognizer.
+public enum GraniteRecognizerError: Error, GraniteDiagnosticError {
+    /// A checkpoint or runtime option uses an unsupported configuration.
+    case unsupportedConfiguration(String)
+    /// A checkpoint directory is missing required or valid model artifacts.
     case invalidModel(URL)
 
+    /// Stable diagnostic identifier for the failure.
+    public var diagnosticCode: String {
+        switch self {
+        case .unsupportedConfiguration: "GMLX-RUNTIME-001"
+        case .invalidModel: "GMLX-RUNTIME-002"
+        }
+    }
+
+    /// Low-level context useful for diagnostics.
+    public var technicalDetails: String? {
+        switch self {
+        case .unsupportedConfiguration(let message): message
+        case .invalidModel(let url): "model_directory=\(url.path)"
+        }
+    }
+
+    /// User-facing localized failure description containing the diagnostic code.
     public var errorDescription: String? {
         switch self {
-        case .notImplemented(let message): message
-        case .invalidModel(let url): "Invalid Granite model directory: \(url.path)"
+        case .unsupportedConfiguration:
+            "[\(diagnosticCode)] The model or requested runtime configuration is not supported. Technical details: \(technicalDetails!)."
+        case .invalidModel:
+            "[\(diagnosticCode)] The model directory is incomplete, corrupt, or incompatible. Re-download the model or select another checkpoint. Technical details: \(technicalDetails!)."
         }
     }
 }
@@ -194,12 +263,16 @@ public enum GraniteRecognizerError: Error, LocalizedError {
 /// Public runtime façade. The model graph is intentionally added behind this
 /// stable API after the conversion manifest and tensor mapping are finalized.
 public final class GraniteRecognizer: @unchecked Sendable {
+    /// Materialized checkpoint directory.
     public let modelURL: URL
+    /// Loaded checkpoint artifact and configuration.
     public let artifact: GraniteModelArtifact
+    /// Frontend used to create Granite log-mel features.
     public let featureExtractor: GraniteFeatureExtractor
     private let model: GraniteCTCModel
     private let tokenizer: GraniteTokenizer
 
+    /// Creates a recognizer from an already downloaded checkpoint directory.
     public init(modelURL: URL) throws {
         let artifact = try GraniteModelLoader.load(from: modelURL)
         let model = GraniteCTCModel(artifact.configuration)
@@ -222,17 +295,27 @@ public final class GraniteRecognizer: @unchecked Sendable {
         self.modelURL = modelURL
         self.featureExtractor = GraniteFeatureExtractor(sampleRate: artifact.configuration.sampleRate)
         self.model = model
-        self.tokenizer = try GraniteTokenizer(directory: modelURL)
+        do {
+            self.tokenizer = try GraniteTokenizer(directory: modelURL)
+        } catch let error as GraniteDiagnosticError {
+            throw error
+        } catch {
+            throw GraniteOperationError.underlying(
+                code: "GMLX-RUNTIME-005", operation: "Speech tokenizer loading",
+                details: "directory=\(modelURL.path); error=\(String(reflecting: error))")
+        }
     }
 
+    /// Creates a recognizer from a local path, catalog alias, or Hugging Face ID.
     public convenience init(
         modelSource: String,
         hfToken: String? = nil,
-        progressHandler: GraniteModelDownloadProgressHandler? = nil
+        progressHandler: GraniteModelDownloadProgressHandler? = nil,
+        cancellationToken: GraniteCancellationToken? = nil
     ) throws {
         let artifact = try GraniteModelLoader.load(
             source: modelSource, hfToken: hfToken,
-            progressHandler: progressHandler)
+            progressHandler: progressHandler, cancellationToken: cancellationToken)
         try self.init(modelURL: artifact.directory)
     }
 
@@ -241,19 +324,39 @@ public final class GraniteRecognizer: @unchecked Sendable {
         featureExtractor(audio.samples)
     }
 
+    /// Transcribes prepared audio with optional chunk progress and cancellation.
     public func transcribe(
         _ audio: GraniteAudio,
         activationPrecision: GraniteActivationPrecision = .baseline,
         ctcVocabularyTileSize: Int = 0,
         middleCTCVocabularyTileSize: Int = 0,
         audioChunkDuration: Double = 0,
-        audioChunkContext: Double = 0
+        audioChunkContext: Double = 0,
+        cancellationToken: GraniteCancellationToken? = nil,
+        progressHandler: GraniteOperationProgressHandler? = nil
     ) throws -> GraniteTranscription {
+        try cancellationToken?.checkCancellation(operation: "Speech transcription")
+        guard audio.sampleRate == artifact.configuration.sampleRate else {
+            throw GraniteAudioError.invalidAudioFormat(
+                details: "prepared_sample_rate=\(audio.sampleRate); required_sample_rate=\(artifact.configuration.sampleRate); source=\(audio.source.path)")
+        }
+        guard audio.samples.count > 256 else {
+            throw GraniteAudioError.invalidAudioFormat(
+                details: "prepared_sample_count=\(audio.samples.count); minimum_sample_count=257; source=\(audio.source.path)")
+        }
+        guard ctcVocabularyTileSize >= 0, middleCTCVocabularyTileSize >= 0,
+              audioChunkDuration >= 0, audioChunkContext >= 0 else {
+            throw GraniteRecognizerError.unsupportedConfiguration(
+                "Tile sizes and chunk durations must be non-negative; ctc_tile=\(ctcVocabularyTileSize), middle_ctc_tile=\(middleCTCVocabularyTileSize), chunk_duration=\(audioChunkDuration), chunk_context=\(audioChunkContext).")
+        }
+        progressHandler?(GraniteOperationProgress(
+            phase: .extractingFeatures, fractionCompleted: 0,
+            message: "Preparing audio features"))
         if middleCTCVocabularyTileSize > 0,
            let quantization = artifact.configuration.quantization {
             let groupSize = quantization.groupSize(for: "encoder.out_mid")
             guard middleCTCVocabularyTileSize.isMultiple(of: groupSize) else {
-                throw GraniteRecognizerError.notImplemented(
+                throw GraniteRecognizerError.unsupportedConfiguration(
                     "Middle CTC vocabulary tile size must be a multiple of \(groupSize) for this checkpoint."
                 )
             }
@@ -263,8 +366,16 @@ public final class GraniteRecognizer: @unchecked Sendable {
             let chunkSampleCount = max(1, Int(audioChunkDuration * Double(audio.sampleRate)))
             let contextSampleCount = max(0, Int(audioChunkContext * Double(audio.sampleRate)))
             let outputFramesPerSecond = 12.5
-            frameIDs = stride(from: 0, to: audio.samples.count, by: chunkSampleCount)
-                .flatMap { coreStart -> [Int] in
+            let coreStarts = Array(stride(
+                from: 0, to: audio.samples.count, by: chunkSampleCount))
+            var collectedFrameIDs: [Int] = []
+            for (chunkIndex, coreStart) in coreStarts.enumerated() {
+                    try cancellationToken?.checkCancellation(operation: "Speech transcription")
+                    progressHandler?(GraniteOperationProgress(
+                        phase: .transcribing,
+                        fractionCompleted: Double(chunkIndex) / Double(coreStarts.count),
+                        message: "Transcribing chunk \(chunkIndex + 1) of \(coreStarts.count)",
+                        chunkIndex: chunkIndex, chunkCount: coreStarts.count))
                     let coreEnd = min(coreStart + chunkSampleCount, audio.samples.count)
                     let segmentStart = max(0, coreStart - contextSampleCount)
                     let segmentEnd = min(audio.samples.count, coreEnd + contextSampleCount)
@@ -293,9 +404,13 @@ public final class GraniteRecognizer: @unchecked Sendable {
                     // Prevent differently-sized temporal buffers from
                     // accumulating across a long sequence of chunks.
                     Memory.clearCache()
-                    return Array(segmentIDs[firstFrame..<endFrame])
-                }
+                    collectedFrameIDs.append(contentsOf: segmentIDs[firstFrame..<endFrame])
+            }
+            frameIDs = collectedFrameIDs
         } else {
+            progressHandler?(GraniteOperationProgress(
+                phase: .transcribing, fractionCompleted: 0,
+                message: "Transcribing audio", chunkIndex: 0, chunkCount: 1))
             frameIDs = greedyFrameIDs(
                 for: audio,
                 activationPrecision: activationPrecision,
@@ -303,18 +418,26 @@ public final class GraniteRecognizer: @unchecked Sendable {
                 middleCTCVocabularyTileSize: middleCTCVocabularyTileSize
             )
         }
+        try cancellationToken?.checkCancellation(operation: "Speech transcription")
+        progressHandler?(GraniteOperationProgress(
+            phase: .transcribing, fractionCompleted: 1,
+            message: "Decoding transcript"))
         let tokenIDs = GraniteCTCDecoder.collapse(frameIDs)
         let tokenTimings = GraniteCTCDecoder.tokenTimings(
             frameIDs,
             frameRate: artifact.configuration.outputFrameRate,
             decodeToken: tokenizer.decodeToken)
-        return GraniteTranscription(
+        let transcription = GraniteTranscription(
             text: tokenizer.decode(tokenIDs),
             tokens: tokenTimings,
             words: GraniteCTCDecoder.words(from: tokenTimings),
             duration: audio.duration,
             model: modelURL.path
         )
+        progressHandler?(GraniteOperationProgress(
+            phase: .complete, fractionCompleted: 1,
+            message: "Transcription complete"))
+        return transcription
     }
 
     private func greedyFrameIDs(
@@ -331,8 +454,7 @@ public final class GraniteRecognizer: @unchecked Sendable {
             middleVocabularyTileSize: middleCTCVocabularyTileSize
         ).squeezed(axis: 0).asArray(Int32.self).map(Int.init)
     }
-
-
+    /// Evaluates and records key activation tensors for precision diagnostics.
     public func activationAudit(
         _ audio: GraniteAudio,
         activationPrecision: GraniteActivationPrecision = .baseline

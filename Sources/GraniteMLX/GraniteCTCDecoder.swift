@@ -1,9 +1,15 @@
+/// One non-blank CTC token emission and its approximate frame timing.
 public struct GraniteTokenTiming: Codable, Sendable, Equatable {
+    /// Tokenizer vocabulary identifier.
     public let tokenID: Int
+    /// Decoded token piece.
     public let text: String
+    /// Emission onset in seconds.
     public let start: Double
+    /// Emission end in seconds.
     public let end: Double
 
+    /// Creates a timed token emission.
     public init(tokenID: Int, text: String, start: Double, end: Double) {
         self.tokenID = tokenID
         self.text = text
@@ -12,6 +18,7 @@ public struct GraniteTokenTiming: Codable, Sendable, Equatable {
     }
 }
 
+/// Greedy CTC collapsing and timing utilities.
 public enum GraniteCTCDecoder {
     /// Greedy CTC collapse: merge adjacent repeats, then remove blank ID 0.
     public static func collapse(_ frameTokenIDs: [Int], blankID: Int = 0) -> [Int] {

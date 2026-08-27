@@ -44,6 +44,17 @@ granite-mlx lecture.mp4 \
   --punctuation-model iky1e/punctuation-fullstop-truecase-english-mlx-fp16
 ```
 
+Formatting is deliberately non-destructive. Granite's recognized words and
+symbols remain authoritative; the formatter may add casing, punctuation, and
+sentence boundaries, but it cannot replace lexical content. In particular,
+characters that the current formatter tokenizer represents as `<unk>` (such
+as `%` and some hyphens) are restored from Granite's raw transcript. If a
+formatter result cannot be aligned safely, the library falls back to the raw
+words instead of silently deleting or inventing text. Formatter loading is
+behind `GraniteTranscriptFormatter` and `GraniteTranscriptFormatterFactory`,
+so a future cleanup model can replace the current BERT checkpoint without
+changing transcription, subtitle, or CLI code.
+
 The native output modes match the Parakeet MLX CLI: `txt`, `srt`, `vtt`,
 `json`, and `all`. SRT is the default. Granite's approximate CTC word times
 and the formatter's predicted sentence boundaries drive subtitle cues:
@@ -101,7 +112,20 @@ granite-mlx models remove --all
 The materialized cache is under `~/Documents/huggingface/models`. Removed
 models are permanently deleted from the local cache but can be downloaded
 again at any time. `--hf-token` is available for private or gated repository
-IDs; when omitted, the Swift Hub library can use its normal environment token.
+IDs and takes precedence over the standard `HF_TOKEN` environment variable:
+
+```bash
+HF_TOKEN=hf_... granite-mlx models download owner/private-model
+granite-mlx models download owner/private-model --hf-token hf_...
+```
+
+`models list` marks absent models as `[ ]`, complete downloads as `[x]`, and
+incomplete or interrupted downloads as `[-]`. Running `models download` again
+repairs or resumes a partial entry; `models remove` deletes it to reclaim space.
+
+When `ffmpeg` is unavailable, Granite-MLX still accepts media AVFoundation can
+decode directly. Other containers produce a coded error explaining that
+`brew install ffmpeg` is required.
 
 The published formatter FP16/Q8/Q6/Q5/Q4 checkpoints are grouped in the
 [Granite Speech 5.0 — Punctuation & Capitalization Model MLX collection](https://huggingface.co/collections/iky1e/granite-speech-50-punctuation-and-capitalization-model-mlx-6a8f6ad45d0f10d3f0bbc5b2).
@@ -248,3 +272,20 @@ The native transcript has been checked character-for-character against this
 reference on the fixed 20-second fixture. The native CTC timing, subtitle
 segmentation, all five exporters, highlighted-word mode, output templates,
 collision handling, and batch model reuse are now implemented in Swift.
+
+## Library diagnostics and application integration
+
+Library failures conform to `GraniteDiagnosticError` and include a stable
+`GMLX-*` code plus technical context suitable for support logs. Audio loading,
+model downloading, transcription, and punctuation formatting expose progress
+callbacks. Long-running operations accept a thread-safe
+`GraniteCancellationToken`; cancellation is cooperative between stages and
+chunks because already-submitted Metal work cannot be interrupted immediately.
+
+## License
+
+Granite-MLX software is available under either the Apache License 2.0 or the
+MIT License, at your option. See [`LICENSE`](LICENSE),
+[`LICENSE-APACHE`](LICENSE-APACHE), and [`LICENSE-MIT`](LICENSE-MIT).
+Downloaded model weights are separate and remain governed by the license in
+their own Hugging Face repository.

@@ -43,7 +43,8 @@ Converted weights should eventually be published as a separate Hugging Face mode
 - [ ] Pin a known-good `mlx-swift` revision and document the minimum Xcode/Swift/macOS versions.
 - [ ] Treat `mlx-swift-lm` as a reference for package/model-loading conventions, but implement Granite as a custom encoder rather than an LLM registry entry.
 - [x] Add `.gitignore` for `.build`, model directories, caches, generated outputs, and local benchmark artifacts.
-- [ ] Choose and add a software license independently of either model-weight license; the project README exists.
+- [x] Dual-license the software under Apache-2.0 or MIT, at the user's option,
+  independently of all model-weight licenses.
 
 ## Phase 2: PyTorch reference runner
 
@@ -109,11 +110,17 @@ Converted weights should eventually be published as a separate Hugging Face mode
   - [x] local model directories
   - [x] Hugging Face repository IDs
   - [x] model caching
-  - [ ] download progress
-  - [ ] optional Hugging Face authentication
+  - [x] download progress
+  - [x] optional Hugging Face authentication through `--hf-token` or `HF_TOKEN`
 - [x] Add `GraniteAudioProcessor` using MLX operations for the feature frontend, including torchaudio-compatible reflect padding.
 - [x] Add native Swift audio loading and resampling to 16 kHz mono.
 - [x] Add ffmpeg fallback for video and audio containers that AVFoundation cannot decode directly.
+- [x] Continue a multi-input transcription batch after per-file failures, retain
+  successful outputs, and return failure after reporting the batch summary.
+- [x] Add structured, coded library errors plus application-facing cooperative
+  cancellation and progress callbacks for audio, model download, inference,
+  and punctuation formatting.
+- [x] Add `///` API documentation to the exported library surface.
 - [x] Add Conformer modules and weight loading with explicit key mapping.
 - [x] Add block attention and relative-position handling.
 - [x] Add strided convolution and residual pooling for temporal subsampling.
@@ -210,6 +217,18 @@ capitalization, and segmentation model derived from
 - [x] Include formatter load/inference time and model ID in CLI benchmark JSON.
 - [x] Include formatter precision and both raw/formatted transcript fields in
   the full transcription JSON exporter.
+- [x] Make formatting non-destructive: align the formatter output to Granite's
+  original words, restore tokenizer-unknown symbols such as `%` and hyphens,
+  reject lexical substitutions, and fall back to raw text when alignment is
+  unsafe.
+- [x] Put formatter loading behind `GraniteTranscriptFormatter` and
+  `GraniteTranscriptFormatterFactory` so a future formatter architecture can
+  replace the current BERT model without changing the recognizer, CLI,
+  timestamp mapping, or exporters.
+- [x] Add regression coverage for unknown-symbol restoration, lexical-change
+  rejection, and unsafe word-count alignment. Verify the four extracted
+  problem clips and the complete 101m59s transcript contain no `<unk>` output
+  and preserve a one-to-one mapping to Granite's raw words.
 
 ## Phase 7: Tests and benchmarks
 
@@ -331,6 +350,8 @@ packaging polish. Complete this phase before creating the first Homebrew release
 - [ ] Test WAV, MP3, M4A, FLAC, WebM, and MP4 inputs.
 - [ ] Test mono/stereo conversion, non-16 kHz resampling, silence, empty audio,
   missing inputs, unsupported formats, and corrupt files.
+- [x] If ffmpeg is absent, retain AVFoundation's directly readable formats and
+  return coded installation/recovery guidance for unsupported containers.
 - [ ] Declare `ffmpeg` as a Homebrew dependency so uncommon audio/video
   containers work consistently when AVFoundation cannot decode them.
 
@@ -355,25 +376,32 @@ corruption without depending on the public service.
   176 seconds with no visible progress.
 - [x] Display the model repository, expected download size, and cache destination.
 - [x] Test a warm-cache run and verify that no model files are downloaded again.
-- [ ] Test interrupted downloads and resumability.
-- [ ] Add clear network, insufficient-disk-space, checksum, incomplete-download,
-  and corrupted-cache errors.
+- [-] Test interrupted downloads and resumability: cancellation is wired through
+  the Hub task and partial files are retained for repair/resume; a deterministic
+  interrupted-transfer integration fixture remains.
+- [-] Add clear network, insufficient-disk-space, checksum, incomplete-download,
+  and corrupted-cache errors: coded disk/download/incomplete/corrupt diagnostics
+  and repair instructions are implemented; repository checksum verification
+  remains where authoritative checksums are available.
 - [x] Expose optional Hugging Face authentication for private/gated model IDs.
 - [x] Keep all download progress and diagnostics on stderr.
 - [x] Add `granite-mlx models list|download|remove`, including the complete
   published catalog, short aliases, actual installed sizes, JSON listing,
   cache-safe model detection, confirmation, `--yes`, and `remove --all`.
+- [x] Display `[ ]` for absent, `[x]` for complete, and `[-]` for partial cache
+  entries, with repair and removal commands for partial entries.
 
 ### CLI polish and stable behavior
 
 - [x] Add `granite-mlx --version` (currently reports the provisional `0.1.0`; release automation must become its source of truth).
 - [x] Validate `--output-format`, numeric subtitle/chunk settings, and `all` without an output directory.
-- [ ] Add useful examples to `--help` for transcription, video input, output
-  directories, all-format export, model selection, and `--no-chunking`.
+- [x] Add common transcription, video, export, raw-output, and model-management
+  examples directly to root and transcribe help.
 - [x] Retain Parakeet's default SRT output when no output directory is supplied;
   multiple stdout results use JSON Lines so file boundaries remain unambiguous.
-- [ ] Define stable exit codes for invalid arguments/input, model download,
-  audio decoding, model loading, and transcription failures.
+- [x] Give validation and runtime failures stable `GMLX-*` diagnostic codes and
+  technical context; multi-input batches continue safely and exit nonzero if
+  any input failed.
 - [ ] Ensure Ctrl-C cleans up temporary converted audio and partial outputs.
 
 ### Release-level tests
@@ -393,8 +421,8 @@ corruption without depending on the public service.
 
 ### Repository preparation
 
-- [ ] Choose and add a software license independently from either model-weight
-  license; MIT is the simplest default if no other license is preferred.
+- [x] Add Apache-2.0 and MIT software licenses as a dual-license choice,
+  explicitly separate from model/checkpoint licenses.
 - [ ] Pin known-good `mlx-swift`, `swift-transformers`, and
   `swift-argument-parser` versions/revisions.
 - [ ] Document the minimum macOS, Apple Silicon, Swift, and Xcode requirements.
@@ -453,7 +481,7 @@ Before calling the project complete:
 - [ ] Short and long audio paths work reliably.
 - [ ] The CLI has deterministic TXT and JSON output.
 - [ ] A clean Mac can install and run the CLI without a Python runtime.
-- [ ] The Granite-MLX software license is documented separately from any model/checkpoint license.
+- [x] The Granite-MLX software license is documented separately from any model/checkpoint license.
 - [ ] GitHub release installation works.
 
 ## Current implementation checkpoint (2026-08-27)

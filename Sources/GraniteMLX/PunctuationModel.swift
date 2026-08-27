@@ -3,9 +3,13 @@ import Hub
 import MLX
 import Tokenizers
 
+/// Quantization settings stored with an MLX punctuation checkpoint.
 public struct PunctuationQuantizationConfiguration: Decodable, Sendable {
+    /// Packed weight bit width.
     public let bits: Int
+    /// Number of source values sharing each quantization scale.
     public let groupSize: Int
+    /// MLX quantization mode.
     public let mode: QuantizationMode
 
     private enum CodingKeys: String, CodingKey {
@@ -14,15 +18,25 @@ public struct PunctuationQuantizationConfiguration: Decodable, Sendable {
     }
 }
 
+/// Architecture metadata for the punctuation and true-casing model.
 public struct PunctuationModelConfiguration: Decodable, Sendable {
+    /// Architecture identifier written by the converter.
     public let architecture: String
+    /// Transformer hidden width.
     public let hiddenSize: Int
+    /// Feed-forward hidden width.
     public let intermediateSize: Int
+    /// Number of transformer layers.
     public let numHiddenLayers: Int
+    /// Number of attention heads.
     public let numAttentionHeads: Int
+    /// Maximum tokenizer window size.
     public let maxLength: Int
+    /// Layer-normalization epsilon.
     public let layerNormEpsilon: Float
+    /// Source precision label.
     public let precision: String
+    /// Quantization settings, or `nil` for floating-point weights.
     public let quantization: PunctuationQuantizationConfiguration?
 
     private enum CodingKeys: String, CodingKey {
@@ -36,30 +50,40 @@ public struct PunctuationModelConfiguration: Decodable, Sendable {
     }
 }
 
+/// A validated punctuation checkpoint loaded into MLX arrays.
 public struct PunctuationModelArtifact: @unchecked Sendable {
+    /// Local checkpoint directory.
     public let directory: URL
+    /// Parsed architecture configuration.
     public let configuration: PunctuationModelConfiguration
     let weights: [String: MLXArray]
 }
 
+/// Loads punctuation checkpoints from disk or Hugging Face.
 public enum PunctuationModelLoader {
+    /// Recommended Q8 punctuation checkpoint.
     public static let defaultModelID = "iky1e/punctuation-fullstop-truecase-english-mlx-q8"
 
+    /// Resolves, downloads if necessary, and loads a punctuation checkpoint.
     public static func load(
         source: String = defaultModelID,
         hfToken: String? = nil,
-        progressHandler: GraniteModelDownloadProgressHandler? = nil
+        progressHandler: GraniteModelDownloadProgressHandler? = nil,
+        cancellationToken: GraniteCancellationToken? = nil
     ) throws -> PunctuationModelArtifact {
+        try cancellationToken?.checkCancellation(operation: "Punctuation model loading")
         let localURL = URL(fileURLWithPath: source)
         if FileManager.default.fileExists(atPath: localURL.path) {
             return try load(from: localURL)
         }
         let directory = try GraniteModelCache.download(
             source, kind: .punctuation, hfToken: hfToken,
-            progressHandler: progressHandler)
+            cancellationToken: cancellationToken, progressHandler: progressHandler)
+        try cancellationToken?.checkCancellation(operation: "Punctuation model loading")
         return try load(from: directory)
     }
 
+    /// Loads and validates a punctuation checkpoint directory.
     public static func load(from directory: URL) throws -> PunctuationModelArtifact {
         let configURL = directory.appendingPathComponent("mlx_config.json")
         let weightsURL = directory.appendingPathComponent("model.safetensors")
@@ -69,9 +93,19 @@ public enum PunctuationModelLoader {
               FileManager.default.fileExists(atPath: tokenizerURL.path) else {
             throw GraniteRecognizerError.invalidModel(directory)
         }
-        let configuration = try JSONDecoder().decode(
-            PunctuationModelConfiguration.self, from: Data(contentsOf: configURL))
-        let weights = try MLX.loadArrays(url: weightsURL)
+        let configuration: PunctuationModelConfiguration
+        let weights: [String: MLXArray]
+        do {
+            configuration = try JSONDecoder().decode(
+                PunctuationModelConfiguration.self, from: Data(contentsOf: configURL))
+            weights = try MLX.loadArrays(url: weightsURL)
+        } catch let error as GraniteDiagnosticError {
+            throw error
+        } catch {
+            throw GraniteOperationError.underlying(
+                code: "GMLX-RUNTIME-004", operation: "Punctuation model loading",
+                details: "directory=\(directory.path); error=\(error)")
+        }
         let required = [
             "embeddings.word.weight", "embeddings.position.weight",
             "layers.0.query.weight", "layers.5.output.weight",
@@ -79,7 +113,7 @@ public enum PunctuationModelLoader {
         ]
         let missing = required.filter { weights[$0] == nil }
         guard missing.isEmpty else {
-            throw GraniteRecognizerError.notImplemented(
+            throw GraniteRecognizerError.unsupportedConfiguration(
                 "Punctuation checkpoint is missing tensors: \(missing.joined(separator: ", "))")
         }
         return PunctuationModelArtifact(
@@ -236,12 +270,16 @@ private final class PunctuationNetwork: @unchecked Sendable {
     }
 }
 
+/// Formatted transcript text and its sentence-to-word mapping.
 public struct PunctuationFormattingResult: Sendable {
+    /// Fully formatted text.
     public let text: String
+    /// Individual formatted sentences.
     public let sentences: [String]
     /// Half-open whitespace-delimited word ranges for each sentence.
     public let sentenceWordRanges: [Range<Int>]
 
+    /// Creates a result, deriving contiguous word ranges when omitted.
     public init(text: String, sentences: [String], sentenceWordRanges: [Range<Int>]? = nil) {
         self.text = text
         self.sentences = sentences
@@ -258,43 +296,122 @@ public struct PunctuationFormattingResult: Sendable {
     }
 }
 
-public final class PunctuationFormatter: @unchecked Sendable {
+/// Restores punctuation, capitalization, and sentence boundaries with MLX.
+public final class PunctuationFormatter: GraniteTranscriptFormatter, @unchecked Sendable {
+    /// Loaded formatter checkpoint.
     public let artifact: PunctuationModelArtifact
     private let tokenizer: PunctuationTokenizer
     private let network: PunctuationNetwork
 
+    /// Architecture-independent metadata exposed to formatter clients.
+    public var formatterInfo: GraniteTranscriptFormatterInfo {
+        GraniteTranscriptFormatterInfo(
+            architecture: artifact.configuration.architecture,
+            precision: artifact.configuration.precision,
+            quantizationBits: artifact.configuration.quantization?.bits)
+    }
+
+    /// Creates a formatter from a local path or Hugging Face repository ID.
     public init(
         modelSource: String = PunctuationModelLoader.defaultModelID,
         hfToken: String? = nil,
-        progressHandler: GraniteModelDownloadProgressHandler? = nil
+        progressHandler: GraniteModelDownloadProgressHandler? = nil,
+        cancellationToken: GraniteCancellationToken? = nil
     ) throws {
         let artifact = try PunctuationModelLoader.load(
             source: modelSource, hfToken: hfToken,
-            progressHandler: progressHandler)
+            progressHandler: progressHandler, cancellationToken: cancellationToken)
         self.artifact = artifact
-        self.tokenizer = try PunctuationTokenizer(directory: artifact.directory)
+        do {
+            self.tokenizer = try PunctuationTokenizer(directory: artifact.directory)
+        } catch let error as GraniteDiagnosticError {
+            throw error
+        } catch {
+            throw GraniteOperationError.underlying(
+                code: "GMLX-RUNTIME-006", operation: "Punctuation tokenizer loading",
+                details: "directory=\(artifact.directory.path); error=\(String(reflecting: error))")
+        }
         self.network = PunctuationNetwork(artifact: artifact)
     }
 
+    /// Creates a formatter from an already downloaded checkpoint directory.
     public init(modelURL: URL) throws {
         let artifact = try PunctuationModelLoader.load(from: modelURL)
         self.artifact = artifact
-        self.tokenizer = try PunctuationTokenizer(directory: artifact.directory)
+        do {
+            self.tokenizer = try PunctuationTokenizer(directory: artifact.directory)
+        } catch let error as GraniteDiagnosticError {
+            throw error
+        } catch {
+            throw GraniteOperationError.underlying(
+                code: "GMLX-RUNTIME-006", operation: "Punctuation tokenizer loading",
+                details: "directory=\(artifact.directory.path); error=\(String(reflecting: error))")
+        }
         self.network = PunctuationNetwork(artifact: artifact)
     }
 
+    /// Formats text without cancellation or progress reporting.
     public func format(_ text: String, overlap: Int = 16) -> PunctuationFormattingResult {
+        // The cancellable implementation can only throw when a supplied token
+        // is cancelled, so this compatibility entry point is non-throwing.
+        try! format(
+            text, overlap: overlap, cancellationToken: nil,
+            progressHandler: nil)
+    }
+
+    /// Formats text through the architecture-independent formatter protocol.
+    public func format(
+        _ text: String,
+        cancellationToken: GraniteCancellationToken?,
+        progressHandler: GraniteOperationProgressHandler?
+    ) throws -> PunctuationFormattingResult {
+        try format(
+            text, overlap: 16,
+            cancellationToken: cancellationToken,
+            progressHandler: progressHandler)
+    }
+
+    /// Restores punctuation, capitalization, and sentence boundaries.
+    ///
+    /// - Parameters:
+    ///   - text: Raw lowercased speech-recognition text.
+    ///   - overlap: Token overlap between formatter windows.
+    ///   - cancellationToken: Optional cooperative cancellation token.
+    ///   - progressHandler: Optional application-facing progress callback.
+    /// - Returns: Formatted text and sentence word ranges.
+    public func format(
+        _ text: String,
+        overlap: Int = 16,
+        cancellationToken: GraniteCancellationToken?,
+        progressHandler: GraniteOperationProgressHandler?
+    ) throws -> PunctuationFormattingResult {
+        try cancellationToken?.checkCancellation(operation: "Text formatting")
+        progressHandler?(GraniteOperationProgress(
+            phase: .formatting, fractionCompleted: 0,
+            message: "Restoring punctuation and capitalization"))
         let allIDs = tokenizer.encode(text.lowercased())
         guard !allIDs.isEmpty else {
+            progressHandler?(GraniteOperationProgress(
+                phase: .complete, fractionCompleted: 1,
+                message: "Formatting complete"))
             return PunctuationFormattingResult(text: "", sentences: [])
         }
         let payload = artifact.configuration.maxLength - 2
+        guard overlap >= 0, overlap < payload else {
+            throw GraniteRecognizerError.unsupportedConfiguration(
+                "Punctuation overlap must be in 0..<\(payload); received \(overlap).")
+        }
         let stride = payload - overlap
         var segments: [PunctuationPredictions] = []
         var start = 0
         while start < allIDs.count {
+            try cancellationToken?.checkCancellation(operation: "Text formatting")
             let end = min(start + payload, allIDs.count)
             segments.append(network.predict([1] + Array(allIDs[start ..< end]) + [2]))
+            progressHandler?(GraniteOperationProgress(
+                phase: .formatting,
+                fractionCompleted: Double(end) / Double(allIDs.count),
+                message: "Formatting token window \(segments.count)"))
             if end == allIDs.count { break }
             start += stride
         }
@@ -349,6 +466,93 @@ public final class PunctuationFormatter: @unchecked Sendable {
             }
         }
         if !current.isEmpty { sentences.append(current) }
-        return PunctuationFormattingResult(text: sentences.joined(separator: " "), sentences: sentences)
+        try cancellationToken?.checkCancellation(operation: "Text formatting")
+        let result = Self.preservingOriginalWords(
+            originalText: text, formattedSentences: sentences)
+        progressHandler?(GraniteOperationProgress(
+            phase: .complete, fractionCompleted: 1,
+            message: "Formatting complete"))
+        return result
+    }
+
+    static func preservingOriginalWords(
+        originalText: String,
+        formattedSentences: [String]
+    ) -> PunctuationFormattingResult {
+        let originalWords = originalText.split(whereSeparator: \.isWhitespace).map(String.init)
+        let sentenceWords = formattedSentences.map {
+            $0.split(whereSeparator: \.isWhitespace).map(String.init)
+        }
+        let formattedWords = sentenceWords.flatMap { $0 }
+
+        // A formatter is an annotation stage, not a text-generation stage. If
+        // its output cannot be aligned one-to-one, preserve all ASR text rather
+        // than silently deleting or inventing words.
+        guard originalWords.count == formattedWords.count else {
+            return PunctuationFormattingResult(
+                text: originalWords.joined(separator: " "),
+                sentences: originalWords.isEmpty ? [] : [originalWords.joined(separator: " ")])
+        }
+
+        let preservedWords = zip(originalWords, formattedWords).map {
+            preserveOriginalWord($0.0, formattedWord: $0.1)
+        }
+        var offset = 0
+        let preservedSentences = sentenceWords.map { words -> String in
+            defer { offset += words.count }
+            return preservedWords[offset ..< (offset + words.count)].joined(separator: " ")
+        }
+        return PunctuationFormattingResult(
+            text: preservedSentences.joined(separator: " "),
+            sentences: preservedSentences)
+    }
+
+    private static func preserveOriginalWord(
+        _ originalWord: String,
+        formattedWord: String
+    ) -> String {
+        let unknownMarker = "<unk>"
+        let containsUnknown = formattedWord.range(
+            of: unknownMarker, options: .caseInsensitive) != nil
+        let withoutUnknown = formattedWord.replacingOccurrences(
+            of: unknownMarker, with: "", options: .caseInsensitive)
+        let originalLexical = lexicalCharacters(in: originalWord)
+        let formattedLexical = lexicalCharacters(in: withoutUnknown)
+
+        // Genuine lexical changes are unsafe. Do not borrow punctuation from a
+        // word that cannot be aligned to the recognizer's original characters.
+        guard originalLexical.map({ String($0).lowercased() })
+            == formattedLexical.map({ String($0).lowercased() }) else {
+            return originalWord
+        }
+        guard containsUnknown else { return formattedWord }
+
+        var caseIndex = 0
+        var repaired = ""
+        for character in originalWord {
+            if character.isLetter || character.isNumber {
+                let formattedCharacter = formattedLexical[caseIndex]
+                repaired.append(formattedCharacter.isUppercase
+                    ? String(character).uppercased()
+                    : String(character).lowercased())
+                caseIndex += 1
+            } else {
+                repaired.append(character)
+            }
+        }
+
+        if withoutUnknown.hasPrefix("¿"), !repaired.hasPrefix("¿") {
+            repaired = "¿" + repaired
+        }
+        if let trailing = withoutUnknown.last,
+           [".", ",", "?"].contains(trailing),
+           repaired.last != trailing {
+            repaired.append(trailing)
+        }
+        return repaired
+    }
+
+    private static func lexicalCharacters(in word: String) -> [Character] {
+        word.filter { $0.isLetter || $0.isNumber }
     }
 }
