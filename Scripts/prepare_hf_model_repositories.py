@@ -125,7 +125,7 @@ The conversion transposes PyTorch depthwise `Conv1d` kernels into MLX layout, re
 
 “Agreement with source” is word-level transcript agreement, calculated as `100 − Levenshtein word edits / source words`. It is **not WER** and does not measure correctness against a human transcript. The reference is the matching original IBM checkpoint loaded by the same native Swift runtime.
 
-The test recording is a 6,118.72-second (101m58.72s) single-speaker Stanford CME295 lecture. All checkpoints used Granite-MLX's bounded-memory defaults: 122.88-second chunks, 20.48-second context, FP16 activations, greedy CTC decoding, and a 64 MiB MLX cache. The source transcript contained {checkpoints['source']['accuracy_vs_source']['reference_words']:,} words. Raw benchmark JSON and transcripts are preserved with the Granite-MLX project and will be published with its source repository.
+The test recording is a 6,118.72-second (101m58.72s) single-speaker Stanford CME295 lecture. All checkpoints used the same Granite-MLX benchmark profile: 122.88-second chunks, 20.48-second context, FP16 activations, greedy CTC decoding, and a 64 MiB MLX cache. The source transcript contained {checkpoints['source']['accuracy_vs_source']['reference_words']:,} words. Raw benchmark JSON and transcripts are preserved with the Granite-MLX project and will be published with its source repository.
 
 ## Usage
 

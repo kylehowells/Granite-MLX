@@ -79,7 +79,7 @@ public enum GraniteAudioError: Error, GraniteDiagnosticError {
         case .conversionFailed:
             "[\(diagnosticCode)] Audio resampling or conversion failed. Technical details: \(technicalDetails!)."
         case .ffmpegUnavailable(let url, _):
-            "[\(diagnosticCode)] \(url.lastPathComponent) could not be read directly and ffmpeg is not installed. Install it with `brew install ffmpeg`, or provide a directly readable audio file such as WAV. Technical details: \(technicalDetails!)."
+            "[\(diagnosticCode)] \(url.lastPathComponent) could not be decoded by AVFoundation and ffmpeg is not installed. Install it with `brew install ffmpeg`, or provide media AVFoundation can decode directly (for example WAV, AIFF, M4A, or a compatible MP4). Technical details: \(technicalDetails!)."
         case .ffmpegLaunchFailed:
             "[\(diagnosticCode)] ffmpeg was found but could not be launched. Technical details: \(technicalDetails!)."
         case .ffmpegFailed:

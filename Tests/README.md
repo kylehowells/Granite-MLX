@@ -34,9 +34,14 @@ GRANITE_TEST_MAX_MLX_PEAK_BYTES=2500000000 \
 swift test --filter GraniteMLXCLITests/testOptInLongFormBoundedMemoryRegression
 ```
 
-The selected expected transcript must come from the exact checkpoint supplied
-in `GRANITE_TEST_SPEECH_MODEL`. The gate validates exact raw transcript output,
-the 122.88-second/10.24-second bounded-memory profile, and MLX peak memory.
+The selected expected transcript must come from the exact checkpoint, audio
+bytes, activation precision, and chunk profile used by the test. For the
+published mixed-G128/G64 Q8 default and the documented CME295 fixture, use
+`Benchmarks/bounded-profile-optimization/transcripts/low-context.txt`; the
+fixture's SHA-256 is
+`f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab`.
+The gate validates exact raw transcript output, the
+122.88-second/10.24-second bounded-memory profile, and MLX peak memory.
 
 Network interruption and resume behavior is also opt-in so ordinary tests do
 not depend on Hugging Face availability:
