@@ -1,0 +1,65 @@
+{
+  "source_model": "1-800-BAD-CODE/punctuation_fullstop_truecase_english",
+  "repositories": [
+    {
+      "variant": "fp16",
+      "repo_id": "iky1e/punctuation-fullstop-truecase-english-mlx-fp16",
+      "local_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english-mlx-fp16",
+      "weight_bytes": 104700407,
+      "weight_sha256": "5e8646b569e1b2f2e4b20e5a1e93feb77fbf152d092fae70e48ff5891c0db9d8",
+      "inference_seconds": 0.4170038339216262,
+      "max_rss_bytes": 347783168,
+      "character_agreement_percent": 99.99156319867261,
+      "word_agreement_percent": 99.95591476855253,
+      "sentence_count": 821
+    },
+    {
+      "variant": "q8",
+      "repo_id": "iky1e/punctuation-fullstop-truecase-english-mlx-q8",
+      "local_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english-mlx-q8",
+      "weight_bytes": 55798096,
+      "weight_sha256": "824a925b80998f7fb8653460ffd6b032c73ec3d238a740e0ba44356ed3055e34",
+      "inference_seconds": 0.25966608291491866,
+      "max_rss_bytes": 301481984,
+      "character_agreement_percent": 99.95360020247185,
+      "word_agreement_percent": 99.75753122703894,
+      "sentence_count": 812
+    },
+    {
+      "variant": "q6",
+      "repo_id": "iky1e/punctuation-fullstop-truecase-english-mlx-q6",
+      "local_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english-mlx-q6",
+      "weight_bytes": 42755181,
+      "weight_sha256": "b1bcafc4713cce679b9030bd7672395cc03ec8a52a2f0f6786b5a245a9a56c1c",
+      "inference_seconds": 0.3458861249964684,
+      "max_rss_bytes": 288112640,
+      "character_agreement_percent": 99.87766466055459,
+      "word_agreement_percent": 99.36811168258633,
+      "sentence_count": 835
+    },
+    {
+      "variant": "q5",
+      "repo_id": "iky1e/punctuation-fullstop-truecase-english-mlx-q5",
+      "local_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english-mlx-q5",
+      "weight_bytes": 36233721,
+      "weight_sha256": "18ab8248821dcb5ab7b2c25ff0a989470df7309ebdfbed3431c5a1733ee521d0",
+      "inference_seconds": 0.35032579116523266,
+      "max_rss_bytes": 281608192,
+      "character_agreement_percent": 99.60659791496894,
+      "word_agreement_percent": 97.99412196914034,
+      "sentence_count": 799
+    },
+    {
+      "variant": "q4",
+      "repo_id": "iky1e/punctuation-fullstop-truecase-english-mlx-q4",
+      "local_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english-mlx-q4",
+      "weight_bytes": 29712269,
+      "weight_sha256": "4c43fbe4d2af7fd863c1510abfcd69b28a39cf64205c1506db6c099bda40349b",
+      "inference_seconds": 0.33010545815341175,
+      "max_rss_bytes": 273072128,
+      "character_agreement_percent": 99.28989256988582,
+      "word_agreement_percent": 96.48787656135195,
+      "sentence_count": 835
+    }
+  ]
+}

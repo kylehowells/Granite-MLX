@@ -1,0 +1,254 @@
+[
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 640000,
+    "maximum" : 1.8193359,
+    "minimum" : -0.5410156,
+    "name" : "frontend",
+    "shape" : [
+      1,
+      1000,
+      320
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 2048000,
+    "maximum" : 11.0078125,
+    "minimum" : -10.5703125,
+    "name" : "encoder.input_projection",
+    "shape" : [
+      1,
+      1000,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 1024000,
+    "maximum" : 29.171875,
+    "minimum" : -28.84375,
+    "name" : "encoder.layer.0",
+    "shape" : [
+      1,
+      500,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 30.640625,
+    "minimum" : -31.84375,
+    "name" : "encoder.layer.1",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 30.84375,
+    "minimum" : -34.0625,
+    "name" : "encoder.layer.2",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 39.03125,
+    "minimum" : -28.671875,
+    "name" : "encoder.layer.3",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 43.59375,
+    "minimum" : -20.828125,
+    "name" : "encoder.layer.4",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 44.90625,
+    "minimum" : -19.46875,
+    "name" : "encoder.layer.5",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 125.625,
+    "minimum" : -18.390625,
+    "name" : "encoder.layer.6",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 5.7148438,
+    "minimum" : -6.3125,
+    "name" : "encoder.layer.7",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 8192000,
+    "maximum" : 23.09375,
+    "minimum" : -24.234375,
+    "name" : "encoder.middle_logits",
+    "shape" : [
+      1,
+      250,
+      16384
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 5.640625,
+    "minimum" : -6.9140625,
+    "name" : "encoder.middle_conditioned",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 30.515625,
+    "minimum" : -18.859375,
+    "name" : "encoder.layer.8",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 30.578125,
+    "minimum" : -21.140625,
+    "name" : "encoder.layer.9",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 374.25,
+    "minimum" : -20.40625,
+    "name" : "encoder.layer.10",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 143.625,
+    "minimum" : -19.609375,
+    "name" : "encoder.layer.11",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 248.375,
+    "minimum" : -18.765625,
+    "name" : "encoder.layer.12",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 161.625,
+    "minimum" : -17.609375,
+    "name" : "encoder.layer.13",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 109.4375,
+    "minimum" : -13.546875,
+    "name" : "encoder.layer.14",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 512000,
+    "maximum" : 6.9960938,
+    "minimum" : -6.78125,
+    "name" : "encoder.layer.15",
+    "shape" : [
+      1,
+      250,
+      1024
+    ]
+  },
+  {
+    "dtype" : "float16",
+    "evaluatedBytes" : 8192000,
+    "maximum" : 23.390625,
+    "minimum" : -25.453125,
+    "name" : "encoder.final_logits",
+    "shape" : [
+      1,
+      250,
+      16384
+    ]
+  }
+]

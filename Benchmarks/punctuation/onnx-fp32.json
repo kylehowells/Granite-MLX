@@ -1,0 +1,16 @@
+{
+  "engine": "onnxruntime-cpu",
+  "precision": "fp32",
+  "source_transcript": "Benchmarks/model-publication/apache-q8.txt",
+  "model_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english",
+  "output": "Benchmarks/punctuation/onnx-fp32.txt",
+  "input_characters": 69168,
+  "output_characters": 71116,
+  "sentence_count": 819,
+  "load_seconds": 0.20728216716088355,
+  "inference_seconds": 2.043833165895194,
+  "total_seconds": 2.2511153330560774,
+  "max_rss_bytes": 820985856,
+  "batch_size_tokens": 4096,
+  "overlap_tokens": 16
+}

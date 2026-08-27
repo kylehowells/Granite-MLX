@@ -1,0 +1,18 @@
+{
+  "engine": "mlx",
+  "precision": "fp16",
+  "quantization": null,
+  "model_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english-mlx-fp16",
+  "model_bytes": 105305951,
+  "output": "Benchmarks/punctuation/mlx-fp16.txt",
+  "sentence_count": 821,
+  "load_seconds": 0.0747583331540227,
+  "inference_seconds": 0.4170038339216262,
+  "total_seconds": 0.4917621670756489,
+  "max_rss_bytes": 347783168,
+  "character_edit_distance": 6,
+  "character_disagreement_percent": 0.008436801327390076,
+  "word_edit_distance": 6,
+  "word_disagreement_percent": 0.0440852314474651,
+  "exact_match": false
+}

@@ -1,0 +1,3 @@
+{"index": 1, "inference_seconds": 53.04763091588393, "realtime_multiple": 115.343888018341, "word_count": 12775, "character_count": 68935, "transcript_sha256": "a1b826286c593528dd21a7db1b25e3841507cbee95fe41f0e27e254bca8d9cc0"}
+{"index": 2, "inference_seconds": 53.614750374807045, "realtime_multiple": 114.12381774093117, "word_count": 12775, "character_count": 68935, "transcript_sha256": "a1b826286c593528dd21a7db1b25e3841507cbee95fe41f0e27e254bca8d9cc0"}
+{"index": 3, "inference_seconds": 53.30865745898336, "realtime_multiple": 114.77910515206378, "word_count": 12775, "character_count": 68935, "transcript_sha256": "a1b826286c593528dd21a7db1b25e3841507cbee95fe41f0e27e254bca8d9cc0"}

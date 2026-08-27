@@ -1,0 +1,21 @@
+{"activation_precision":"fp16","audio_chunk_context_seconds":20.48,"audio_chunk_duration_seconds":122.88,"audio_duration_seconds":6118.72,"audio_file":"\/private\/tmp\/granite-cme295-lecture1-16k-mono.wav","audio_load_seconds":0.12626397609710693,"ctc_vocabulary_tile_size":0,"inference_seconds":42.12531101703644,"middle_ctc_vocabulary_tile_size":0,"mlx_active_memory_bytes":489059320,"mlx_cache_limit_bytes":67108864,"mlx_cache_memory_bytes":51411760,"mlx_peak_memory_bytes":1247702378,"model":"iky1e\/granite-speech-5.0-470m-turboctc-mlx-q8","model_load_seconds":3.1725369691848755,"real_time_factor":0.006884660683449551,"realtime_multiple":145.25044094096896,"total_seconds":45.42432105541229}
+real 45.52
+user 1.38
+sys 6.39
+          1012711424  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              116746  page reclaims
+                 916  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                  20  messages sent
+                  20  messages received
+                   0  signals received
+                 900  voluntary context switches
+               18276  involuntary context switches
+         44479166793  instructions retired
+         21426608359  cycles elapsed
+          1732888040  peak memory footprint

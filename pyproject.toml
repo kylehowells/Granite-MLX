@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "granite-mlx-reference"
+version = "0.1.0"
+description = "Reference Python CLI for Granite Speech 5.0 TurboCTC"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "soundfile>=0.12",
+    "torch>=2.2",
+    "torchaudio>=2.2",
+    "transformers>=5.0",
+    "tokenizers>=0.21",
+    "safetensors>=0.4",
+    "mlx>=0.31,<0.32",
+    "rapidfuzz>=3.9",
+    "sacrebleu>=2.4",
+    "matplotlib>=3.10",
+    "onnx>=1.17",
+    "onnxruntime>=1.20,<1.24",
+    "sentencepiece>=0.2",
+    "punctuators>=0.0.5",
+]
+
+[project.scripts]
+granite-reference = "Scripts.granite_reference:main"
+
+[tool.setuptools]
+
+[tool.setuptools.packages.find]
+include = ["Scripts*"]

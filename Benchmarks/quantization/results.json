@@ -1,0 +1,1118 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-26T06:41:32+0100",
+  "hardware": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.10.15",
+    "machine_name": "MacBook Pro",
+    "machine_model": "MacBookPro18,4",
+    "chip": "Apple M1 Max",
+    "processors": "proc 10:8:2:0",
+    "physical_memory": "64 GB"
+  },
+  "methodology": {
+    "quantization": "Affine weight-only quantization, group size 64; matrix weights quantized, other tensors FP16.",
+    "short_runs": 3,
+    "full_runs": 1,
+    "memory": "macOS /usr/bin/time -lp maximum resident set size and peak memory footprint.",
+    "accuracy": "Transcript disagreement against FP32 references; not ground-truth WER."
+  },
+  "audio": {
+    "short": "/private/tmp/granite-reference-test-20s.wav",
+    "full": "/private/tmp/granite-cme295-lecture1-16k-mono.wav"
+  },
+  "references": {
+    "python_fp32_short": "/private/tmp/granite-reference-output-final.pql1v6/granite-reference-test-20s.txt",
+    "python_fp32_full": "/private/tmp/granite-benchmark-lecture1-one-pass/granite-cme295-lecture1-16k-mono.json"
+  },
+  "configurations": {
+    "fp32": {
+      "name": "fp32",
+      "quantization": null,
+      "model_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp32",
+      "model_file_bytes": 1892035704,
+      "model_directory_bytes": 1893184939,
+      "short": {
+        "runs": [
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.0047910213470458984,
+            "inference_seconds": 0.11584293842315674,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp32",
+            "model_load_seconds": 0.3470829725265503,
+            "real_time_factor": 0.005792146921157837,
+            "realtime_multiple": 172.64755428546732,
+            "total_seconds": 0.4677819013595581,
+            "process_wall_seconds": 0.49,
+            "maximum_resident_bytes": 1962475520,
+            "peak_memory_footprint_bytes": 2170341368
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.005078911781311035,
+            "inference_seconds": 0.11561107635498047,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp32",
+            "model_load_seconds": 0.33789801597595215,
+            "real_time_factor": 0.005780553817749024,
+            "realtime_multiple": 172.99380501043498,
+            "total_seconds": 0.45865702629089355,
+            "process_wall_seconds": 0.48,
+            "maximum_resident_bytes": 1961902080,
+            "peak_memory_footprint_bytes": 2169833560
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004734992980957031,
+            "inference_seconds": 0.11311805248260498,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp32",
+            "model_load_seconds": 0.3405189514160156,
+            "real_time_factor": 0.005655902624130249,
+            "realtime_multiple": 176.80643859277504,
+            "total_seconds": 0.4584341049194336,
+            "process_wall_seconds": 0.48,
+            "maximum_resident_bytes": 1960984576,
+            "peak_memory_footprint_bytes": 2168899648
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.0047910213470458984,
+          "model_load_seconds": 0.3405189514160156,
+          "inference_seconds": 0.11561107635498047,
+          "total_seconds": 0.45865702629089355,
+          "process_wall_seconds": 0.48,
+          "real_time_factor": 0.005780553817749024,
+          "realtime_multiple": 172.99380501043498,
+          "maximum_resident_bytes": 1961902080,
+          "peak_memory_footprint_bytes": 2169833560
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      },
+      "full": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.10734891891479492,
+            "inference_seconds": 27.64084303379059,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp32",
+            "model_load_seconds": 0.33420705795288086,
+            "real_time_factor": 0.004517422440280089,
+            "realtime_multiple": 221.36517299852036,
+            "total_seconds": 28.082503080368042,
+            "process_wall_seconds": 29.33,
+            "maximum_resident_bytes": 3134832640,
+            "peak_memory_footprint_bytes": 45499206272
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.10734891891479492,
+          "model_load_seconds": 0.33420705795288086,
+          "inference_seconds": 27.64084303379059,
+          "total_seconds": 28.082503080368042,
+          "process_wall_seconds": 29.33,
+          "real_time_factor": 0.004517422440280089,
+          "realtime_multiple": 221.36517299852036,
+          "maximum_resident_bytes": 3134832640,
+          "peak_memory_footprint_bytes": 45499206272
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 13589,
+          "hypothesis_words": 13615,
+          "word_edits": 37,
+          "word_disagreement_percent": 0.27227904923099566,
+          "character_similarity_percent": 99.8092099557714,
+          "bleu": 99.46379942641373,
+          "chrf2": 99.91492856269258
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": true,
+          "reference_words": 13615,
+          "hypothesis_words": 13615,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      }
+    },
+    "fp16": {
+      "name": "fp16",
+      "quantization": null,
+      "model_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp16",
+      "model_file_bytes": 946047608,
+      "model_directory_bytes": 947196843,
+      "short": {
+        "runs": [
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.0051419734954833984,
+            "inference_seconds": 0.11242008209228516,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp16",
+            "model_load_seconds": 0.3023480176925659,
+            "real_time_factor": 0.005621004104614258,
+            "realtime_multiple": 177.90415758264692,
+            "total_seconds": 0.4199730157852173,
+            "process_wall_seconds": 0.44,
+            "maximum_resident_bytes": 1016676352,
+            "peak_memory_footprint_bytes": 1483539920
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004454970359802246,
+            "inference_seconds": 0.11306405067443848,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp16",
+            "model_load_seconds": 0.3006399869918823,
+            "real_time_factor": 0.005653202533721924,
+            "realtime_multiple": 176.89088512836733,
+            "total_seconds": 0.4182169437408447,
+            "process_wall_seconds": 0.44,
+            "maximum_resident_bytes": 1016053760,
+            "peak_memory_footprint_bytes": 1482900920
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004363059997558594,
+            "inference_seconds": 0.11610794067382812,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp16",
+            "model_load_seconds": 0.2989339828491211,
+            "real_time_factor": 0.005805397033691406,
+            "realtime_multiple": 172.2535072444722,
+            "total_seconds": 0.4194650650024414,
+            "process_wall_seconds": 0.44,
+            "maximum_resident_bytes": 1016250368,
+            "peak_memory_footprint_bytes": 1483113936
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.004454970359802246,
+          "model_load_seconds": 0.3006399869918823,
+          "inference_seconds": 0.11306405067443848,
+          "total_seconds": 0.4194650650024414,
+          "process_wall_seconds": 0.44,
+          "real_time_factor": 0.005653202533721924,
+          "realtime_multiple": 176.89088512836733,
+          "maximum_resident_bytes": 1016250368,
+          "peak_memory_footprint_bytes": 1483113936
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      },
+      "full": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.08611798286437988,
+            "inference_seconds": 18.336537957191467,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp16",
+            "model_load_seconds": 0.33020901679992676,
+            "real_time_factor": 0.0029967931131333787,
+            "realtime_multiple": 333.69003539734604,
+            "total_seconds": 18.752941012382507,
+            "process_wall_seconds": 18.79,
+            "maximum_resident_bytes": 2192637952,
+            "peak_memory_footprint_bytes": 45141919928
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.08611798286437988,
+          "model_load_seconds": 0.33020901679992676,
+          "inference_seconds": 18.336537957191467,
+          "total_seconds": 18.752941012382507,
+          "process_wall_seconds": 18.79,
+          "real_time_factor": 0.0029967931131333787,
+          "realtime_multiple": 333.69003539734604,
+          "maximum_resident_bytes": 2192637952,
+          "peak_memory_footprint_bytes": 45141919928
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 13589,
+          "hypothesis_words": 13615,
+          "word_edits": 37,
+          "word_disagreement_percent": 0.27227904923099566,
+          "character_similarity_percent": 99.8092099557714,
+          "bleu": 99.46379942641373,
+          "chrf2": 99.91492856269258
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": true,
+          "reference_words": 13615,
+          "hypothesis_words": 13615,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      }
+    },
+    "q8": {
+      "name": "q8",
+      "quantization": {
+        "mode": "affine",
+        "bits": 8,
+        "group_size": 64
+      },
+      "model_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+      "model_file_bytes": 503412021,
+      "model_directory_bytes": 504561565,
+      "short": {
+        "runs": [
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.0049190521240234375,
+            "inference_seconds": 0.10260200500488281,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+            "model_load_seconds": 0.3087480068206787,
+            "real_time_factor": 0.005130100250244141,
+            "realtime_multiple": 194.92796460506014,
+            "total_seconds": 0.4163389205932617,
+            "process_wall_seconds": 0.44,
+            "maximum_resident_bytes": 577781760,
+            "peak_memory_footprint_bytes": 802358352
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004409074783325195,
+            "inference_seconds": 0.10404205322265625,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+            "model_load_seconds": 0.3032419681549072,
+            "real_time_factor": 0.005202102661132813,
+            "realtime_multiple": 192.22996260174526,
+            "total_seconds": 0.4117499589920044,
+            "process_wall_seconds": 0.43,
+            "maximum_resident_bytes": 577159168,
+            "peak_memory_footprint_bytes": 801768576
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004473090171813965,
+            "inference_seconds": 0.10048198699951172,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+            "model_load_seconds": 0.3107830286026001,
+            "real_time_factor": 0.005024099349975586,
+            "realtime_multiple": 199.04064994352856,
+            "total_seconds": 0.41579198837280273,
+            "process_wall_seconds": 0.44,
+            "maximum_resident_bytes": 578125824,
+            "peak_memory_footprint_bytes": 802718824
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.004473090171813965,
+          "model_load_seconds": 0.3087480068206787,
+          "inference_seconds": 0.10260200500488281,
+          "total_seconds": 0.41579198837280273,
+          "process_wall_seconds": 0.44,
+          "real_time_factor": 0.005130100250244141,
+          "realtime_multiple": 194.92796460506014,
+          "maximum_resident_bytes": 577781760,
+          "peak_memory_footprint_bytes": 802358352
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      },
+      "full": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.11088597774505615,
+            "inference_seconds": 25.815865993499756,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+            "model_load_seconds": 0.3011159896850586,
+            "real_time_factor": 0.0042191611960507676,
+            "realtime_multiple": 237.01393559838934,
+            "total_seconds": 26.227946996688843,
+            "process_wall_seconds": 26.38,
+            "maximum_resident_bytes": 1750646784,
+            "peak_memory_footprint_bytes": 44526176104
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.11088597774505615,
+          "model_load_seconds": 0.3011159896850586,
+          "inference_seconds": 25.815865993499756,
+          "total_seconds": 26.227946996688843,
+          "process_wall_seconds": 26.38,
+          "real_time_factor": 0.0042191611960507676,
+          "realtime_multiple": 237.01393559838934,
+          "maximum_resident_bytes": 1750646784,
+          "peak_memory_footprint_bytes": 44526176104
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 13589,
+          "hypothesis_words": 13614,
+          "word_edits": 45,
+          "word_disagreement_percent": 0.3311501950106704,
+          "character_similarity_percent": 99.76440320296014,
+          "bleu": 99.33325845779602,
+          "chrf2": 99.85328832177285
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": false,
+          "reference_words": 13615,
+          "hypothesis_words": 13614,
+          "word_edits": 8,
+          "word_disagreement_percent": 0.05875872199779655,
+          "character_similarity_percent": 99.95519324718873,
+          "bleu": 99.86049842289454,
+          "chrf2": 99.93455459083616
+        }
+      }
+    },
+    "q6": {
+      "name": "q6",
+      "quantization": {
+        "mode": "affine",
+        "bits": 6,
+        "group_size": 64
+      },
+      "model_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q6",
+      "model_file_bytes": 385364657,
+      "model_directory_bytes": 386514201,
+      "short": {
+        "runs": [
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.0048819780349731445,
+            "inference_seconds": 0.10314798355102539,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q6",
+            "model_load_seconds": 0.3050349950790405,
+            "real_time_factor": 0.00515739917755127,
+            "realtime_multiple": 193.89618014303082,
+            "total_seconds": 0.413119912147522,
+            "process_wall_seconds": 0.43,
+            "maximum_resident_bytes": 458752000,
+            "peak_memory_footprint_bytes": 679167056
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004561066627502441,
+            "inference_seconds": 0.10130393505096436,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q6",
+            "model_load_seconds": 0.2995429039001465,
+            "real_time_factor": 0.005065196752548217,
+            "realtime_multiple": 197.42569713544026,
+            "total_seconds": 0.40547800064086914,
+            "process_wall_seconds": 0.43,
+            "maximum_resident_bytes": 458375168,
+            "peak_memory_footprint_bytes": 678773816
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.0045549869537353516,
+            "inference_seconds": 0.10217392444610596,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q6",
+            "model_load_seconds": 0.2964200973510742,
+            "real_time_factor": 0.005108696222305298,
+            "realtime_multiple": 195.7446590059235,
+            "total_seconds": 0.40320396423339844,
+            "process_wall_seconds": 0.42,
+            "maximum_resident_bytes": 457785344,
+            "peak_memory_footprint_bytes": 678183992
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.004561066627502441,
+          "model_load_seconds": 0.2995429039001465,
+          "inference_seconds": 0.10217392444610596,
+          "total_seconds": 0.40547800064086914,
+          "process_wall_seconds": 0.43,
+          "real_time_factor": 0.005108696222305298,
+          "realtime_multiple": 195.7446590059235,
+          "maximum_resident_bytes": 458375168,
+          "peak_memory_footprint_bytes": 678773816
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      },
+      "full": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.08834302425384521,
+            "inference_seconds": 26.756496906280518,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q6",
+            "model_load_seconds": 0.2943880558013916,
+            "real_time_factor": 0.00437289121029897,
+            "realtime_multiple": 228.6816552044136,
+            "total_seconds": 27.139304995536804,
+            "process_wall_seconds": 27.28,
+            "maximum_resident_bytes": 1632436224,
+            "peak_memory_footprint_bytes": 44407277368
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.08834302425384521,
+          "model_load_seconds": 0.2943880558013916,
+          "inference_seconds": 26.756496906280518,
+          "total_seconds": 27.139304995536804,
+          "process_wall_seconds": 27.28,
+          "real_time_factor": 0.00437289121029897,
+          "realtime_multiple": 228.6816552044136,
+          "maximum_resident_bytes": 1632436224,
+          "peak_memory_footprint_bytes": 44407277368
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 13589,
+          "hypothesis_words": 13617,
+          "word_edits": 83,
+          "word_disagreement_percent": 0.6107881374641254,
+          "character_similarity_percent": 99.61705755697172,
+          "bleu": 98.75218526222535,
+          "chrf2": 99.672044863848
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": false,
+          "reference_words": 13615,
+          "hypothesis_words": 13617,
+          "word_edits": 46,
+          "word_disagreement_percent": 0.33786265148733013,
+          "character_similarity_percent": 99.80780624557448,
+          "bleu": 99.2837080628394,
+          "chrf2": 99.74608638859722
+        }
+      }
+    },
+    "q5": {
+      "name": "q5",
+      "quantization": {
+        "mode": "affine",
+        "bits": 5,
+        "group_size": 64
+      },
+      "model_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q5",
+      "model_file_bytes": 326340979,
+      "model_directory_bytes": 327490523,
+      "short": {
+        "runs": [
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004661917686462402,
+            "inference_seconds": 0.10302197933197021,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q5",
+            "model_load_seconds": 0.30192995071411133,
+            "real_time_factor": 0.005151098966598511,
+            "realtime_multiple": 194.13333086480037,
+            "total_seconds": 0.4096750020980835,
+            "process_wall_seconds": 0.43,
+            "maximum_resident_bytes": 400982016,
+            "peak_memory_footprint_bytes": 622756824
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.005074024200439453,
+            "inference_seconds": 0.10646295547485352,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q5",
+            "model_load_seconds": 0.2969249486923218,
+            "real_time_factor": 0.005323147773742676,
+            "realtime_multiple": 187.85877125798925,
+            "total_seconds": 0.4085209369659424,
+            "process_wall_seconds": 0.43,
+            "maximum_resident_bytes": 402423808,
+            "peak_memory_footprint_bytes": 624215024
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004303932189941406,
+            "inference_seconds": 0.10523402690887451,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q5",
+            "model_load_seconds": 0.29561102390289307,
+            "real_time_factor": 0.005261701345443725,
+            "realtime_multiple": 190.05259598512404,
+            "total_seconds": 0.40520596504211426,
+            "process_wall_seconds": 0.43,
+            "maximum_resident_bytes": 398901248,
+            "peak_memory_footprint_bytes": 620676056
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.004661917686462402,
+          "model_load_seconds": 0.2969249486923218,
+          "inference_seconds": 0.10523402690887451,
+          "total_seconds": 0.4085209369659424,
+          "process_wall_seconds": 0.43,
+          "real_time_factor": 0.005261701345443725,
+          "realtime_multiple": 190.05259598512404,
+          "maximum_resident_bytes": 400982016,
+          "peak_memory_footprint_bytes": 622756824
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      },
+      "full": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.10134100914001465,
+            "inference_seconds": 26.490002036094666,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q5",
+            "model_load_seconds": 0.29980790615081787,
+            "real_time_factor": 0.004329337187531815,
+            "realtime_multiple": 230.98223970170986,
+            "total_seconds": 26.891245007514954,
+            "process_wall_seconds": 27.07,
+            "maximum_resident_bytes": 1574780928,
+            "peak_memory_footprint_bytes": 44349245192
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.10134100914001465,
+          "model_load_seconds": 0.29980790615081787,
+          "inference_seconds": 26.490002036094666,
+          "total_seconds": 26.891245007514954,
+          "process_wall_seconds": 27.07,
+          "real_time_factor": 0.004329337187531815,
+          "realtime_multiple": 230.98223970170986,
+          "maximum_resident_bytes": 1574780928,
+          "peak_memory_footprint_bytes": 44349245192
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 13589,
+          "hypothesis_words": 13629,
+          "word_edits": 112,
+          "word_disagreement_percent": 0.8241960409154463,
+          "character_similarity_percent": 99.51766863546435,
+          "bleu": 98.3383420542569,
+          "chrf2": 99.55975821767218
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": false,
+          "reference_words": 13615,
+          "hypothesis_words": 13629,
+          "word_edits": 76,
+          "word_disagreement_percent": 0.5582078589790672,
+          "character_similarity_percent": 99.70829061186767,
+          "bleu": 98.81258873617107,
+          "chrf2": 99.61746817612189
+        }
+      }
+    },
+    "q4": {
+      "name": "q4",
+      "quantization": {
+        "mode": "affine",
+        "bits": 4,
+        "group_size": 64
+      },
+      "model_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q4",
+      "model_file_bytes": 267317193,
+      "model_directory_bytes": 268466737,
+      "short": {
+        "runs": [
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004642009735107422,
+            "inference_seconds": 0.09760892391204834,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q4",
+            "model_load_seconds": 0.3001340627670288,
+            "real_time_factor": 0.004880446195602417,
+            "realtime_multiple": 204.89929812177044,
+            "total_seconds": 0.4024399518966675,
+            "process_wall_seconds": 0.42,
+            "maximum_resident_bytes": 340148224,
+            "peak_memory_footprint_bytes": 561054656
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.005123019218444824,
+            "inference_seconds": 0.09916794300079346,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q4",
+            "model_load_seconds": 0.28979694843292236,
+            "real_time_factor": 0.004958397150039673,
+            "realtime_multiple": 201.6780765518145,
+            "total_seconds": 0.39415109157562256,
+            "process_wall_seconds": 0.42,
+            "maximum_resident_bytes": 338690048,
+            "peak_memory_footprint_bytes": 559596504
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.0044089555740356445,
+            "inference_seconds": 0.10157299041748047,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q4",
+            "model_load_seconds": 0.2949180603027344,
+            "real_time_factor": 0.005078649520874024,
+            "realtime_multiple": 196.90273878712196,
+            "total_seconds": 0.4009619951248169,
+            "process_wall_seconds": 0.42,
+            "maximum_resident_bytes": 341770240,
+            "peak_memory_footprint_bytes": 565576688
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.004642009735107422,
+          "model_load_seconds": 0.2949180603027344,
+          "inference_seconds": 0.09916794300079346,
+          "total_seconds": 0.4009619951248169,
+          "process_wall_seconds": 0.42,
+          "real_time_factor": 0.004958397150039673,
+          "realtime_multiple": 201.6780765518145,
+          "maximum_resident_bytes": 340148224,
+          "peak_memory_footprint_bytes": 561054656
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": true,
+          "reference_words": 33,
+          "hypothesis_words": 33,
+          "word_edits": 0,
+          "word_disagreement_percent": 0.0,
+          "character_similarity_percent": 100.0,
+          "bleu": 100.00000000000004,
+          "chrf2": 100.0
+        }
+      },
+      "full": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.10774898529052734,
+            "inference_seconds": 24.65566098690033,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q4",
+            "model_load_seconds": 0.29599106311798096,
+            "real_time_factor": 0.004029545556407276,
+            "realtime_multiple": 248.16694240121592,
+            "total_seconds": 25.05948495864868,
+            "process_wall_seconds": 25.21,
+            "maximum_resident_bytes": 1514356736,
+            "peak_memory_footprint_bytes": 44287117040
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.10774898529052734,
+          "model_load_seconds": 0.29599106311798096,
+          "inference_seconds": 24.65566098690033,
+          "total_seconds": 25.05948495864868,
+          "process_wall_seconds": 25.21,
+          "real_time_factor": 0.004029545556407276,
+          "realtime_multiple": 248.16694240121592,
+          "maximum_resident_bytes": 1514356736,
+          "peak_memory_footprint_bytes": 44287117040
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 13589,
+          "hypothesis_words": 13583,
+          "word_edits": 233,
+          "word_disagreement_percent": 1.7146221208330268,
+          "character_similarity_percent": 98.96023401975266,
+          "bleu": 96.92954538145514,
+          "chrf2": 98.92408043385099
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": false,
+          "reference_words": 13615,
+          "hypothesis_words": 13583,
+          "word_edits": 205,
+          "word_disagreement_percent": 1.5056922511935364,
+          "character_similarity_percent": 99.1053103228977,
+          "bleu": 97.134461301471,
+          "chrf2": 98.93478735874592
+        }
+      }
+    },
+    "q3": {
+      "name": "q3",
+      "quantization": {
+        "mode": "affine",
+        "bits": 3,
+        "group_size": 64
+      },
+      "model_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q3",
+      "model_file_bytes": 208293266,
+      "model_directory_bytes": 209442810,
+      "short": {
+        "runs": [
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004956960678100586,
+            "inference_seconds": 0.09918391704559326,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q3",
+            "model_load_seconds": 0.29940903186798096,
+            "real_time_factor": 0.004959195852279663,
+            "realtime_multiple": 201.64559533181492,
+            "total_seconds": 0.40360701084136963,
+            "process_wall_seconds": 0.42,
+            "maximum_resident_bytes": 284491776,
+            "peak_memory_footprint_bytes": 503251880
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.005133986473083496,
+            "inference_seconds": 0.09997892379760742,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q3",
+            "model_load_seconds": 0.29010605812072754,
+            "real_time_factor": 0.004998946189880371,
+            "realtime_multiple": 200.04216129078412,
+            "total_seconds": 0.3952749967575073,
+            "process_wall_seconds": 0.42,
+            "maximum_resident_bytes": 281165824,
+            "peak_memory_footprint_bytes": 499942336
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.00432896614074707,
+            "inference_seconds": 0.09920692443847656,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q3",
+            "model_load_seconds": 0.2862730026245117,
+            "real_time_factor": 0.004960346221923828,
+            "realtime_multiple": 201.5988310614654,
+            "total_seconds": 0.38986194133758545,
+            "process_wall_seconds": 0.41,
+            "maximum_resident_bytes": 279707648,
+            "peak_memory_footprint_bytes": 498451344
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.004956960678100586,
+          "model_load_seconds": 0.29010605812072754,
+          "inference_seconds": 0.09920692443847656,
+          "total_seconds": 0.3952749967575073,
+          "process_wall_seconds": 0.42,
+          "real_time_factor": 0.004960346221923828,
+          "realtime_multiple": 201.5988310614654,
+          "maximum_resident_bytes": 281165824,
+          "peak_memory_footprint_bytes": 499942336
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 33,
+          "hypothesis_words": 27,
+          "word_edits": 6,
+          "word_disagreement_percent": 18.181818181818183,
+          "character_similarity_percent": 79.76878612716763,
+          "bleu": 64.46917899160043,
+          "chrf2": 77.94835385147807
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": false,
+          "reference_words": 33,
+          "hypothesis_words": 27,
+          "word_edits": 6,
+          "word_disagreement_percent": 18.181818181818183,
+          "character_similarity_percent": 79.76878612716763,
+          "bleu": 64.46917899160043,
+          "chrf2": 77.94835385147807
+        }
+      },
+      "full": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.09918701648712158,
+            "inference_seconds": 24.058683037757874,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q3",
+            "model_load_seconds": 0.29315102100372314,
+            "real_time_factor": 0.003931979733957081,
+            "realtime_multiple": 254.3248103147307,
+            "total_seconds": 24.451102018356323,
+            "process_wall_seconds": 24.6,
+            "maximum_resident_bytes": 1457717248,
+            "peak_memory_footprint_bytes": 44231378600
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.09918701648712158,
+          "model_load_seconds": 0.29315102100372314,
+          "inference_seconds": 24.058683037757874,
+          "total_seconds": 24.451102018356323,
+          "process_wall_seconds": 24.6,
+          "real_time_factor": 0.003931979733957081,
+          "realtime_multiple": 254.3248103147307,
+          "maximum_resident_bytes": 1457717248,
+          "peak_memory_footprint_bytes": 44231378600
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 13589,
+          "hypothesis_words": 13039,
+          "word_edits": 971,
+          "word_disagreement_percent": 7.145485319008021,
+          "character_similarity_percent": 94.57091551539375,
+          "bleu": 86.75692628267272,
+          "chrf2": 93.93484999445633
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": false,
+          "reference_words": 13615,
+          "hypothesis_words": 13039,
+          "word_edits": 962,
+          "word_disagreement_percent": 7.065736320235035,
+          "character_similarity_percent": 94.6390888330009,
+          "bleu": 86.750103583607,
+          "chrf2": 93.85648355018479
+        }
+      }
+    },
+    "q2": {
+      "name": "q2",
+      "quantization": {
+        "mode": "affine",
+        "bits": 2,
+        "group_size": 64
+      },
+      "model_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q2",
+      "model_file_bytes": 149269226,
+      "model_directory_bytes": 150418770,
+      "short": {
+        "runs": [
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004503011703491211,
+            "inference_seconds": 0.09547996520996094,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q2",
+            "model_load_seconds": 0.288411021232605,
+            "real_time_factor": 0.0047739982604980465,
+            "realtime_multiple": 209.46802772728182,
+            "total_seconds": 0.3884540796279907,
+            "process_wall_seconds": 0.41,
+            "maximum_resident_bytes": 222756864,
+            "peak_memory_footprint_bytes": 441861032
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004584074020385742,
+            "inference_seconds": 0.10060298442840576,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q2",
+            "model_load_seconds": 0.2889389991760254,
+            "real_time_factor": 0.005030149221420288,
+            "realtime_multiple": 198.80125936256917,
+            "total_seconds": 0.39417994022369385,
+            "process_wall_seconds": 0.41,
+            "maximum_resident_bytes": 221790208,
+            "peak_memory_footprint_bytes": 440894376
+          },
+          {
+            "audio_duration_seconds": 20,
+            "audio_file": "/tmp/granite-reference-test-20s.wav",
+            "audio_load_seconds": 0.004533052444458008,
+            "inference_seconds": 0.09900903701782227,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q2",
+            "model_load_seconds": 0.28605008125305176,
+            "real_time_factor": 0.0049504518508911135,
+            "realtime_multiple": 202.00176269162048,
+            "total_seconds": 0.3896479606628418,
+            "process_wall_seconds": 0.41,
+            "maximum_resident_bytes": 220872704,
+            "peak_memory_footprint_bytes": 439944056
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.004533052444458008,
+          "model_load_seconds": 0.288411021232605,
+          "inference_seconds": 0.09900903701782227,
+          "total_seconds": 0.3896479606628418,
+          "process_wall_seconds": 0.41,
+          "real_time_factor": 0.0049504518508911135,
+          "realtime_multiple": 202.00176269162048,
+          "maximum_resident_bytes": 221790208,
+          "peak_memory_footprint_bytes": 440894376
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 33,
+          "hypothesis_words": 0,
+          "word_edits": 33,
+          "word_disagreement_percent": 100.0,
+          "character_similarity_percent": 0.0,
+          "bleu": 0.0,
+          "chrf2": 0.0
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": false,
+          "reference_words": 33,
+          "hypothesis_words": 0,
+          "word_edits": 33,
+          "word_disagreement_percent": 100.0,
+          "character_similarity_percent": 0.0,
+          "bleu": 0.0,
+          "chrf2": 0.0
+        }
+      },
+      "full": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.09698092937469482,
+            "inference_seconds": 23.302345991134644,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q2",
+            "model_load_seconds": 0.2849079370498657,
+            "real_time_factor": 0.0038083693960721593,
+            "realtime_multiple": 262.5795704144064,
+            "total_seconds": 23.6842919588089,
+            "process_wall_seconds": 23.83,
+            "maximum_resident_bytes": 1396752384,
+            "peak_memory_footprint_bytes": 44170086032
+          }
+        ],
+        "median": {
+          "audio_load_seconds": 0.09698092937469482,
+          "model_load_seconds": 0.2849079370498657,
+          "inference_seconds": 23.302345991134644,
+          "total_seconds": 23.6842919588089,
+          "process_wall_seconds": 23.83,
+          "real_time_factor": 0.0038083693960721593,
+          "realtime_multiple": 262.5795704144064,
+          "maximum_resident_bytes": 1396752384,
+          "peak_memory_footprint_bytes": 44170086032
+        },
+        "accuracy_vs_python_fp32": {
+          "exact": false,
+          "reference_words": 13589,
+          "hypothesis_words": 0,
+          "word_edits": 13589,
+          "word_disagreement_percent": 100.0,
+          "character_similarity_percent": 0.0,
+          "bleu": 0.0,
+          "chrf2": 0.0
+        },
+        "accuracy_vs_swift_fp32": {
+          "exact": false,
+          "reference_words": 13615,
+          "hypothesis_words": 0,
+          "word_edits": 13615,
+          "word_disagreement_percent": 100.0,
+          "character_similarity_percent": 0.0,
+          "bleu": 0.0,
+          "chrf2": 0.0
+        }
+      }
+    }
+  }
+}

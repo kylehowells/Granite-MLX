@@ -1,0 +1,399 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-26T16:50:30+0100",
+  "environment": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.10.15",
+    "mlx_python": "0.31.2",
+    "mlx_swift": "0.31.4",
+    "device": {
+      "device_name": "Apple M1 Max",
+      "max_recommended_working_set_size": 55662788608,
+      "memory_size": 68719476736,
+      "architecture": "applegpu_g13s",
+      "max_buffer_length": 41747087360,
+      "resource_limit": 499000
+    },
+    "hardware": {
+      "_name": "hardware_overview",
+      "activation_lock_status": "activation_lock_disabled",
+      "boot_rom_version": "18000.121.3",
+      "chip_type": "Apple M1 Max",
+      "machine_model": "MacBookPro18,4",
+      "machine_name": "MacBook Pro",
+      "model_number": "MKH53B/A",
+      "number_processors": "proc 10:8:2:0",
+      "os_loader_version": "18000.121.3",
+      "physical_memory": "64 GB",
+      "platform_UUID": "F32A427D-A1D7-5F0E-8FD3-DC438965E19C",
+      "provisioning_UDID": "00006001-0014104A1140011E",
+      "serial_number": "JLVQ7431P4"
+    }
+  },
+  "audio": {
+    "path": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+    "sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+    "duration_seconds": 6118.72
+  },
+  "model_files": {
+    "q8_g64_bytes": 503412021,
+    "q8_g128_mixed_bytes": 488666129,
+    "q8_g128_override": {
+      "encoder.input_linear": 64
+    }
+  },
+  "paired_full_input_results": {
+    "q8_g64_fp16": {
+      "runs": [
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.0928419828414917,
+          "inference_seconds": 17.013629913330078,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+          "model_load_seconds": 0.3052029609680176,
+          "real_time_factor": 0.0027805864483633957,
+          "realtime_multiple": 359.63636397227725,
+          "total_seconds": 17.4118549823761,
+          "maximum_resident_bytes": 1752317952,
+          "peak_memory_footprint_bytes": 34681603968,
+          "process_wall_seconds": 17.55
+        },
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.09092700481414795,
+          "inference_seconds": 20.69359791278839,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+          "model_load_seconds": 0.3052769899368286,
+          "real_time_factor": 0.003382014197869553,
+          "realtime_multiple": 295.6817865016458,
+          "total_seconds": 21.091235995292664,
+          "maximum_resident_bytes": 1751891968,
+          "peak_memory_footprint_bytes": 34681128808,
+          "process_wall_seconds": 21.16
+        },
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.08841598033905029,
+          "inference_seconds": 20.678346991539,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+          "model_load_seconds": 0.30889999866485596,
+          "real_time_factor": 0.0033795216959656596,
+          "realtime_multiple": 295.8998609755223,
+          "total_seconds": 21.07581102848053,
+          "maximum_resident_bytes": 1753563136,
+          "peak_memory_footprint_bytes": 34682849152,
+          "process_wall_seconds": 21.2
+        }
+      ],
+      "median": {
+        "inference_seconds": 20.678346991539,
+        "realtime_multiple": 295.8998609755223,
+        "maximum_resident_bytes": 1752317952,
+        "peak_memory_footprint_bytes": 34681603968,
+        "process_wall_seconds": 21.16
+      },
+      "transcripts_identical": true,
+      "accuracy_vs_swift_fp32_weights": {
+        "reference_words": 13615,
+        "candidate_words": 13613,
+        "word_edits": 9,
+        "word_disagreement_percent": 0.06610356224752112,
+        "character_similarity_percent": 99.94652097245107,
+        "bleu": 99.84214001741701,
+        "chrf2": 99.92345571753314
+      }
+    },
+    "q8_g128_fp16": {
+      "runs": [
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.09076905250549316,
+          "inference_seconds": 16.805621027946472,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model_load_seconds": 0.367406964302063,
+          "real_time_factor": 0.0027465909582308837,
+          "realtime_multiple": 364.08770552573054,
+          "total_seconds": 17.26393496990204,
+          "maximum_resident_bytes": 1737310208,
+          "peak_memory_footprint_bytes": 34666334080,
+          "process_wall_seconds": 17.29
+        },
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.09798598289489746,
+          "inference_seconds": 20.250635981559753,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model_load_seconds": 0.3140510320663452,
+          "real_time_factor": 0.0033096196559999074,
+          "realtime_multiple": 302.149522887662,
+          "total_seconds": 20.66280996799469,
+          "maximum_resident_bytes": 1737359360,
+          "peak_memory_footprint_bytes": 34666416000,
+          "process_wall_seconds": 20.79
+        },
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.09319496154785156,
+          "inference_seconds": 20.262346982955933,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model_load_seconds": 0.306164026260376,
+          "real_time_factor": 0.003311533618625453,
+          "realtime_multiple": 301.97488993485706,
+          "total_seconds": 20.661842107772827,
+          "maximum_resident_bytes": 1737703424,
+          "peak_memory_footprint_bytes": 34666858368,
+          "process_wall_seconds": 20.79
+        }
+      ],
+      "median": {
+        "inference_seconds": 20.250635981559753,
+        "realtime_multiple": 302.149522887662,
+        "maximum_resident_bytes": 1737359360,
+        "peak_memory_footprint_bytes": 34666416000,
+        "process_wall_seconds": 20.79
+      },
+      "transcripts_identical": true,
+      "accuracy_vs_swift_fp32_weights": {
+        "reference_words": 13615,
+        "candidate_words": 13615,
+        "word_edits": 9,
+        "word_disagreement_percent": 0.06610356224752112,
+        "character_similarity_percent": 99.95519324718873,
+        "bleu": 99.84948027819149,
+        "chrf2": 99.93347319178899
+      }
+    }
+  },
+  "experimental_full_input_results": {
+    "q8_g128_fp8_emulated": {
+      "runs": [
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.0928720235824585,
+          "inference_seconds": 19.1719970703125,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model_load_seconds": 0.3105039596557617,
+          "real_time_factor": 0.003133334597810081,
+          "realtime_multiple": 319.1488073756662,
+          "total_seconds": 19.575511932373047,
+          "maximum_resident_bytes": 1741766656,
+          "peak_memory_footprint_bytes": 34748893056,
+          "process_wall_seconds": 19.7
+        }
+      ],
+      "median": {
+        "inference_seconds": 19.1719970703125,
+        "realtime_multiple": 319.1488073756662,
+        "maximum_resident_bytes": 1741766656,
+        "peak_memory_footprint_bytes": 34748893056,
+        "process_wall_seconds": 19.7
+      },
+      "paired_fp16_control": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.09530901908874512,
+            "inference_seconds": 16.815696001052856,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+            "model_load_seconds": 0.3009049892425537,
+            "real_time_factor": 0.0027482375400496926,
+            "realtime_multiple": 363.8695656496703,
+            "total_seconds": 17.212194085121155,
+            "maximum_resident_bytes": 1738113024,
+            "peak_memory_footprint_bytes": 34667169688,
+            "process_wall_seconds": 17.33
+          }
+        ],
+        "median": {
+          "inference_seconds": 16.815696001052856,
+          "realtime_multiple": 363.8695656496703,
+          "maximum_resident_bytes": 1738113024,
+          "peak_memory_footprint_bytes": 34667169688,
+          "process_wall_seconds": 17.33
+        }
+      },
+      "inference_time_ratio_vs_paired_control": 1.1401250991402385,
+      "peak_memory_ratio_vs_paired_control": 1.0023573706401618,
+      "accuracy_vs_q8_g128_fp16": {
+        "reference_words": 13615,
+        "candidate_words": 13609,
+        "word_edits": 36,
+        "word_disagreement_percent": 0.2644142489900845,
+        "character_similarity_percent": 99.86556614001358,
+        "bleu": 99.47114642382138,
+        "chrf2": 99.80356666897544
+      }
+    },
+    "q8_g128_int8_emulated": {
+      "runs": [
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.09639501571655273,
+          "inference_seconds": 20.29340088367462,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model_load_seconds": 0.3093760013580322,
+          "real_time_factor": 0.0033166088468952037,
+          "realtime_multiple": 301.51279399020353,
+          "total_seconds": 20.69930899143219,
+          "maximum_resident_bytes": 1738653696,
+          "peak_memory_footprint_bytes": 34745419648,
+          "process_wall_seconds": 20.84
+        }
+      ],
+      "median": {
+        "inference_seconds": 20.29340088367462,
+        "realtime_multiple": 301.51279399020353,
+        "maximum_resident_bytes": 1738653696,
+        "peak_memory_footprint_bytes": 34745419648,
+        "process_wall_seconds": 20.84
+      },
+      "paired_fp16_control": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.08881998062133789,
+            "inference_seconds": 19.187387943267822,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+            "model_load_seconds": 0.29988598823547363,
+            "real_time_factor": 0.003135849972423615,
+            "realtime_multiple": 318.89280698818845,
+            "total_seconds": 19.576231956481934,
+            "maximum_resident_bytes": 1737277440,
+            "peak_memory_footprint_bytes": 34666334080,
+            "process_wall_seconds": 19.71
+          }
+        ],
+        "median": {
+          "inference_seconds": 19.187387943267822,
+          "realtime_multiple": 318.89280698818845,
+          "maximum_resident_bytes": 1737277440,
+          "peak_memory_footprint_bytes": 34666334080,
+          "process_wall_seconds": 19.71
+        }
+      },
+      "inference_time_ratio_vs_paired_control": 1.0576427048682706,
+      "peak_memory_ratio_vs_paired_control": 1.0022813363483285,
+      "accuracy_vs_q8_g128_fp16": {
+        "reference_words": 13615,
+        "candidate_words": 13611,
+        "word_edits": 142,
+        "word_disagreement_percent": 1.0429673154608887,
+        "character_similarity_percent": 99.423235374897,
+        "bleu": 97.98266758594687,
+        "chrf2": 99.28550675416926
+      }
+    },
+    "q8_g128_fp16_ctc_tile_2048": {
+      "runs": [
+        {
+          "audio_duration_seconds": 6118.72,
+          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_load_seconds": 0.11300992965698242,
+          "inference_seconds": 20.539054036140442,
+          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model_load_seconds": 0.3528190851211548,
+          "real_time_factor": 0.00335675664781857,
+          "realtime_multiple": 297.9066119225123,
+          "total_seconds": 21.005025029182434,
+          "maximum_resident_bytes": 1739980800,
+          "peak_memory_footprint_bytes": 34668955496,
+          "process_wall_seconds": 21.15
+        }
+      ],
+      "median": {
+        "inference_seconds": 20.539054036140442,
+        "realtime_multiple": 297.9066119225123,
+        "maximum_resident_bytes": 1739980800,
+        "peak_memory_footprint_bytes": 34668955496,
+        "process_wall_seconds": 21.15
+      },
+      "paired_fp16_control": {
+        "runs": [
+          {
+            "audio_duration_seconds": 6118.72,
+            "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_load_seconds": 0.09526193141937256,
+            "inference_seconds": 20.256271958351135,
+            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+            "model_load_seconds": 0.31526803970336914,
+            "real_time_factor": 0.003310540759889509,
+            "realtime_multiple": 302.0654547184538,
+            "total_seconds": 20.666970014572144,
+            "maximum_resident_bytes": 1738473472,
+            "peak_memory_footprint_bytes": 34667497320,
+            "process_wall_seconds": 20.81
+          }
+        ],
+        "median": {
+          "inference_seconds": 20.256271958351135,
+          "realtime_multiple": 302.0654547184538,
+          "maximum_resident_bytes": 1738473472,
+          "peak_memory_footprint_bytes": 34667497320,
+          "process_wall_seconds": 20.81
+        }
+      },
+      "inference_time_ratio_vs_paired_control": 1.0139602232025091,
+      "peak_memory_ratio_vs_paired_control": 1.0000420617613823,
+      "accuracy_vs_q8_g128_fp16": {
+        "reference_words": 13615,
+        "candidate_words": 13615,
+        "word_edits": 0,
+        "word_disagreement_percent": 0.0,
+        "character_similarity_percent": 100.0,
+        "bleu": 100.00000000000004,
+        "chrf2": 100.0
+      }
+    }
+  },
+  "capabilities": {
+    "int8_matmul": {
+      "supported": false,
+      "error": "[matmul] Only inexact types are supported but int8 and int8 were provided which results in int8, which is not a floating point type."
+    },
+    "qqmm_affine": {
+      "supported": false,
+      "error": "[qqmm] Only 'nvfp4' and 'mxfp8' quantization modes are supported but 'affine' was provided."
+    },
+    "qqmm_mxfp8": {
+      "supported": false,
+      "error": "[QQMatmul] NYI for the general case"
+    }
+  },
+  "artifacts": {
+    "qmm_microbenchmarks": "qmm-results.json",
+    "dtype_audit": "dtype-audit-fp16.json",
+    "metal_trace_toc": "metal/trace-toc.xml",
+    "metal_shader_list": "metal/shaders.xml"
+  },
+  "kernel_experiments": {
+    "symmetric_signed_q8_g128": {
+      "status": "rejected",
+      "reason": "Numerically valid scalar/threadgroup prototype was 2x to 13.5x slower than MLX affine QMM."
+    },
+    "mlx_qmm_bm64": {
+      "status": "rejected",
+      "reason": "Experimental 64-frame tile failed transcript correctness and did not outperform the stock valid kernel."
+    },
+    "fused_ctc_qmm_argmax": {
+      "status": "blocked_by_public_api",
+      "implemented_fallback": "Exact streamed vocabulary-tile QMM plus running argmax.",
+      "result": "Fallback was exact but slower and did not reduce peak because middle CTC logits establish the peak.",
+      "required_work": "A new MLX primitive/Metal QMM epilogue that emits per-tile maxima and IDs instead of logits."
+    }
+  },
+  "conclusion": {
+    "recommended_weights": "Q8 affine, default group 128 with encoder.input_linear group 64",
+    "recommended_activations": "FP16 with FP32 softmax stability islands",
+    "native_fp8_or_int8_activation_compute_on_m1_max": false
+  }
+}

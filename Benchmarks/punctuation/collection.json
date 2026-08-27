@@ -1,0 +1,11 @@
+{
+  "slug": "iky1e/granite-speech-50-punctuation-and-capitalization-model-mlx-6a8f6ad45d0f10d3f0bbc5b2",
+  "url": "https://huggingface.co/collections/iky1e/granite-speech-50-punctuation-and-capitalization-model-mlx-6a8f6ad45d0f10d3f0bbc5b2",
+  "models": [
+    "iky1e/punctuation-fullstop-truecase-english-mlx-fp16",
+    "iky1e/punctuation-fullstop-truecase-english-mlx-q8",
+    "iky1e/punctuation-fullstop-truecase-english-mlx-q6",
+    "iky1e/punctuation-fullstop-truecase-english-mlx-q5",
+    "iky1e/punctuation-fullstop-truecase-english-mlx-q4"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-26T17:24:25+0100",
+  "environment": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.10.15",
+    "parakeet_mlx": "0.2.4",
+    "mlx": "0.25.1"
+  },
+  "configuration": {
+    "model": "mlx-community/parakeet-tdt-0.6b-v2",
+    "dtype": "bfloat16",
+    "chunk_duration_seconds": 120.0,
+    "overlap_duration_seconds": 15.0
+  },
+  "audio": {
+    "path": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+    "sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+    "duration_seconds": 6118.72
+  },
+  "model_load_seconds": 1.1486938749440014,
+  "runs": [
+    {
+      "index": 1,
+      "inference_seconds": 53.04763091588393,
+      "realtime_multiple": 115.343888018341,
+      "word_count": 12775,
+      "character_count": 68935,
+      "transcript_sha256": "a1b826286c593528dd21a7db1b25e3841507cbee95fe41f0e27e254bca8d9cc0"
+    },
+    {
+      "index": 2,
+      "inference_seconds": 53.614750374807045,
+      "realtime_multiple": 114.12381774093117,
+      "word_count": 12775,
+      "character_count": 68935,
+      "transcript_sha256": "a1b826286c593528dd21a7db1b25e3841507cbee95fe41f0e27e254bca8d9cc0"
+    },
+    {
+      "index": 3,
+      "inference_seconds": 53.30865745898336,
+      "realtime_multiple": 114.77910515206378,
+      "word_count": 12775,
+      "character_count": 68935,
+      "transcript_sha256": "a1b826286c593528dd21a7db1b25e3841507cbee95fe41f0e27e254bca8d9cc0"
+    }
+  ],
+  "summary": {
+    "median_inference_seconds": 53.30865745898336,
+    "minimum_inference_seconds": 53.04763091588393,
+    "maximum_inference_seconds": 53.614750374807045,
+    "median_realtime_multiple": 114.77910515206378,
+    "transcripts_identical": true
+  }
+}
