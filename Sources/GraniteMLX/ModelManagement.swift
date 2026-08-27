@@ -29,6 +29,14 @@ public struct GranitePublishedModel: Codable, Sendable, Equatable {
     public let isDefault: Bool
 
     /// Creates published-model metadata.
+    /// - Parameters:
+    ///   - alias: Stable short name accepted by the CLI and library.
+    ///   - repositoryID: Full Hugging Face `owner/repository` identifier.
+    ///   - kind: Functional checkpoint role.
+    ///   - family: Human-readable source/license family label.
+    ///   - precision: Human-readable weight precision or quantization label.
+    ///   - expectedBytes: Approximate materialized repository size in bytes.
+    ///   - isDefault: Whether this checkpoint is recommended for its model role.
     public init(
         alias: String,
         repositoryID: String,
@@ -78,6 +86,14 @@ public struct GraniteModelDownloadProgress: Sendable {
     public let bytesPerSecond: Double?
 
     /// Creates a model-download progress value.
+    /// - Parameters:
+    ///   - repositoryID: Full Hugging Face repository identifier.
+    ///   - kind: Functional checkpoint role being acquired.
+    ///   - cacheDirectory: Destination materialized repository directory.
+    ///   - phase: Current cache or download stage.
+    ///   - fractionCompleted: Estimated completion in `0...1`.
+    ///   - estimatedTotalBytes: Approximate final size, or `nil` when unknown.
+    ///   - bytesPerSecond: Current transfer rate, or `nil` when unavailable.
     public init(
         repositoryID: String,
         kind: GraniteManagedModelKind,
@@ -132,19 +148,36 @@ public struct GraniteCachedModel: Codable, Sendable {
 
 /// Errors produced by model catalog, download, validation, and cache operations.
 public enum GraniteModelManagementError: Error, GraniteDiagnosticError {
-    /// Repository ID does not have the required `owner/repository` form.
+    /// Repository ID does not have the required `owner/repository` form. The
+    /// associated string is the rejected identifier.
     case invalidRepositoryID(String)
-    /// Alias or ID cannot be resolved.
+    /// Alias or ID cannot be resolved. The associated string is the rejected value.
     case unknownModel(String)
-    /// No local files are present for the requested model.
+    /// No local files are present for the requested model. The associated string
+    /// is its canonical repository identifier.
     case notDownloaded(String)
     /// Available disk capacity is too low for the expected checkpoint.
+    /// - Parameters:
+    ///   - required: Estimated bytes required to complete materialization.
+    ///   - available: Bytes currently available on the destination volume.
     case insufficientDiskSpace(required: Int64, available: Int64)
     /// Hub download or repository lookup failed.
+    /// - Parameters:
+    ///   - repositoryID: Canonical repository being downloaded.
+    ///   - cacheDirectory: Destination retaining any resumable partial files.
+    ///   - details: Underlying Hub or network diagnostics.
     case downloadFailed(repositoryID: String, cacheDirectory: URL, details: String)
     /// Download returned without producing a complete compatible checkpoint.
+    /// - Parameters:
+    ///   - repositoryID: Canonical downloaded repository.
+    ///   - cacheDirectory: Materialized directory that failed validation.
+    ///   - details: Missing-file or compatibility validation details.
     case incompleteModel(repositoryID: String, cacheDirectory: URL, details: String)
     /// Removing a materialized checkpoint failed.
+    /// - Parameters:
+    ///   - repositoryID: Canonical repository selected for removal.
+    ///   - cacheDirectory: Exact materialized directory being removed.
+    ///   - details: Underlying filesystem or Core ML cache-removal diagnostics.
     case removalFailed(repositoryID: String, cacheDirectory: URL, details: String)
 
     /// Stable diagnostic identifier for the failure.
@@ -220,6 +253,10 @@ public enum GraniteModelCatalog {
     ]
 
     /// Resolves a catalog alias or validates a custom Hugging Face repository ID.
+    /// - Parameter aliasOrID: Published alias or `owner/repository` identifier.
+    /// - Returns: Canonical repository ID and catalog metadata when known.
+    /// - Throws: ``GraniteModelManagementError/unknownModel(_:)`` when the value
+    ///   is neither a catalog entry nor a valid repository ID.
     public static func resolve(_ aliasOrID: String) throws -> (id: String, model: GranitePublishedModel?) {
         if let model = models.first(where: {
             $0.alias.caseInsensitiveCompare(aliasOrID) == .orderedSame
@@ -234,6 +271,8 @@ public enum GraniteModelCatalog {
     }
 
     /// Returns catalog metadata matching a full repository ID.
+    /// - Parameter repositoryID: Case-insensitive full Hugging Face identifier.
+    /// - Returns: Matching catalog entry, or `nil` for custom repositories.
     public static func model(for repositoryID: String) -> GranitePublishedModel? {
         models.first { $0.repositoryID.caseInsensitiveCompare(repositoryID) == .orderedSame }
     }
@@ -292,6 +331,11 @@ public enum GraniteModelCache {
     }
 
     /// Returns the materialized cache directory for a Hugging Face repository ID.
+    /// - Parameter repositoryID: Full `owner/repository` identifier.
+    /// - Returns: Standardized local Hub materialization directory. The directory
+    ///   is not created by this lookup.
+    /// - Throws: ``GraniteModelManagementError/invalidRepositoryID(_:)`` when the
+    ///   identifier does not have a safe `owner/repository` form.
     public static func directory(for repositoryID: String) throws -> URL {
         guard isValidRepositoryID(repositoryID) else {
             throw GraniteModelManagementError.invalidRepositoryID(repositoryID)
@@ -300,6 +344,12 @@ public enum GraniteModelCache {
     }
 
     /// Returns the current completeness state for a model cache entry.
+    /// - Parameters:
+    ///   - repositoryID: Full Hugging Face repository identifier.
+    ///   - kind: Expected checkpoint role, or `nil` to accept any recognized role.
+    /// - Returns: ``GraniteModelCacheState/absent``,
+    ///   ``GraniteModelCacheState/partial``, or
+    ///   ``GraniteModelCacheState/downloaded`` after local validation.
     public static func state(
         of repositoryID: String,
         kind: GraniteManagedModelKind? = nil
@@ -319,11 +369,16 @@ public enum GraniteModelCache {
     }
 
     /// Indicates whether a complete compatible checkpoint is cached.
+    /// - Parameters:
+    ///   - repositoryID: Full Hugging Face repository identifier.
+    ///   - kind: Expected checkpoint role, or `nil` for any recognized role.
+    /// - Returns: `true` only when all required files and configuration validate.
     public static func isDownloaded(_ repositoryID: String, kind: GraniteManagedModelKind? = nil) -> Bool {
         state(of: repositoryID, kind: kind) == .downloaded
     }
 
     /// Lists complete and partial catalog checkpoints plus compatible custom checkpoints.
+    /// - Returns: Cached model records sorted case-insensitively by repository ID.
     public static func downloadedModels() -> [GraniteCachedModel] {
         let manager = FileManager.default
         guard let owners = try? manager.contentsOfDirectory(
@@ -373,6 +428,9 @@ public enum GraniteModelCache {
     ///   - cancellationToken: Optional cooperative cancellation token.
     ///   - progressHandler: Optional download progress callback.
     /// - Returns: Validated materialized checkpoint directory.
+    /// - Throws: ``GraniteModelManagementError`` for invalid IDs, insufficient
+    ///   disk space, transfer failures, or incomplete artifacts, and
+    ///   ``GraniteOperationError`` when cancellation is requested.
     @discardableResult
     public static func download(
         _ aliasOrID: String,
@@ -443,6 +501,10 @@ public enum GraniteModelCache {
 
     /// Permanently removes one exact materialized Hub repository directory.
     /// It can be restored by downloading the repository again.
+    /// - Parameter aliasOrID: Catalog alias or exact repository ID to remove.
+    /// - Returns: Metadata and reclaimed-size information captured before removal.
+    /// - Throws: ``GraniteModelManagementError`` when resolution fails, no cache
+    ///   exists, or the model and associated compiled Core ML cache cannot be removed.
     @discardableResult
     public static func remove(_ aliasOrID: String) throws -> GraniteCachedModel {
         let resolved = try GraniteModelCatalog.resolve(aliasOrID)
@@ -475,6 +537,9 @@ public enum GraniteModelCache {
     }
 
     /// Recursively computes logical file size without following symbolic links.
+    /// - Parameter directory: Directory tree whose regular files should be measured.
+    /// - Returns: Sum of regular-file logical sizes in bytes. Unreadable entries
+    ///   and symbolic links are ignored.
     public static func directorySize(_ directory: URL) -> Int64 {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileSizeKey, .isSymbolicLinkKey]
         guard let enumerator = FileManager.default.enumerator(

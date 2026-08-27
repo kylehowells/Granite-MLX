@@ -10,6 +10,11 @@ public struct GraniteTokenTiming: Codable, Sendable, Equatable {
     public let end: Double
 
     /// Creates a timed token emission.
+    /// - Parameters:
+    ///   - tokenID: Tokenizer vocabulary identifier emitted by CTC decoding.
+    ///   - text: Decoded tokenizer piece represented by `tokenID`.
+    ///   - start: Approximate emission onset in seconds from the audio start.
+    ///   - end: Approximate exclusive emission end in seconds from the audio start.
     public init(tokenID: Int, text: String, start: Double, end: Double) {
         self.tokenID = tokenID
         self.text = text
@@ -21,6 +26,10 @@ public struct GraniteTokenTiming: Codable, Sendable, Equatable {
 /// Greedy CTC collapsing and timing utilities.
 public enum GraniteCTCDecoder {
     /// Greedy CTC collapse: merge adjacent repeats, then remove blank ID 0.
+    /// - Parameters:
+    ///   - frameTokenIDs: Winning token identifier for every CTC output frame.
+    ///   - blankID: Vocabulary identifier representing the CTC blank symbol.
+    /// - Returns: Token identifiers after adjacent-repeat merging and blank removal.
     public static func collapse(_ frameTokenIDs: [Int], blankID: Int = 0) -> [Int] {
         var result: [Int] = []
         result.reserveCapacity(frameTokenIDs.count)
@@ -34,6 +43,15 @@ public enum GraniteCTCDecoder {
 
     /// Converts greedy CTC frame predictions into timestamped token emissions.
     /// Repeated adjacent IDs are one emission; blank frames terminate it.
+    /// - Parameters:
+    ///   - frameTokenIDs: Winning token identifier for every CTC output frame.
+    ///   - frameRate: Number of CTC output frames per second of source audio.
+    ///     Non-positive values produce an empty result.
+    ///   - blankID: Vocabulary identifier representing the CTC blank symbol.
+    ///   - decodeToken: Closure that maps one vocabulary identifier to its
+    ///     tokenizer piece.
+    /// - Returns: Non-blank token emissions in chronological order with
+    ///   frame-derived approximate timestamps.
     public static func tokenTimings(
         _ frameTokenIDs: [Int],
         frameRate: Double,
@@ -74,6 +92,9 @@ public enum GraniteCTCDecoder {
     }
 
     /// Groups decoded token pieces into words while retaining their CTC times.
+    /// - Parameter tokens: Chronological decoded token pieces with CTC timing.
+    /// - Returns: Whitespace-delimited words. A word may be extended to the next
+    ///   word's onset when the intervening gap is at most two seconds.
     public static func words(from tokens: [GraniteTokenTiming]) -> [GraniteWord] {
         var words: [GraniteWord] = []
         var text = ""

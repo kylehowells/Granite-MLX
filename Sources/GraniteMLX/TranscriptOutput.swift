@@ -12,6 +12,11 @@ public struct GraniteSubtitleSegment: Codable, Sendable, Equatable {
     public let words: [GraniteWord]
 
     /// Creates a subtitle cue.
+    /// - Parameters:
+    ///   - text: Rendered cue text.
+    ///   - start: Cue onset in seconds from the media start.
+    ///   - end: Cue end in seconds from the media start.
+    ///   - words: Timed words represented by the cue.
     public init(text: String, start: Double, end: Double, words: [GraniteWord]) {
         self.text = text
         self.start = start
@@ -23,6 +28,14 @@ public struct GraniteSubtitleSegment: Codable, Sendable, Equatable {
 /// Groups timed words into readable subtitle cues.
 public enum GraniteSubtitleSegmenter {
     /// Segments words at formatter boundaries, pauses, and configured limits.
+    /// - Parameters:
+    ///   - words: Chronological timed words to group into cues.
+    ///   - sentenceWordRanges: Formatter-provided half-open sentence ranges into
+    ///     `words`; sentence ends become preferred hard boundaries.
+    ///   - maxWords: Maximum words per cue before starting another cue.
+    ///   - silenceGap: Word-onset gap in seconds that starts a new cue.
+    ///   - maxDuration: Maximum onset span in seconds within one cue.
+    /// - Returns: Chronological subtitle cues. Empty input produces no cues.
     public static func segments(
         words: [GraniteWord],
         sentenceWordRanges: [Range<Int>] = [],
@@ -64,11 +77,19 @@ public enum GraniteSubtitleSegmenter {
 /// Renders transcription output in plain-text and subtitle formats.
 public enum GraniteTranscriptExporter {
     /// Renders user-facing transcript text with a trailing newline.
+    /// - Parameter transcription: Raw or formatted transcription to render.
+    /// - Returns: ``GraniteTranscription/text`` followed by one newline.
     public static func text(_ transcription: GraniteTranscription) -> String {
         transcription.text + "\n"
     }
 
     /// Renders SubRip subtitle cues.
+    /// - Parameters:
+    ///   - segments: Chronological subtitle cues.
+    ///   - duration: Media duration used for the no-speech fallback cue.
+    ///   - highlightWords: When `true`, emits one cue per active word and wraps
+    ///     that word in SubRip-compatible underline tags.
+    /// - Returns: Complete UTF-8 SubRip text with comma millisecond separators.
     public static func srt(
         segments: [GraniteSubtitleSegment],
         duration: Double,
@@ -80,6 +101,12 @@ public enum GraniteTranscriptExporter {
     }
 
     /// Renders WebVTT subtitle cues.
+    /// - Parameters:
+    ///   - segments: Chronological subtitle cues.
+    ///   - duration: Media duration used for the no-speech fallback cue.
+    ///   - highlightWords: When `true`, emits one cue per active word and wraps
+    ///     that word in WebVTT bold tags.
+    /// - Returns: Complete WebVTT text beginning with the `WEBVTT` header.
     public static func webVTT(
         segments: [GraniteSubtitleSegment],
         duration: Double,

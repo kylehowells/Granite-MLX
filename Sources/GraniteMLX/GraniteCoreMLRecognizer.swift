@@ -27,12 +27,18 @@ public enum GraniteCoreMLComputeUnits: String, Codable, Sendable, CaseIterable {
 /// Errors produced by the fixed-shape Core ML Granite backend.
 public enum GraniteCoreMLRecognizerError: Error, GraniteDiagnosticError, Sendable {
     /// Required tokenizer or configuration files are absent.
+    /// - Parameter details: Missing file, parse, or tokenizer diagnostic context.
     case invalidTokenizerDirectory(URL, details: String)
     /// The Core ML package could not be loaded or has an incompatible interface.
+    /// - Parameter details: Compilation, loading, or interface diagnostic context.
     case invalidModel(URL, details: String)
     /// A chunk contains more frontend frames than the fixed model accepts.
+    /// - Parameters:
+    ///   - actualFrames: Frontend frames required by the supplied audio chunk.
+    ///   - maximumFrames: Fixed frame capacity encoded in the Core ML graph.
     case inputTooLong(actualFrames: Int, maximumFrames: Int)
     /// Core ML prediction failed.
+    /// - Parameter details: Core ML prediction or output-conversion diagnostics.
     case predictionFailed(details: String)
 
     /// Stable diagnostic identifier for the failure.
@@ -129,6 +135,18 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
     private let temporaryCompiledModelURL: URL?
 
     /// Loads a converted Core ML package and the matching Granite tokenizer.
+    /// - Parameters:
+    ///   - modelURL: Compiled `.mlmodelc` or source `.mlpackage` containing the
+    ///     fixed-shape Granite ML Program.
+    ///   - tokenizerURL: Directory containing matching `config.json` and
+    ///     tokenizer files.
+    ///   - computeUnits: Core ML device-placement policy.
+    ///   - compiledModelCacheURL: Persistent cache for compiled `.mlpackage`
+    ///     output. Pass `nil` to use a temporary compiled model removed at
+    ///     recognizer deinitialization.
+    /// - Throws: ``GraniteCoreMLRecognizerError`` when tokenizer files are
+    ///   incompatible, compilation/loading fails, or model inputs and outputs do
+    ///   not match Granite's fixed interface.
     public init(
         modelURL: URL,
         tokenizerURL: URL,
@@ -197,6 +215,8 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
     ///   - compiledModelCacheURL: Persistent compiled-model cache directory.
     ///   - progressHandler: Optional model-download progress callback.
     ///   - cancellationToken: Optional cooperative cancellation token.
+    /// - Throws: Errors from ``GraniteCoreMLModelLoader`` or the designated
+    ///   initializer when acquisition, validation, compilation, or loading fails.
     public convenience init(
         modelSource: String = GraniteCoreMLModelLoader.defaultModelID,
         computeUnits: GraniteCoreMLComputeUnits = .cpuAndGPU,
@@ -217,6 +237,13 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
     }
 
     /// Initializes a recognizer from a validated Core ML model artifact.
+    /// - Parameters:
+    ///   - artifact: Validated package, tokenizer directory, and configuration.
+    ///   - computeUnits: Core ML device-placement policy.
+    ///   - compiledModelCacheURL: Persistent compilation cache, or `nil` for a
+    ///     temporary compiled model.
+    /// - Throws: ``GraniteCoreMLRecognizerError`` when tokenizer loading,
+    ///   compilation, model loading, or interface validation fails.
     public convenience init(
         artifact: GraniteCoreMLModelArtifact,
         computeUnits: GraniteCoreMLComputeUnits = .cpuAndGPU,
@@ -236,6 +263,9 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
     }
 
     /// Exposes the shared Granite frontend tensor for parity diagnostics.
+    /// - Parameter audio: Prepared mono audio. Callers are responsible for using
+    ///   the sample rate in ``configuration``.
+    /// - Returns: Granite frontend features shaped `[1, frames, 320]`.
     public func features(for audio: GraniteAudio) -> MLXArray {
         featureExtractor(audio.samples)
     }

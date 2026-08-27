@@ -1,9 +1,10 @@
-#!/bin/bash
+#!/bin/sh
 
-set -euo pipefail
+set -eu
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPOSITORY_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+unset CDPATH
+SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
+REPOSITORY_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 TEMPORARY_OUTPUT="$(mktemp -d "${TMPDIR:-/tmp}/granite-mlx-docc.XXXXXX")"
 
 cleanup() {
@@ -19,10 +20,12 @@ swift package dump-symbol-graph \
     --minimum-access-level public
 
 SYMBOL_GRAPH_FILE="$(find .build -type f -name 'GraniteMLX.symbols.json' -print -quit)"
-if [[ -z "$SYMBOL_GRAPH_FILE" ]]; then
+if [ -z "$SYMBOL_GRAPH_FILE" ]; then
     echo "Documentation check failed: SwiftPM did not produce a symbol graph." >&2
     exit 1
 fi
+
+xcrun swift Scripts/check_public_api_documentation.swift "$SYMBOL_GRAPH_FILE"
 SYMBOL_GRAPH_DIRECTORY="$TEMPORARY_OUTPUT/symbolgraphs"
 mkdir -p "$SYMBOL_GRAPH_DIRECTORY"
 cp "$SYMBOL_GRAPH_FILE" "$SYMBOL_GRAPH_DIRECTORY/"

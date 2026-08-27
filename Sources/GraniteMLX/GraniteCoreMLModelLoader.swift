@@ -76,6 +76,16 @@ public enum GraniteCoreMLModelLoader {
     ///
     /// Download progress, cancellation, authentication, and cache placement use
     /// the same model-management APIs as the MLX speech and punctuation models.
+    /// - Parameters:
+    ///   - source: Local repository directory, catalog alias, or Hugging Face
+    ///     repository ID. The published Core ML Q8 model is used when omitted.
+    ///   - hfToken: Optional Hugging Face token for private or gated repositories.
+    ///   - progressHandler: Receives model cache and byte-weighted download events.
+    ///   - cancellationToken: Cooperatively cancels before, during, or after download.
+    /// - Returns: Validated model package, tokenizer directory, and conversion metadata.
+    /// - Throws: ``GraniteModelManagementError`` for resolution, download, or
+    ///   cache failures; ``GraniteCoreMLRecognizerError`` for incompatible model
+    ///   contents; ``GraniteOperationError`` when cancelled.
     public static func load(
         source: String = defaultModelID,
         hfToken: String? = nil,
@@ -96,6 +106,11 @@ public enum GraniteCoreMLModelLoader {
     }
 
     /// Loads and validates a materialized Core ML model repository directory.
+    /// - Parameter directory: Directory containing `coreml_config.json`, the
+    ///   configured `.mlpackage`, and Granite tokenizer/configuration files.
+    /// - Returns: A validated Core ML model artifact referencing local files.
+    /// - Throws: ``GraniteCoreMLRecognizerError/invalidModel(_:details:)`` when
+    ///   configuration, package, tokenizer, or cache state is missing or invalid.
     public static func load(from directory: URL) throws -> GraniteCoreMLModelArtifact {
         let directory = directory.standardizedFileURL
         let configurationURL = directory.appendingPathComponent("coreml_config.json")

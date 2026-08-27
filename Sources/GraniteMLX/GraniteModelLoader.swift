@@ -24,6 +24,17 @@ public enum GraniteModelLoader {
 
     /// Loads either a local converted checkpoint directory or a Hugging Face
     /// repository ID. The model directory is cached by swift-transformers.
+    /// - Parameters:
+    ///   - source: Local converted checkpoint directory, catalog alias, or
+    ///     Hugging Face repository ID. The recommended Q8 checkpoint is used
+    ///     when omitted.
+    ///   - hfToken: Optional Hugging Face token for private or gated repositories.
+    ///   - progressHandler: Receives model cache and byte-weighted download events.
+    ///   - cancellationToken: Cooperatively cancels model acquisition.
+    /// - Returns: Validated configuration and MLX tensors for speech inference.
+    /// - Throws: ``GraniteModelManagementError`` for download/cache failures,
+    ///   ``GraniteRecognizerError`` for incompatible checkpoints, or
+    ///   ``GraniteOperationError`` for cancellation and wrapped loading errors.
     public static func load(
         source: String = defaultModelID,
         hfToken: String? = nil,
@@ -43,6 +54,12 @@ public enum GraniteModelLoader {
     }
 
     /// Loads and validates a converted Granite checkpoint directory.
+    /// - Parameter directory: Directory containing `config.json`,
+    ///   `model.safetensors`, and matching tokenizer files.
+    /// - Returns: Parsed configuration and normalized MLX checkpoint tensors.
+    /// - Throws: ``GraniteRecognizerError`` when required files/tensors or
+    ///   quantization settings are invalid; ``GraniteOperationError`` when file,
+    ///   JSON, or safetensors loading fails.
     public static func load(from directory: URL) throws -> GraniteModelArtifact {
         let configURL = directory.appendingPathComponent("config.json")
         let weightsURL = directory.appendingPathComponent("model.safetensors")

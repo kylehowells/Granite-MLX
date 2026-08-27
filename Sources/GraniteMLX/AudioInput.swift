@@ -17,6 +17,10 @@ public struct GraniteAudio: Sendable {
     }
 
     /// Creates an in-memory audio value.
+    /// - Parameters:
+    ///   - samples: Normalized mono PCM samples, conventionally in `-1...1`.
+    ///   - sampleRate: Number of samples per second.
+    ///   - source: Original media URL retained for diagnostics and metadata.
     public init(samples: [Float], sampleRate: Int, source: URL) {
         self.samples = samples
         self.sampleRate = sampleRate
@@ -26,19 +30,27 @@ public struct GraniteAudio: Sendable {
 
 /// Errors produced while decoding and converting input media.
 public enum GraniteAudioError: Error, GraniteDiagnosticError {
-    /// The input path does not identify a regular file.
+    /// The input path does not identify a readable file. The associated URL is
+    /// the standardized path requested by the caller.
     case inputNotFound(URL)
-    /// No usable audio track was found.
+    /// No usable audio track was found. The associated URL identifies the media.
     case noAudioTrack(URL)
     /// AVFoundation returned an unsupported audio representation.
+    /// - Parameter details: Decoder format and buffer information for diagnostics.
     case invalidAudioFormat(details: String)
-    /// Audio conversion or resampling failed.
+    /// Audio conversion or resampling failed. The associated string contains
+    /// framework or format details.
     case conversionFailed(String)
     /// Direct decoding failed and ffmpeg is not installed.
+    /// - Parameter directDecoderDetails: AVFoundation failure retained for support logs.
     case ffmpegUnavailable(URL, directDecoderDetails: String)
     /// ffmpeg could not be launched.
+    /// - Parameter details: Process launch error retained for support logs.
     case ffmpegLaunchFailed(URL, details: String)
     /// ffmpeg ran but rejected or failed to decode the input.
+    /// - Parameters:
+    ///   - exitStatus: ffmpeg process termination status.
+    ///   - stderr: Captured ffmpeg diagnostic output.
     case ffmpegFailed(URL, exitStatus: Int32, stderr: String)
 
     /// Stable diagnostic identifier for the failure.
@@ -101,6 +113,9 @@ public enum GraniteAudioInput {
     ///   - cancellationToken: Optional cooperative cancellation token.
     ///   - progressHandler: Optional application-facing progress callback.
     /// - Returns: Mono floating-point audio at `targetSampleRate`.
+    /// - Throws: ``GraniteAudioError`` when the file is missing, contains no
+    ///   readable audio, or cannot be converted; ``GraniteOperationError`` when
+    ///   cancellation is requested or an underlying operation fails.
     public static func load(
         url: URL,
         targetSampleRate: Int = targetSampleRate,

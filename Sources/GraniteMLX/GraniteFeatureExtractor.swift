@@ -31,6 +31,16 @@ public struct GraniteFeatureExtractor: @unchecked Sendable {
     private let filterbank: MLXArray
 
     /// Creates a Granite-compatible feature extractor.
+    /// - Parameters:
+    ///   - sampleRate: Required input PCM sample rate in samples per second.
+    ///   - fftSize: Transform size, including zero padding around the analysis window.
+    ///   - windowLength: Number of PCM samples covered by each Hann window.
+    ///   - hopLength: Number of PCM samples advanced between adjacent windows.
+    ///   - melCount: Number of HTK mel-filterbank channels.
+    ///   - stackFactor: Adjacent feature frames concatenated into one encoder step.
+    ///   - includeDeltas: Whether first-order temporal deltas are appended.
+    ///   - deltaWindowLength: Delta calculation window. Granite checkpoints use `3`.
+    ///   - logMelFloorDB: Dynamic-range floor applied before normalization, in dB.
     public init(
         sampleRate: Int = 16_000, fftSize: Int = 512, windowLength: Int = 400,
         hopLength: Int = 160, melCount: Int = 80, stackFactor: Int = 2,
@@ -56,7 +66,11 @@ public struct GraniteFeatureExtractor: @unchecked Sendable {
         self.filterbank = MLXArray(bank.flatMap { $0 }).reshaped(melCount, fftSize / 2 + 1)
     }
 
-    /// Returns [1, stackedFrames, melCount * (1 + deltas) * stackFactor].
+    /// Produces Granite log-mel, optional delta, and frame-stacked features.
+    /// - Parameter samples: Mono floating-point PCM at ``sampleRate`` containing
+    ///   more than `fftSize / 2` samples.
+    /// - Returns: An MLX tensor shaped
+    ///   `[1, stackedFrames, melCount * (1 + deltas) * stackFactor]`.
     public func callAsFunction(_ samples: [Float]) -> MLXArray {
         let melFrames = max(1, samples.count / hopLength)
         let frameCount = max(stackFactor, ((melFrames + stackFactor - 1) / stackFactor) * stackFactor)

@@ -10,6 +10,10 @@ public struct GraniteTranscriptFormatterInfo: Codable, Sendable, Equatable {
     public let quantizationBits: Int?
 
     /// Creates formatter checkpoint metadata.
+    /// - Parameters:
+    ///   - architecture: Formatter architecture identifier used for backend selection.
+    ///   - precision: Human-readable checkpoint precision such as `Q8` or `FP16`.
+    ///   - quantizationBits: Packed weight bit width, or `nil` for floating weights.
     public init(architecture: String, precision: String, quantizationBits: Int?) {
         self.architecture = architecture
         self.precision = precision
@@ -27,6 +31,13 @@ public protocol GraniteTranscriptFormatter: Sendable {
     var formatterInfo: GraniteTranscriptFormatterInfo { get }
 
     /// Formats raw Granite text with optional cancellation and progress reporting.
+    /// - Parameters:
+    ///   - text: Raw lexical transcript to annotate without replacing its words.
+    ///   - cancellationToken: Optional cooperative cancellation token.
+    ///   - progressHandler: Receives formatter window and completion progress.
+    /// - Returns: Presentation text and sentence-to-word boundary mapping.
+    /// - Throws: ``GraniteOperationError`` when cancelled or an underlying
+    ///   operation fails, and backend-specific validation errors.
     func format(
         _ text: String,
         cancellationToken: GraniteCancellationToken?,
@@ -40,6 +51,15 @@ public enum GraniteTranscriptFormatterFactory {
     ///
     /// Future architectures can be selected here from checkpoint metadata
     /// without changing callers, the CLI, timestamp mapping, or exporters.
+    /// - Parameters:
+    ///   - modelSource: Local checkpoint directory, catalog alias, or Hugging
+    ///     Face repository ID. The recommended Q8 formatter is used when omitted.
+    ///   - hfToken: Optional Hugging Face token for private or gated repositories.
+    ///   - progressHandler: Receives model cache and download events.
+    ///   - cancellationToken: Cooperatively cancels model acquisition.
+    /// - Returns: A loaded formatter behind the architecture-independent protocol.
+    /// - Throws: Model-management, checkpoint-validation, tokenizer-loading, or
+    ///   cancellation errors produced while constructing the formatter.
     public static func load(
         modelSource: String = PunctuationModelLoader.defaultModelID,
         hfToken: String? = nil,

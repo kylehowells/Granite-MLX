@@ -515,7 +515,9 @@ documented in [`Tests/README.md`](Tests/README.md). Large model and audio paths
 are supplied through environment variables and are never committed.
 
 `Scripts/check_documentation.sh` builds the DocC catalog with warnings treated
-as errors and reports public-symbol documentation coverage.
+as errors and enforces the source documentation contract. Every source-defined
+public symbol must have a `///` description; callable parameters, return values,
+thrown errors, and named enum associated values must also be documented.
 
 ## License
 

@@ -35,6 +35,9 @@ public final class GraniteCancellationToken: @unchecked Sendable {
     }
 
     /// Throws ``GraniteOperationError/cancelled(operation:)`` when cancelled.
+    /// - Parameter operation: Human-readable name included in diagnostic details.
+    /// - Throws: ``GraniteOperationError/cancelled(operation:)`` after
+    ///   ``cancel()`` has been called; otherwise returns normally.
     public func checkCancellation(operation: String) throws {
         if isCancelled { throw GraniteOperationError.cancelled(operation: operation) }
     }
@@ -68,6 +71,12 @@ public struct GraniteOperationProgress: Codable, Sendable, Equatable {
     public let chunkCount: Int?
 
     /// Creates an operation progress value.
+    /// - Parameters:
+    ///   - phase: High-level operation stage.
+    ///   - fractionCompleted: Completion value; values outside `0...1` are clamped.
+    ///   - message: Human-readable status suitable for application UI.
+    ///   - chunkIndex: Zero-based active chunk index, or `nil` outside chunked work.
+    ///   - chunkCount: Total chunks when known, or `nil` when not applicable.
     public init(
         phase: GraniteOperationPhase,
         fractionCompleted: Double,
@@ -89,8 +98,13 @@ public typealias GraniteOperationProgressHandler = @Sendable (GraniteOperationPr
 /// Failures shared by cancellable GraniteMLX operations.
 public enum GraniteOperationError: Error, GraniteDiagnosticError, Sendable {
     /// Cooperative cancellation was requested by the caller.
+    /// - Parameter operation: Human-readable operation interrupted by cancellation.
     case cancelled(operation: String)
     /// An underlying framework produced an error that was not more specifically classified.
+    /// - Parameters:
+    ///   - code: Stable GraniteMLX diagnostic code for the failed operation.
+    ///   - operation: Human-readable operation name.
+    ///   - details: Underlying framework error and technical context.
     case underlying(code: String, operation: String, details: String)
 
     /// Stable diagnostic identifier for the failure.

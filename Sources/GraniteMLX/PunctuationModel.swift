@@ -65,6 +65,16 @@ public enum PunctuationModelLoader {
     public static let defaultModelID = "iky1e/punctuation-fullstop-truecase-english-mlx-q8"
 
     /// Resolves, downloads if necessary, and loads a punctuation checkpoint.
+    /// - Parameters:
+    ///   - source: Local checkpoint directory, catalog alias, or Hugging Face
+    ///     repository ID. The recommended Q8 formatter is used when omitted.
+    ///   - hfToken: Optional Hugging Face token for private or gated repositories.
+    ///   - progressHandler: Receives model cache and byte-weighted download events.
+    ///   - cancellationToken: Cooperatively cancels model acquisition.
+    /// - Returns: Validated formatter configuration and MLX tensors.
+    /// - Throws: ``GraniteModelManagementError`` for download/cache failures,
+    ///   ``GraniteRecognizerError`` for incompatible checkpoints, or
+    ///   ``GraniteOperationError`` for cancellation and wrapped loading errors.
     public static func load(
         source: String = defaultModelID,
         hfToken: String? = nil,
@@ -84,6 +94,11 @@ public enum PunctuationModelLoader {
     }
 
     /// Loads and validates a punctuation checkpoint directory.
+    /// - Parameter directory: Directory containing `mlx_config.json`,
+    ///   `model.safetensors`, and tokenizer files.
+    /// - Returns: Parsed formatter configuration and loaded MLX tensors.
+    /// - Throws: ``GraniteRecognizerError`` for missing files/tensors or
+    ///   ``GraniteOperationError`` when JSON or safetensors loading fails.
     public static func load(from directory: URL) throws -> PunctuationModelArtifact {
         let configURL = directory.appendingPathComponent("mlx_config.json")
         let weightsURL = directory.appendingPathComponent("model.safetensors")
@@ -280,6 +295,11 @@ public struct PunctuationFormattingResult: Sendable {
     public let sentenceWordRanges: [Range<Int>]
 
     /// Creates a result, deriving contiguous word ranges when omitted.
+    /// - Parameters:
+    ///   - text: Complete formatted transcript.
+    ///   - sentences: Formatted sentences in display order.
+    ///   - sentenceWordRanges: Half-open ranges into whitespace-delimited words.
+    ///     When omitted, contiguous ranges are derived from `sentences`.
     public init(text: String, sentences: [String], sentenceWordRanges: [Range<Int>]? = nil) {
         self.text = text
         self.sentences = sentences
@@ -312,6 +332,14 @@ public final class PunctuationFormatter: GraniteTranscriptFormatter, @unchecked 
     }
 
     /// Creates a formatter from a local path or Hugging Face repository ID.
+    /// - Parameters:
+    ///   - modelSource: Local checkpoint directory, catalog alias, or Hugging
+    ///     Face repository ID. The recommended Q8 formatter is used when omitted.
+    ///   - hfToken: Optional Hugging Face token for private or gated repositories.
+    ///   - progressHandler: Receives model cache and download progress.
+    ///   - cancellationToken: Cooperatively cancels model acquisition.
+    /// - Throws: Model-management, checkpoint-validation, tokenizer-loading, or
+    ///   cancellation errors produced while constructing the formatter.
     public init(
         modelSource: String = PunctuationModelLoader.defaultModelID,
         hfToken: String? = nil,
@@ -335,6 +363,9 @@ public final class PunctuationFormatter: GraniteTranscriptFormatter, @unchecked 
     }
 
     /// Creates a formatter from an already downloaded checkpoint directory.
+    /// - Parameter modelURL: Materialized formatter repository directory.
+    /// - Throws: ``GraniteRecognizerError`` for invalid checkpoint contents or
+    ///   ``GraniteOperationError`` when model/tokenizer loading fails.
     public init(modelURL: URL) throws {
         let artifact = try PunctuationModelLoader.load(from: modelURL)
         self.artifact = artifact
@@ -351,6 +382,11 @@ public final class PunctuationFormatter: GraniteTranscriptFormatter, @unchecked 
     }
 
     /// Formats text without cancellation or progress reporting.
+    /// - Parameters:
+    ///   - text: Raw lowercased recognition text to annotate.
+    ///   - overlap: Number of tokenizer items shared by adjacent windows. Must
+    ///     be nonnegative and smaller than the model payload length.
+    /// - Returns: Formatted text, sentences, and sentence word ranges.
     public func format(_ text: String, overlap: Int = 16) -> PunctuationFormattingResult {
         // The cancellable implementation can only throw when a supplied token
         // is cancelled, so this compatibility entry point is non-throwing.
@@ -360,6 +396,13 @@ public final class PunctuationFormatter: GraniteTranscriptFormatter, @unchecked 
     }
 
     /// Formats text through the architecture-independent formatter protocol.
+    /// - Parameters:
+    ///   - text: Raw lexical transcript to annotate non-destructively.
+    ///   - cancellationToken: Optional cooperative cancellation token.
+    ///   - progressHandler: Receives formatter-window and completion progress.
+    /// - Returns: Formatted text, sentences, and sentence word ranges.
+    /// - Throws: ``GraniteOperationError`` when cancelled or an underlying
+    ///   operation fails, and ``GraniteRecognizerError`` for invalid options.
     public func format(
         _ text: String,
         cancellationToken: GraniteCancellationToken?,
@@ -379,6 +422,9 @@ public final class PunctuationFormatter: GraniteTranscriptFormatter, @unchecked 
     ///   - cancellationToken: Optional cooperative cancellation token.
     ///   - progressHandler: Optional application-facing progress callback.
     /// - Returns: Formatted text and sentence word ranges.
+    /// - Throws: ``GraniteRecognizerError/unsupportedConfiguration(_:)`` when
+    ///   `overlap` is outside the supported range, or
+    ///   ``GraniteOperationError/cancelled(operation:)`` when cancelled.
     public func format(
         _ text: String,
         overlap: Int = 16,

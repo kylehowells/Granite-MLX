@@ -20,6 +20,11 @@ public struct GraniteQuantizationConfiguration: Decodable, Sendable, Equatable {
     }
 
     /// Creates an affine quantization configuration.
+    /// - Parameters:
+    ///   - groupSize: Default number of source values sharing scale and bias.
+    ///   - bits: Packed weight width supported by the converted checkpoint.
+    ///   - mode: MLX quantization representation, normally affine.
+    ///   - groupSizes: Per-module group-size overrides keyed by flattened path.
     public init(
         groupSize: Int, bits: Int, mode: QuantizationMode,
         groupSizes: [String: Int] = [:]
@@ -31,6 +36,8 @@ public struct GraniteQuantizationConfiguration: Decodable, Sendable, Equatable {
     }
 
     /// Decodes quantization settings from a converted checkpoint configuration.
+    /// - Parameter decoder: Decoder positioned at the quantization object.
+    /// - Throws: `DecodingError` when required values are missing or malformed.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         groupSize = try container.decode(Int.self, forKey: .groupSize)
@@ -40,6 +47,9 @@ public struct GraniteQuantizationConfiguration: Decodable, Sendable, Equatable {
     }
 
     /// Returns the per-module group size override or the default group size.
+    /// - Parameter modulePath: Flattened MLX module path, for example
+    ///   `encoder.input_linear`.
+    /// - Returns: Matching override, or ``groupSize`` when no override exists.
     public func groupSize(for modulePath: String) -> Int {
         groupSizes[modulePath] ?? groupSize
     }
@@ -96,6 +106,9 @@ public struct GraniteModelConfiguration: Decodable, Sendable {
     public init() {}
 
     /// Decodes architecture settings from a converted checkpoint configuration.
+    /// - Parameter decoder: Decoder positioned at the model configuration object.
+    /// - Throws: `DecodingError` when a present configuration value has an
+    ///   incompatible type or nested structure.
     public init(from decoder: Decoder) throws {
         let root = try decoder.container(keyedBy: CodingKeys.self)
         modelType = try root.decodeIfPresent(String.self, forKey: .modelType) ?? modelType
@@ -128,6 +141,10 @@ public struct GraniteWord: Codable, Sendable, Equatable {
     public let end: Double
 
     /// Creates a timed word.
+    /// - Parameters:
+    ///   - text: Display spelling for the decoded word.
+    ///   - start: Approximate word onset in seconds from the audio start.
+    ///   - end: Approximate exclusive word end in seconds from the audio start.
     public init(text: String, start: Double, end: Double) {
         self.text = text
         self.start = start
@@ -153,6 +170,14 @@ public struct GraniteTranscription: Codable, Sendable {
     public let model: String
 
     /// Creates a transcription result.
+    /// - Parameters:
+    ///   - text: Current user-facing transcript text.
+    ///   - rawText: Original unformatted CTC text; defaults to `text`.
+    ///   - formattedText: Presentation-formatted text, or `nil` before formatting.
+    ///   - tokens: Collapsed CTC emissions with approximate timing.
+    ///   - words: Whitespace-grouped words with approximate timing.
+    ///   - duration: Source audio duration in seconds.
+    ///   - model: Model path or identifier used to produce the result.
     public init(
         text: String,
         rawText: String? = nil,
@@ -172,6 +197,10 @@ public struct GraniteTranscription: Codable, Sendable {
     }
 
     /// Returns a copy whose visible text and word spelling use formatter output.
+    /// - Parameter formatting: Non-destructive formatter text and sentence mapping.
+    /// - Returns: A transcription retaining raw text/token timing while using
+    ///   formatted display text. Timed word spellings are updated only when the
+    ///   formatter preserves the whitespace-delimited word count.
     public func applyingFormatting(_ formatting: PunctuationFormattingResult) -> GraniteTranscription {
         let formattedWords = formatting.text.split(whereSeparator: \.isWhitespace).map(String.init)
         let timedWords: [GraniteWord]
@@ -244,9 +273,11 @@ public struct GraniteActivationStage: Codable, Sendable {
 
 /// Errors produced while loading or running the Granite recognizer.
 public enum GraniteRecognizerError: Error, GraniteDiagnosticError {
-    /// A checkpoint or runtime option uses an unsupported configuration.
+    /// A checkpoint or runtime option uses an unsupported configuration. The
+    /// associated string describes the rejected value or compatibility rule.
     case unsupportedConfiguration(String)
-    /// A checkpoint directory is missing required or valid model artifacts.
+    /// A checkpoint directory is missing required or valid model artifacts. The
+    /// associated URL is the exact directory that failed validation.
     case invalidModel(URL)
 
     /// Stable diagnostic identifier for the failure.
@@ -306,6 +337,11 @@ public final class GraniteRecognizer: @unchecked Sendable {
     private let tokenizer: GraniteTokenizer
 
     /// Creates a recognizer from an already downloaded checkpoint directory.
+    /// - Parameter modelURL: Converted checkpoint directory containing model,
+    ///   tokenizer, and configuration files.
+    /// - Throws: ``GraniteRecognizerError`` when checkpoint contents or
+    ///   quantization are incompatible; ``GraniteOperationError`` when model or
+    ///   tokenizer loading fails.
     public init(modelURL: URL) throws {
         let artifact = try GraniteModelLoader.load(from: modelURL)
         let model = GraniteCTCModel(artifact.configuration)
@@ -350,6 +386,8 @@ public final class GraniteRecognizer: @unchecked Sendable {
     ///     may be called multiple times on the calling operation's thread.
     ///   - cancellationToken: Cooperatively cancels model acquisition between
     ///     network and file operations.
+    /// - Throws: Model-management, checkpoint-validation, tokenizer-loading, or
+    ///   cancellation errors produced while acquiring and initializing the model.
     public convenience init(
         modelSource: String = GraniteModelLoader.defaultModelID,
         hfToken: String? = nil,
@@ -363,6 +401,8 @@ public final class GraniteRecognizer: @unchecked Sendable {
     }
 
     /// Exposes the model input tensor for frontend parity diagnostics.
+    /// - Parameter audio: Prepared mono audio at the checkpoint sample rate.
+    /// - Returns: Granite frontend tensor shaped `[1, frames, 320]`.
     public func features(for audio: GraniteAudio) -> MLXArray {
         featureExtractor(audio.samples)
     }
@@ -547,6 +587,11 @@ public final class GraniteRecognizer: @unchecked Sendable {
         ).squeezed(axis: 0).asArray(Int32.self).map(Int.init)
     }
     /// Evaluates and records key activation tensors for precision diagnostics.
+    /// - Parameters:
+    ///   - audio: Prepared mono audio at the checkpoint sample rate.
+    ///   - activationPrecision: Storage precision to audit between encoder stages.
+    /// - Returns: Ordered snapshots containing stage name, shape, dtype, byte
+    ///   count, and evaluated numeric range. This performs a full model forward pass.
     public func activationAudit(
         _ audio: GraniteAudio,
         activationPrecision: GraniteActivationPrecision = .baseline
