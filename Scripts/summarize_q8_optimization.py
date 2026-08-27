@@ -70,12 +70,14 @@ def sha256(path: Path) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--raw-root", type=Path, default=Path("/tmp/granite-q8-optimization"))
+    parser.add_argument("--model-root", type=Path, required=True)
+    parser.add_argument("--audio", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     raw = args.raw_root
     repo = Path(__file__).resolve().parents[1]
-    model_root = Path("/Users/kylehowells/Developer/ML-Models")
-    full_audio = Path("/private/tmp/granite-cme295-lecture1-16k-mono.wav")
+    model_root = args.model_root
+    full_audio = args.audio
     qmm = json.loads((repo / "Benchmarks/q8-optimization/qmm-results.json").read_text())
 
     fp32_reference = (repo / "Benchmarks/quantization/transcripts/fp32-full.txt").read_text().strip()
@@ -146,7 +148,7 @@ def main() -> int:
             "hardware": hardware,
         },
         "audio": {
-            "path": str(full_audio),
+            "path": full_audio.name,
             "sha256": sha256(full_audio),
             "duration_seconds": 6118.72,
         },

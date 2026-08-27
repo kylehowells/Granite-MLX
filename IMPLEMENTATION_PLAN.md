@@ -20,16 +20,16 @@ The original model is an English-only, encoder-only CTC model. It uses a 16-laye
 
 Model weights must remain outside this repository. The local source checkpoint currently lives at:
 
-`/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc`
+`/path/to/granite-speech-5.0-470m-turboctc`
 
 Converted weights should eventually be published as a separate Hugging Face model repository and downloaded/cached by the CLI.
 
 ## Reference projects
 
-- `/Users/kylehowells/Developer/Github/moonshine-mlx` — native Swift speech-recognition runtime and CLI.
-- `/Users/kylehowells/Developer/Github/DeepFilterNet-mlx` — MLX conversion, audio processing, benchmarking, and packaging patterns.
-- `/Users/kylehowells/Developer/Github/demucs-mlx-swift` — Swift MLX audio model loading and CLI structure.
-- `/Users/kylehowells/Developer/Github/Moebius-MLX` — larger custom MLX model architecture and performance work.
+- `moonshine-mlx` — native Swift speech-recognition runtime and CLI.
+- `DeepFilterNet-mlx` — MLX conversion, audio processing, benchmarking, and packaging patterns.
+- `demucs-mlx-swift` — Swift MLX audio model loading and CLI structure.
+- `Moebius-MLX` — larger custom MLX model architecture and performance work.
 - `senstella/parakeet-mlx` — behavioral reference for the existing Python Parakeet CLI.
 - `Blaizzy/mlx-audio-swift` — existing Swift MLX audio model conventions, including older Granite Speech support.
 
@@ -40,7 +40,8 @@ Converted weights should eventually be published as a separate Hugging Face mode
 - [x] Create library target `GraniteMLX`.
 - [x] Create executable target `granite-mlx`.
 - [x] Add test target and initial test fixtures.
-- [ ] Pin a known-good `mlx-swift` revision and document the minimum Xcode/Swift/macOS versions.
+- [x] Pin known-good MLX Swift 0.31.4, Swift Transformers 1.3.3, and Swift
+  Argument Parser 1.8.2 releases and document the minimum Xcode/Swift/macOS versions.
 - [ ] Treat `mlx-swift-lm` as a reference for package/model-loading conventions, but implement Granite as a custom encoder rather than an LLM registry entry.
 - [x] Add `.gitignore` for `.build`, model directories, caches, generated outputs, and local benchmark artifacts.
 - [x] Dual-license the software under Apache-2.0 or MIT, at the user's option,
@@ -278,13 +279,15 @@ capitalization, and segmentation model derived from
   including jetsam headroom, thermals, battery use, and sustained speed.
 - [ ] Test short audio, long audio, silence, stereo input, non-16 kHz input, and multiple files (20 s and 10 min audio/video paths are complete).
 - [x] Test published default-model download from an isolated empty cache and local model loading.
-- [ ] Test cache reuse and clear network/download error messages; add first-download progress reporting.
+- [x] Test cache reuse, isolated partial/corrupt states, interruption/resume,
+  coded network/download errors, and first-download progress reporting.
 
 ### Local long-form benchmark corpus
 
 The primary long-form performance fixtures are stored outside this repository:
 
-`/Users/kylehowells/Movies/YouTube/Stanford CME295 Transformers & LLMs`
+The source videos are supplied to release tests through
+`GRANITE_TEST_LONG_AUDIO` and remain outside Git.
 
 Current fixtures:
 
@@ -402,20 +405,24 @@ corruption without depending on the public service.
 - [x] Give validation and runtime failures stable `GMLX-*` diagnostic codes and
   technical context; multi-input batches continue safely and exit nonzero if
   any input failed.
-- [ ] Ensure Ctrl-C cleans up temporary converted audio and partial outputs.
+- [x] Map Ctrl-C to cooperative library cancellation, terminate ffmpeg, write
+  outputs atomically, and remove files from an interrupted multi-format export.
 
 ### Release-level tests
 
-- [ ] Add CLI integration tests for TXT, SRT, VTT, JSON, and `all`.
+- [x] Add CLI integration tests for TXT, SRT, VTT, JSON, and `all`.
 - [x] Add unit fixtures for deterministic CTC token/word timestamps, formatter
   sentence-boundary segmentation, SRT/VTT formatting, and highlighted words.
-- [ ] Add multiple-input, duplicate-name, output-directory, output-template,
+- [x] Add multiple-input, duplicate-name, output-directory, output-template,
   and collision tests.
-- [ ] Add model first-download, warm-cache, interrupted-download, and corrupt-cache tests.
-- [ ] Add native audio conversion/resampling tests for the supported format matrix.
-- [ ] Add a long-form bounded-memory regression test.
+- [x] Add isolated model first-download, warm-cache, interrupted/resumed-download,
+  partial-cache, and corrupt-cache tests.
+- [x] Add generated WAV stereo/downmix/resampling tests and MP3, M4A, FLAC,
+  WebM, and MP4 ffmpeg-backed format tests.
+- [x] Add an opt-in long-form bounded-memory regression test with exact
+  checkpoint-matched transcript comparison and an MLX peak-memory threshold.
 - [ ] Test a clean Mac installation and transcription without Python installed.
-- [ ] Verify machine-readable stdout never contains progress or diagnostic text.
+- [x] Verify machine-readable stdout never contains progress or diagnostic text.
 
 ## Phase 10: GitHub repository and releases
 
@@ -423,16 +430,17 @@ corruption without depending on the public service.
 
 - [x] Add Apache-2.0 and MIT software licenses as a dual-license choice,
   explicitly separate from model/checkpoint licenses.
-- [ ] Pin known-good `mlx-swift`, `swift-transformers`, and
+- [x] Pin known-good `mlx-swift`, `swift-transformers`, and
   `swift-argument-parser` versions/revisions.
-- [ ] Document the minimum macOS, Apple Silicon, Swift, and Xcode requirements.
-- [ ] Document the `ffmpeg` dependency, model cache location, default Q8 model,
+- [x] Document the minimum macOS, Apple Silicon, Swift, and Xcode requirements.
+- [x] Document the `ffmpeg` dependency, model cache location, default Q8 model,
   alternate model selection, output formats, and first-run download behavior.
-- [ ] Review benchmark artifacts and generated transcripts; keep only intended,
+- [x] Review benchmark artifacts and generated transcripts; keep only intended,
   reproducible project files in Git.
-- [ ] Review the repository for local absolute paths, caches, downloaded weights,
+- [x] Review the repository for local absolute paths, caches, downloaded weights,
   credentials, and temporary files.
-- [ ] Make the initial commit and create the `kylehowells/Granite-MLX` GitHub remote.
+- [x] Create local implementation and release-hardening commits.
+- [ ] Create the `kylehowells/Granite-MLX` GitHub remote and push the repository.
 
 ### CI and GitHub Releases
 

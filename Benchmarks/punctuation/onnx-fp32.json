@@ -2,7 +2,7 @@
   "engine": "onnxruntime-cpu",
   "precision": "fp32",
   "source_transcript": "Benchmarks/model-publication/apache-q8.txt",
-  "model_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english",
+  "model_directory": "${MODEL_ROOT}/punctuation_fullstop_truecase_english",
   "output": "Benchmarks/punctuation/onnx-fp32.txt",
   "input_characters": 69168,
   "output_characters": 71116,

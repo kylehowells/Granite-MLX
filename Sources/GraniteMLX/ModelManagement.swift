@@ -254,9 +254,22 @@ public enum GraniteModelCatalog {
 
 /// Inspects, downloads, validates, and removes GraniteMLX model cache entries.
 public enum GraniteModelCache {
+    private static var hubDirectory: URL? {
+        ProcessInfo.processInfo.environment["GRANITE_MLX_HUB_DIRECTORY"].map {
+            URL(fileURLWithPath: $0).standardizedFileURL
+        }
+    }
+
+    private static func hub(hfToken: String? = nil) -> HubApi {
+        HubApi(downloadBase: hubDirectory, hfToken: hfToken)
+    }
+
     /// Root of the Swift Hub materialized model cache.
+    ///
+    /// Set `GRANITE_MLX_HUB_DIRECTORY` to override the parent Hugging Face
+    /// directory. This is useful for isolated application and test caches.
     public static var rootDirectory: URL {
-        let hub = HubApi()
+        let hub = hub()
         return hub.localRepoLocation(.init(id: "placeholder/repository"))
             .deletingLastPathComponent().deletingLastPathComponent()
     }
@@ -266,7 +279,7 @@ public enum GraniteModelCache {
         guard isValidRepositoryID(repositoryID) else {
             throw GraniteModelManagementError.invalidRepositoryID(repositoryID)
         }
-        return HubApi().localRepoLocation(.init(id: repositoryID)).standardizedFileURL
+        return hub().localRepoLocation(.init(id: repositoryID)).standardizedFileURL
     }
 
     /// Returns the current completeness state for a model cache entry.
@@ -365,7 +378,7 @@ public enum GraniteModelCache {
         }
         event(.checking, 0, nil)
         try preflightDiskSpace(at: destination, expectedBytes: expectedBytes)
-        let hub = HubApi(hfToken: hfToken)
+        let hub = hub(hfToken: hfToken)
         let patterns = kind == .punctuation
             ? ["*.safetensors", "*.json", "*.model", "*.yaml"]
             : ["*.safetensors", "*.json", "*.txt", "*.model"]

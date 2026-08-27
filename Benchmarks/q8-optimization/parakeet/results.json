@@ -14,7 +14,7 @@
     "overlap_duration_seconds": 15.0
   },
   "audio": {
-    "path": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+    "path": "${BENCHMARK_AUDIO}",
     "sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
     "duration_seconds": 6118.72
   },

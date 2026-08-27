@@ -204,12 +204,14 @@ struct ModelsDownloadCommand: ParsableCommand {
     }
 
     func run() throws {
+        let interruptHandler = CLIInterruptHandler()
         let reporter = ConsoleDownloadProgressReporter(showCacheHits: true)
         let effectiveHFToken = hfToken ?? ProcessInfo.processInfo.environment["HF_TOKEN"]
         for model in models {
             do {
                 _ = try GraniteModelCache.download(
                     model, hfToken: effectiveHFToken,
+                    cancellationToken: interruptHandler.cancellationToken,
                     progressHandler: reporter.handler)
             } catch {
                 throw CLIRuntimeError.wrapping(

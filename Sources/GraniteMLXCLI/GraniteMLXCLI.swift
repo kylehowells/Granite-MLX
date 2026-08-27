@@ -1,10 +1,36 @@
 import ArgumentParser
+import Darwin
 import Foundation
 import GraniteMLX
 import MLX
 
 func stderr(_ message: String) {
     FileHandle.standardError.write(Data((message + "\n").utf8))
+}
+
+final class CLIInterruptHandler {
+    let cancellationToken = GraniteCancellationToken()
+    private let source: DispatchSourceSignal
+
+    init() {
+        signal(SIGINT, SIG_IGN)
+        source = DispatchSource.makeSignalSource(
+            signal: SIGINT, queue: .global(qos: .userInitiated))
+        source.setEventHandler { [cancellationToken] in
+            if cancellationToken.isCancelled {
+                stderr("[GMLX-OP-001] Cancellation is already in progress; waiting for the current MLX operation to yield.")
+            } else {
+                stderr("[GMLX-OP-001] Cancellation requested; cleaning up the current operation.")
+                cancellationToken.cancel()
+            }
+        }
+        source.activate()
+    }
+
+    deinit {
+        source.cancel()
+        signal(SIGINT, SIG_DFL)
+    }
 }
 
 struct CLIRuntimeError: Error, LocalizedError {
@@ -203,6 +229,8 @@ struct TranscribeCommand: ParsableCommand {
     }
 
     func run() throws {
+        let interruptHandler = CLIInterruptHandler()
+        let cancellationToken = interruptHandler.cancellationToken
         let format = OutputFormat(rawValue: outputFormat.lowercased())!
         let precision = GraniteActivationPrecision(rawValue: activationPrecision)!
         let chunkDuration = noChunking ? 0 : audioChunkDuration
@@ -224,7 +252,8 @@ struct TranscribeCommand: ParsableCommand {
         do {
             recognizer = try GraniteRecognizer(
                 modelSource: model, hfToken: effectiveHFToken,
-                progressHandler: downloadReporter.handler)
+                progressHandler: downloadReporter.handler,
+                cancellationToken: cancellationToken)
         } catch {
             throw CLIRuntimeError.wrapping(
                 error, code: "GMLX-CLI-020", operation: "Speech model initialization")
@@ -238,7 +267,8 @@ struct TranscribeCommand: ParsableCommand {
             do {
                 formatter = try GraniteTranscriptFormatterFactory.load(
                     modelSource: punctuationModel, hfToken: effectiveHFToken,
-                    progressHandler: downloadReporter.handler)
+                    progressHandler: downloadReporter.handler,
+                    cancellationToken: cancellationToken)
             } catch {
                 throw CLIRuntimeError.wrapping(
                     error, code: "GMLX-CLI-021", operation: "Punctuation model initialization")
@@ -251,7 +281,9 @@ struct TranscribeCommand: ParsableCommand {
 
         if let dumpFeatures {
             do {
-                let audio = try GraniteAudioInput.load(url: URL(fileURLWithPath: inputs[0]))
+                let audio = try GraniteAudioInput.load(
+                    url: URL(fileURLWithPath: inputs[0]),
+                    cancellationToken: cancellationToken)
                 let features = recognizer.features(for: audio)
                 MLX.eval(features)
                 try MLX.save(arrays: ["features": features], metadata: [:], url: URL(fileURLWithPath: dumpFeatures))
@@ -264,7 +296,9 @@ struct TranscribeCommand: ParsableCommand {
         }
         if let activationAudit {
             do {
-                let audio = try GraniteAudioInput.load(url: URL(fileURLWithPath: inputs[0]))
+                let audio = try GraniteAudioInput.load(
+                    url: URL(fileURLWithPath: inputs[0]),
+                    cancellationToken: cancellationToken)
                 let stages = recognizer.activationAudit(audio, activationPrecision: precision)
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -289,7 +323,8 @@ struct TranscribeCommand: ParsableCommand {
             let totalStart = Date()
             let inputURL = URL(fileURLWithPath: input).standardizedFileURL
             let audioStart = Date()
-            let audio = try GraniteAudioInput.load(url: inputURL)
+            let audio = try GraniteAudioInput.load(
+                url: inputURL, cancellationToken: cancellationToken)
             let audioLoadSeconds = Date().timeIntervalSince(audioStart)
             if verbose {
                 stderr(String(format: "Loaded %@: %.2fs at %d Hz", inputURL.lastPathComponent, audio.duration, audio.sampleRate))
@@ -303,12 +338,13 @@ struct TranscribeCommand: ParsableCommand {
                 ctcVocabularyTileSize: ctcVocabularyTile,
                 middleCTCVocabularyTileSize: middleCTCVocabularyTile,
                 audioChunkDuration: chunkDuration,
-                audioChunkContext: chunkContext)
+                audioChunkContext: chunkContext,
+                cancellationToken: cancellationToken)
             let inferenceSeconds = Date().timeIntervalSince(inferenceStart)
 
             let punctuationStart = Date()
             let formatting = try formatter?.format(
-                rawResult.rawText, cancellationToken: nil,
+                rawResult.rawText, cancellationToken: cancellationToken,
                 progressHandler: nil)
             let result = formatting.map(rawResult.applyingFormatting) ?? rawResult
             let punctuationInferenceSeconds = Date().timeIntervalSince(punctuationStart)
@@ -365,7 +401,8 @@ struct TranscribeCommand: ParsableCommand {
                 format: format, document: document, transcription: result,
                 segments: segments, inputURL: inputURL, inputIndex: index,
                 outputDirectory: outputDirectory, resolver: resolver,
-                forceJSONLine: outputDirectory == nil && inputs.count > 1)
+                forceJSONLine: outputDirectory == nil && inputs.count > 1,
+                cancellationToken: cancellationToken)
             if verbose {
                 stderr(String(format: "Inference %.3fs; formatting %.3fs; %.1fx realtime", inferenceSeconds, punctuationInferenceSeconds, report.realtimeMultiple))
             }
@@ -406,25 +443,37 @@ struct TranscribeCommand: ParsableCommand {
         inputIndex: Int,
         outputDirectory: URL?,
         resolver: OutputPathResolver,
-        forceJSONLine: Bool
+        forceJSONLine: Bool,
+        cancellationToken: GraniteCancellationToken
     ) throws {
+        try cancellationToken.checkCancellation(operation: "Transcript output")
         if forceJSONLine {
             FileHandle.standardOutput.write(Data((try encodedJSON(document, pretty: false) + "\n").utf8))
             return
         }
         let formats: [OutputFormat] = format == .all ? [.txt, .srt, .vtt, .json] : [format]
-        for selected in formats {
-            let content = try rendered(selected, document: document, transcription: transcription, segments: segments)
-            if let outputDirectory {
-                let destination = resolver.destination(
-                    directory: outputDirectory,
-                    baseName: renderedBaseName(for: inputURL, index: inputIndex),
-                    extension: selected.rawValue)
-                try Data(content.utf8).write(to: destination, options: .atomic)
-                if verbose { stderr("Wrote \(destination.path)") }
-            } else {
-                FileHandle.standardOutput.write(Data(content.utf8))
+        var writtenFiles: [URL] = []
+        do {
+            for selected in formats {
+                try cancellationToken.checkCancellation(operation: "Transcript output")
+                let content = try rendered(
+                    selected, document: document, transcription: transcription,
+                    segments: segments)
+                if let outputDirectory {
+                    let destination = resolver.destination(
+                        directory: outputDirectory,
+                        baseName: renderedBaseName(for: inputURL, index: inputIndex),
+                        extension: selected.rawValue)
+                    try Data(content.utf8).write(to: destination, options: .atomic)
+                    writtenFiles.append(destination)
+                    if verbose { stderr("Wrote \(destination.path)") }
+                } else {
+                    FileHandle.standardOutput.write(Data(content.utf8))
+                }
             }
+        } catch {
+            for file in writtenFiles { try? FileManager.default.removeItem(at: file) }
+            throw error
         }
     }
 

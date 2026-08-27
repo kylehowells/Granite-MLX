@@ -5,7 +5,7 @@
         <info>
             <target>
                 <device uuid="F32A427D-A1D7-5F0E-8FD3-DC438965E19C" model="MacBook Pro" name="Kyle’s MacBook Pro" os-version="26.5.2 (25F84)" platform="macOS"/>
-                <process arguments="/private/tmp/granite-reference-test-20s.wav --model /Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8 --benchmark" type="launched" return-exit-status="0" name="granite-mlx" pid="53078" termination-reason="exit(0)"/>
+                <process arguments="${SHORT_AUDIO} --model ${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8 --benchmark" type="launched" return-exit-status="0" name="granite-mlx" pid="53078" termination-reason="exit(0)"/>
             </target>
             <summary>
                 <start-date>2026-08-26T16:14:07.394+01:00</start-date>
@@ -113,7 +113,7 @@
             <process name="Phone" pid="26545" path="/System/Applications/Phone.app/Contents/MacOS/Phone"/>
             <process name="com.apple.SafariPlatformSupport.Helper" pid="93187" path="/System/Library/PrivateFrameworks/SafariPlatformSupport.framework/Versions/A/XPCServices/com.apple.SafariPlatformSupport.Helper.xpc/Contents/MacOS/com.apple.SafariPlatformSupport.Helper"/>
             <process name="Simulator" pid="44139" path="/Applications/Xcode.app/Contents/Developer/Applications/Simulator.app/Contents/MacOS/Simulator"/>
-            <process name="SkyComputerUseService" pid="4261" path="/Users/kylehowells/.codex/computer-use/Codex Computer Use.app/Contents/MacOS/SkyComputerUseService"/>
+            <process name="SkyComputerUseService" pid="4261" path="${TERMINAL} Computer Use.app/Contents/MacOS/SkyComputerUseService"/>
             <process name="replayd" pid="50153" path="/usr/libexec/replayd"/>
             <process name="UserNotificationCenter" pid="26701" path="/System/Library/CoreServices/UserNotificationCenter.app/Contents/MacOS/UserNotificationCenter"/>
             <process name="TextInputMenuAgent" pid="1699" path="/System/Library/CoreServices/TextInputMenuAgent.app/Contents/MacOS/TextInputMenuAgent"/>

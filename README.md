@@ -2,6 +2,24 @@
 
 Native Swift/MLX Granite Speech 5.0 TurboCTC CLI for Apple Silicon.
 
+## Requirements
+
+- Apple Silicon Mac (`arm64`)
+- macOS 14 Sonoma or newer
+- Swift 6.2 and Xcode 26 or newer when building from source
+- `ffmpeg` for containers that AVFoundation cannot decode directly
+
+The SwiftPM dependencies are pinned to MLX Swift 0.31.4, Swift Transformers
+1.3.3, and Swift Argument Parser 1.8.2. `Package.resolved` pins their complete
+transitive dependency graph. Python is used only by conversion and benchmark
+tools; the native CLI and distributed release do not require Python.
+
+Install the media fallback with:
+
+```bash
+brew install ffmpeg
+```
+
 ## Native Swift CLI
 
 The Swift runtime now performs end-to-end Granite 5.0 CTC transcription. It
@@ -123,6 +141,10 @@ granite-mlx models download owner/private-model --hf-token hf_...
 incomplete or interrupted downloads as `[-]`. Running `models download` again
 repairs or resumes a partial entry; `models remove` deletes it to reclaim space.
 
+Applications and isolated tests can set `GRANITE_MLX_HUB_DIRECTORY` to use a
+different Hugging Face materialization directory without touching the normal
+user cache.
+
 When `ffmpeg` is unavailable, Granite-MLX still accepts media AVFoundation can
 decode directly. Other containers produce a coded error explaining that
 `brew install ffmpeg` is required.
@@ -243,7 +265,7 @@ Install its dependencies in an isolated environment, then run:
 ```bash
 python -m pip install -e .
 granite-reference /path/to/audio.wav \
-  --model /Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc \
+  --model /path/to/granite-speech-5.0-470m-turboctc \
   --output-format srt \
   --verbose
 ```
@@ -262,7 +284,7 @@ Generate every output format at once:
 
 ```bash
 granite-reference /path/to/audio.wav \
-  --model /Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc \
+  --model /path/to/granite-speech-5.0-470m-turboctc \
   --output-dir ./transcripts \
   --output-format all \
   --highlight-words
@@ -281,6 +303,18 @@ model downloading, transcription, and punctuation formatting expose progress
 callbacks. Long-running operations accept a thread-safe
 `GraniteCancellationToken`; cancellation is cooperative between stages and
 chunks because already-submitted Metal work cannot be interrupted immediately.
+The CLI maps Ctrl-C onto the same cancellation mechanism. Generated files are
+written atomically, and files from an interrupted `all` export are removed.
+Interrupted model downloads are intentionally retained as partial cache entries
+so the next `models download` can resume them.
+
+## Testing
+
+`swift test` runs the library suite and fast offline CLI contract tests. Real
+model exporter tests, the generated media-container matrix, isolated network
+interruption/resume test, and the 101-minute bounded-memory release gate are
+documented in [`Tests/README.md`](Tests/README.md). Large model and audio paths
+are supplied through environment variables and are never committed.
 
 ## License
 

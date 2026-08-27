@@ -176,7 +176,7 @@ def main() -> int:
             (directory / "README.md").write_text(card(metadata, checkpoints, variant))
             publication["repositories"].append({
                 "repo_id": f"iky1e/{metadata['repo_prefix']}{variant}",
-                "local_directory": str(directory.resolve()),
+                "local_directory": directory.name,
                 "family": family_name,
                 "variant": variant,
                 "license": metadata["license"],

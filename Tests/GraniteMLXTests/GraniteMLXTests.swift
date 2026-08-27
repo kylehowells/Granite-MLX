@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 @testable import GraniteMLX
 
@@ -233,6 +234,113 @@ final class GraniteMLXTests: XCTestCase {
         XCTAssertThrowsError(try GraniteAudioInput.load(
             url: URL(fileURLWithPath: #filePath), cancellationToken: token)) { error in
             XCTAssertEqual((error as? any GraniteDiagnosticError)?.diagnosticCode, "GMLX-OP-001")
+        }
+    }
+
+    func testNativeWAVStereoDownmixAndResampling() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let wav = directory.appendingPathComponent("stereo-44k.wav")
+        try writePCM16WAV(to: wav, sampleRate: 44_100, channels: 2, seconds: 1)
+        let audio = try GraniteAudioInput.load(url: wav)
+        XCTAssertEqual(audio.sampleRate, 16_000)
+        XCTAssertEqual(audio.duration, 1, accuracy: 0.02)
+        XCTAssertEqual(audio.samples.count, 16_000, accuracy: 64)
+        XCTAssertTrue(audio.samples.contains { abs($0) > 0.01 })
+    }
+
+    func testFFmpegBackedAudioAndVideoFormatMatrix() throws {
+        guard let ffmpeg = findExecutable("ffmpeg") else {
+            throw XCTSkip("Install ffmpeg to run the media-container matrix.")
+        }
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let wav = directory.appendingPathComponent("source.wav")
+        try writePCM16WAV(to: wav, sampleRate: 44_100, channels: 2, seconds: 1)
+        let variants: [(String, [String])] = [
+            ("mp3", ["-c:a", "libmp3lame"]),
+            ("m4a", ["-c:a", "aac"]),
+            ("flac", ["-c:a", "flac"]),
+            ("webm", ["-c:a", "libopus"]),
+            ("mp4", ["-c:a", "aac"]),
+        ]
+        for (extensionName, codec) in variants {
+            let output = directory.appendingPathComponent("sample.\(extensionName)")
+            try runProcess(
+                ffmpeg,
+                arguments: ["-y", "-hide_banner", "-loglevel", "error", "-i", wav.path]
+                    + codec + [output.path])
+            let audio = try GraniteAudioInput.load(url: output)
+            XCTAssertEqual(audio.sampleRate, 16_000, extensionName)
+            XCTAssertEqual(audio.duration, 1, accuracy: 0.08, extensionName)
+            XCTAssertTrue(audio.samples.contains { abs($0) > 0.005 }, extensionName)
+        }
+    }
+
+    private func makeTemporaryDirectory() throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("granite-mlx-library-tests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    private func writePCM16WAV(
+        to url: URL, sampleRate: UInt32, channels: UInt16, seconds: UInt32
+    ) throws {
+        let frameCount = sampleRate * seconds
+        let bytesPerFrame = UInt32(channels) * 2
+        let dataBytes = frameCount * bytesPerFrame
+        var data = Data()
+        func append<T>(_ value: T) {
+            var value = value
+            withUnsafeBytes(of: &value) { data.append(contentsOf: $0) }
+        }
+        data.append(contentsOf: "RIFF".utf8)
+        append((UInt32(36) + dataBytes).littleEndian)
+        data.append(contentsOf: "WAVEfmt ".utf8)
+        append(UInt32(16).littleEndian)
+        append(UInt16(1).littleEndian)
+        append(channels.littleEndian)
+        append(sampleRate.littleEndian)
+        append((sampleRate * bytesPerFrame).littleEndian)
+        append(UInt16(bytesPerFrame).littleEndian)
+        append(UInt16(16).littleEndian)
+        data.append(contentsOf: "data".utf8)
+        append(dataBytes.littleEndian)
+        for frame in 0..<frameCount {
+            let phase = 2 * Double.pi * 440 * Double(frame) / Double(sampleRate)
+            let sample = Int16(sin(phase) * 12_000)
+            for channel in 0..<channels {
+                let scaled = channel == 0 ? sample : sample / 2
+                append(scaled.littleEndian)
+            }
+        }
+        try data.write(to: url)
+    }
+
+    private func findExecutable(_ name: String) -> URL? {
+        for directory in (ProcessInfo.processInfo.environment["PATH"] ?? "")
+            .split(separator: ":") {
+            let candidate = URL(fileURLWithPath: String(directory)).appendingPathComponent(name)
+            if FileManager.default.isExecutableFile(atPath: candidate.path) { return candidate }
+        }
+        return nil
+    }
+
+    private func runProcess(_ executable: URL, arguments: [String]) throws {
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = arguments
+        let stderr = Pipe()
+        process.standardError = stderr
+        try process.run()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else {
+            let details = String(
+                decoding: stderr.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            throw NSError(
+                domain: "GraniteMLXTests.ffmpeg", code: Int(process.terminationStatus),
+                userInfo: [NSLocalizedDescriptionKey: details])
         }
     }
 

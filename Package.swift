@@ -9,9 +9,9 @@ let package = Package(
         .executable(name: "granite-mlx", targets: ["GraniteMLXCLI"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/ml-explore/mlx-swift.git", .upToNextMajor(from: "0.30.6")),
-        .package(url: "https://github.com/huggingface/swift-transformers.git", .upToNextMajor(from: "1.1.6")),
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
+        .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.31.4"),
+        .package(url: "https://github.com/huggingface/swift-transformers.git", exact: "1.3.3"),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.8.2"),
     ],
     targets: [
         .target(
@@ -31,5 +31,8 @@ let package = Package(
             ]
         ),
         .testTarget(name: "GraniteMLXTests", dependencies: ["GraniteMLX"]),
+        .testTarget(
+            name: "GraniteMLXCLITests",
+            dependencies: ["GraniteMLX", "GraniteMLXCLI"]),
     ]
 )

@@ -1,0 +1,394 @@
+import Darwin
+import Foundation
+import XCTest
+
+final class GraniteMLXCLITests: XCTestCase {
+    private struct Result {
+        let status: Int32
+        let stdout: String
+        let stderr: String
+    }
+
+    private final class PipeCollector: @unchecked Sendable {
+        private let handle: FileHandle
+        private let group = DispatchGroup()
+        private var data = Data()
+
+        init(_ handle: FileHandle) {
+            self.handle = handle
+        }
+
+        func start() {
+            group.enter()
+            DispatchQueue.global(qos: .utility).async { [self] in
+                data = handle.readDataToEndOfFile()
+                group.leave()
+            }
+        }
+
+        func text() -> String {
+            group.wait()
+            return String(decoding: data, as: UTF8.self)
+        }
+    }
+
+    private var executable: URL {
+        Bundle(for: Self.self).bundleURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("granite-mlx")
+    }
+
+    private func runCLI(
+        _ arguments: [String],
+        environment additions: [String: String] = [:],
+        timeout: TimeInterval = 60,
+        interruptAfter: TimeInterval? = nil
+    ) throws -> Result {
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = arguments
+        process.environment = ProcessInfo.processInfo.environment.merging(additions) { _, new in new }
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = stderrPipe
+        let stdout = PipeCollector(stdoutPipe.fileHandleForReading)
+        let stderr = PipeCollector(stderrPipe.fileHandleForReading)
+        stdout.start()
+        stderr.start()
+        try process.run()
+        if let interruptAfter {
+            DispatchQueue.global().asyncAfter(deadline: .now() + interruptAfter) {
+                if process.isRunning { kill(process.processIdentifier, SIGINT) }
+            }
+        }
+        let deadline = Date().addingTimeInterval(timeout)
+        while process.isRunning, Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        if process.isRunning {
+            process.terminate()
+            process.waitUntilExit()
+            XCTFail("CLI timed out after \(timeout)s: \(arguments.joined(separator: " "))")
+        } else {
+            process.waitUntilExit()
+        }
+        return Result(status: process.terminationStatus, stdout: stdout.text(), stderr: stderr.text())
+    }
+
+    private func temporaryDirectory() throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("granite-mlx-tests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        return url
+    }
+
+    private func writeSilentWAV(to url: URL, seconds: Int = 2) throws {
+        let sampleRate: UInt32 = 16_000
+        let sampleCount = sampleRate * UInt32(seconds)
+        let dataBytes = sampleCount * 2
+        var data = Data()
+        func append<T>(_ value: T) {
+            var littleEndian = value
+            withUnsafeBytes(of: &littleEndian) { data.append(contentsOf: $0) }
+        }
+        data.append(contentsOf: "RIFF".utf8)
+        append(UInt32(36) + dataBytes)
+        data.append(contentsOf: "WAVEfmt ".utf8)
+        append(UInt32(16))
+        append(UInt16(1))
+        append(UInt16(1))
+        append(sampleRate)
+        append(sampleRate * 2)
+        append(UInt16(2))
+        append(UInt16(16))
+        data.append(contentsOf: "data".utf8)
+        append(dataBytes)
+        data.append(Data(count: Int(dataBytes)))
+        try data.write(to: url)
+    }
+
+    private func realModelArguments() throws -> [String] {
+        guard let model = ProcessInfo.processInfo.environment["GRANITE_TEST_SPEECH_MODEL"] else {
+            throw XCTSkip("Set GRANITE_TEST_SPEECH_MODEL to run real-model CLI integration tests.")
+        }
+        var arguments = ["--model", model]
+        if let punctuation = ProcessInfo.processInfo.environment["GRANITE_TEST_PUNCTUATION_MODEL"] {
+            arguments += ["--punctuation-model", punctuation]
+        } else {
+            arguments.append("--no-punctuate")
+        }
+        return arguments
+    }
+
+    func testRootHelpVersionAndValidationAreOffline() throws {
+        let help = try runCLI(["--help"])
+        XCTAssertEqual(help.status, 0)
+        XCTAssertTrue(help.stdout.contains("COMMON EXAMPLES"))
+        XCTAssertTrue(help.stdout.contains("models download"))
+        XCTAssertEqual(help.stderr, "")
+
+        let version = try runCLI(["--version"])
+        XCTAssertEqual(version.status, 0)
+        XCTAssertEqual(version.stdout.trimmingCharacters(in: .whitespacesAndNewlines), "0.1.0")
+        XCTAssertEqual(version.stderr, "")
+
+        let invalid = try runCLI(["file.wav", "--output-format", "xml"])
+        XCTAssertNotEqual(invalid.status, 0)
+        XCTAssertEqual(invalid.stdout, "")
+        XCTAssertTrue(invalid.stderr.contains("GMLX-CLI-002"))
+    }
+
+    func testModelListReportsAbsentPartialCompleteAndWarmCache() throws {
+        let temporary = try temporaryDirectory()
+        let hub = temporary.appendingPathComponent("hub")
+        let models = hub.appendingPathComponent("models/iky1e")
+        let complete = models.appendingPathComponent("granite-speech-5.0-470m-turboctc-mlx-q8")
+        let partial = models.appendingPathComponent("punctuation-fullstop-truecase-english-mlx-q8")
+        try FileManager.default.createDirectory(at: complete, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: partial, withIntermediateDirectories: true)
+        try writeSafetensorsHeader(
+            names: ["encoder.input_linear.weight", "encoder.out.weight"],
+            to: complete.appendingPathComponent("model.safetensors"))
+        try Data("{\"model_type\":\"granite_speech5_ctc\"}".utf8)
+            .write(to: complete.appendingPathComponent("config.json"))
+        try Data("{}".utf8).write(to: complete.appendingPathComponent("tokenizer.json"))
+        try Data("interrupted".utf8).write(to: partial.appendingPathComponent("model.safetensors"))
+
+        let environment = ["GRANITE_MLX_HUB_DIRECTORY": hub.path]
+        let listed = try runCLI(["models", "list", "--json"], environment: environment)
+        XCTAssertEqual(listed.status, 0)
+        XCTAssertEqual(listed.stderr, "")
+        let records = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(listed.stdout.utf8)) as? [[String: Any]])
+        let states = Dictionary(uniqueKeysWithValues: records.compactMap { record -> (String, String)? in
+            guard let alias = record["alias"] as? String,
+                  let state = record["cache_state"] as? String else { return nil }
+            return (alias, state)
+        })
+        XCTAssertEqual(states["apache-q8"], "downloaded")
+        XCTAssertEqual(states["punctuation-q8"], "partial")
+        XCTAssertEqual(states["apache-q6"], "absent")
+
+        let warm = try runCLI(
+            ["models", "download", "apache-q8"], environment: environment)
+        XCTAssertEqual(warm.status, 0)
+        XCTAssertEqual(warm.stdout, "")
+        XCTAssertTrue(warm.stderr.contains("Already downloaded"))
+
+        let removed = try runCLI(
+            ["models", "remove", "punctuation-q8", "--yes"], environment: environment)
+        XCTAssertEqual(removed.status, 0)
+        XCTAssertTrue(removed.stdout.contains("Removed"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: partial.path))
+    }
+
+    func testAllExportersBatchTemplatesAndCollisions() throws {
+        let temporary = try temporaryDirectory()
+        let firstDirectory = temporary.appendingPathComponent("first")
+        let secondDirectory = temporary.appendingPathComponent("second")
+        let output = temporary.appendingPathComponent("output")
+        try FileManager.default.createDirectory(at: firstDirectory, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: secondDirectory, withIntermediateDirectories: true)
+        let first = firstDirectory.appendingPathComponent("sample.wav")
+        let second = secondDirectory.appendingPathComponent("sample.wav")
+        if let fixture = ProcessInfo.processInfo.environment["GRANITE_TEST_AUDIO"] {
+            try FileManager.default.copyItem(at: URL(fileURLWithPath: fixture), to: first)
+            try FileManager.default.copyItem(at: URL(fileURLWithPath: fixture), to: second)
+        } else {
+            try writeSilentWAV(to: first)
+            try writeSilentWAV(to: second)
+        }
+        var arguments = [
+            first.path, second.path, "--output-format", "all",
+            "--output-dir", output.path, "--output-template", "{filename}",
+        ]
+        arguments += try realModelArguments()
+        let result = try runCLI(arguments, timeout: 180)
+        XCTAssertEqual(result.status, 0, result.stderr)
+        XCTAssertEqual(result.stdout, "")
+        for ext in ["txt", "srt", "vtt", "json"] {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: output.appendingPathComponent("sample.\(ext)").path))
+            XCTAssertTrue(FileManager.default.fileExists(atPath: output.appendingPathComponent("sample-2.\(ext)").path))
+        }
+        let vtt = try String(contentsOf: output.appendingPathComponent("sample.vtt"), encoding: .utf8)
+        XCTAssertTrue(vtt.hasPrefix("WEBVTT"))
+        let json = try Data(contentsOf: output.appendingPathComponent("sample.json"))
+        let document = try XCTUnwrap(JSONSerialization.jsonObject(with: json) as? [String: Any])
+        XCTAssertNotNil(document["text"])
+        XCTAssertNotNil(document["raw_text"])
+        XCTAssertNotNil(document["performance"])
+    }
+
+    func testIndividualOutputFormatSelection() throws {
+        let temporary = try temporaryDirectory()
+        let audio = temporary.appendingPathComponent("sample.wav")
+        if let fixture = ProcessInfo.processInfo.environment["GRANITE_TEST_AUDIO"] {
+            try FileManager.default.copyItem(at: URL(fileURLWithPath: fixture), to: audio)
+        } else {
+            try writeSilentWAV(to: audio)
+        }
+        for format in ["txt", "srt", "vtt", "json"] {
+            let output = temporary.appendingPathComponent(format)
+            var arguments = [
+                audio.path, "--output-format", format,
+                "--output-dir", output.path,
+            ]
+            arguments += try realModelArguments()
+            let result = try runCLI(arguments, timeout: 180)
+            XCTAssertEqual(result.status, 0, "\(format): \(result.stderr)")
+            XCTAssertEqual(result.stdout, "")
+            let destination = output.appendingPathComponent("sample.\(format)")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: destination.path))
+            let data = try Data(contentsOf: destination)
+            if format == "json" {
+                XCTAssertNoThrow(try JSONSerialization.jsonObject(with: data))
+            } else if format == "vtt" {
+                XCTAssertTrue(String(decoding: data, as: UTF8.self).hasPrefix("WEBVTT"))
+            }
+        }
+    }
+
+    func testJSONStdoutRemainsMachineReadableWhileDiagnosticsUseStderr() throws {
+        let temporary = try temporaryDirectory()
+        let audio = temporary.appendingPathComponent("sample.wav")
+        if let fixture = ProcessInfo.processInfo.environment["GRANITE_TEST_AUDIO"] {
+            try FileManager.default.copyItem(at: URL(fileURLWithPath: fixture), to: audio)
+        } else {
+            try writeSilentWAV(to: audio)
+        }
+        var arguments = [audio.path, "--output-format", "json", "--verbose", "--benchmark"]
+        arguments += try realModelArguments()
+        let result = try runCLI(arguments, timeout: 180)
+        XCTAssertEqual(result.status, 0, result.stderr)
+        XCTAssertNoThrow(try JSONSerialization.jsonObject(with: Data(result.stdout.utf8)))
+        XCTAssertTrue(result.stderr.contains("Inference"))
+        XCTAssertFalse(result.stdout.contains("Inference"))
+        XCTAssertFalse(result.stdout.contains("Download"))
+    }
+
+    func testCorruptInputWithoutFFmpegHasCodedError() throws {
+        let temporary = try temporaryDirectory()
+        let input = temporary.appendingPathComponent("corrupt.webm")
+        try Data("not media".utf8).write(to: input)
+        var arguments = [input.path, "--no-punctuate"]
+        arguments += try realModelArguments().filter { $0 != "--no-punctuate" }
+        let result = try runCLI(
+            arguments, environment: ["PATH": "/usr/bin:/bin"], timeout: 120)
+        XCTAssertNotEqual(result.status, 0)
+        XCTAssertEqual(result.stdout, "")
+        XCTAssertTrue(result.stderr.contains("GMLX-AUDIO-005"), result.stderr)
+        XCTAssertTrue(result.stderr.contains("brew install ffmpeg"), result.stderr)
+        XCTAssertTrue(result.stderr.contains("Technical details:"), result.stderr)
+    }
+
+    func testCtrlCCancelsWithoutLeavingOutputFiles() throws {
+        guard let longAudio = ProcessInfo.processInfo.environment["GRANITE_TEST_LONG_AUDIO"] else {
+            throw XCTSkip("Set GRANITE_TEST_LONG_AUDIO to run the Ctrl-C integration test.")
+        }
+        let temporary = try temporaryDirectory()
+        let output = temporary.appendingPathComponent("output")
+        var arguments = [
+            longAudio, "--no-punctuate", "--output-format", "all",
+            "--output-dir", output.path,
+        ]
+        arguments += try realModelArguments().filter { $0 != "--no-punctuate" }
+        let result = try runCLI(
+            arguments, timeout: 120, interruptAfter: 0.5)
+        XCTAssertNotEqual(result.status, 0)
+        XCTAssertTrue(result.stderr.contains("GMLX-OP-001"), result.stderr)
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: output.path)) ?? []
+        XCTAssertTrue(files.isEmpty, "Cancellation left output files: \(files)")
+    }
+
+    func testOptInInterruptedDownloadResumesToCompleteCache() throws {
+        guard let model = ProcessInfo.processInfo.environment["GRANITE_TEST_NETWORK_MODEL"] else {
+            throw XCTSkip("Set GRANITE_TEST_NETWORK_MODEL to run the network interruption/resume gate.")
+        }
+        let temporary = try temporaryDirectory()
+        let hub = temporary.appendingPathComponent("hub")
+        let environment = ["GRANITE_MLX_HUB_DIRECTORY": hub.path]
+        let interrupted = try runCLI(
+            ["models", "download", model], environment: environment,
+            timeout: 120, interruptAfter: 1.0)
+        XCTAssertNotEqual(interrupted.status, 0, "Download completed before it could be interrupted; select a larger uncached model.")
+        XCTAssertTrue(interrupted.stderr.contains("GMLX-OP-001"), interrupted.stderr)
+
+        let partialList = try runCLI(
+            ["models", "list", "--json"], environment: environment)
+        XCTAssertEqual(partialList.status, 0)
+        let partialRecords = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(partialList.stdout.utf8)) as? [[String: Any]])
+        let resolvedAlias = partialRecords.first {
+            ($0["alias"] as? String) == model || ($0["repository_id"] as? String) == model
+        }
+        if let state = resolvedAlias?["cache_state"] as? String {
+            XCTAssertTrue(["absent", "partial"].contains(state))
+        }
+
+        let resumed = try runCLI(
+            ["models", "download", model], environment: environment, timeout: 600)
+        XCTAssertEqual(resumed.status, 0, resumed.stderr)
+        XCTAssertTrue(
+            resumed.stderr.contains("Downloaded:") || resumed.stderr.contains("Already downloaded:"),
+            resumed.stderr)
+        let completeList = try runCLI(
+            ["models", "list", "--json"], environment: environment)
+        let completeRecords = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(completeList.stdout.utf8)) as? [[String: Any]])
+        let completed = completeRecords.first {
+            ($0["alias"] as? String) == model || ($0["repository_id"] as? String) == model
+        }
+        XCTAssertEqual(completed?["cache_state"] as? String, "downloaded")
+    }
+
+    func testOptInLongFormBoundedMemoryRegression() throws {
+        guard let audio = ProcessInfo.processInfo.environment["GRANITE_TEST_LONG_AUDIO"] else {
+            throw XCTSkip("Set GRANITE_TEST_LONG_AUDIO to run the long-form release gate.")
+        }
+        let temporary = try temporaryDirectory()
+        let output = temporary.appendingPathComponent("long.json")
+        var arguments = [
+            audio, "--no-punctuate", "--output-format", "json",
+            "--output-dir", temporary.path, "--output-template", "long",
+            "--audio-chunk-duration", "122.88", "--audio-chunk-context", "20.48",
+            "--mlx-cache-limit-mb", "64",
+        ]
+        arguments += try realModelArguments().filter { $0 != "--no-punctuate" }
+        let result = try runCLI(arguments, timeout: 600)
+        XCTAssertEqual(result.status, 0, result.stderr)
+        let document = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(contentsOf: output)) as? [String: Any])
+        let text = try XCTUnwrap(document["text"] as? String)
+        XCTAssertFalse(text.isEmpty)
+        let performance = try XCTUnwrap(document["performance"] as? [String: Any])
+        XCTAssertEqual(performance["audio_chunk_duration_seconds"] as? Double, 122.88)
+        XCTAssertEqual(performance["audio_chunk_context_seconds"] as? Double, 20.48)
+        let peak = try XCTUnwrap(performance["mlx_peak_memory_bytes"] as? Int)
+        let maximum = Int(ProcessInfo.processInfo.environment["GRANITE_TEST_MAX_MLX_PEAK_BYTES"] ?? "2500000000")!
+        XCTAssertLessThan(peak, maximum, "MLX peak memory exceeded the release threshold")
+        if let expectedPath = ProcessInfo.processInfo.environment["GRANITE_TEST_LONG_EXPECTED_TEXT"] {
+            let expected = try String(contentsOfFile: expectedPath, encoding: .utf8)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if text != expected {
+                let mismatch = zip(text, expected).enumerated().first {
+                    $0.element.0 != $0.element.1
+                }?.offset ?? min(text.count, expected.count)
+                XCTFail(
+                    "Long-form transcript differs from its selected baseline at character \(mismatch); "
+                    + "actual_chars=\(text.count), expected_chars=\(expected.count). "
+                    + "Make sure GRANITE_TEST_SPEECH_MODEL matches the checkpoint used by the baseline.")
+            }
+        }
+    }
+
+    private func writeSafetensorsHeader(names: [String], to url: URL) throws {
+        let object = Dictionary(uniqueKeysWithValues: names.map { ($0, [String: Any]()) })
+        let header = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+        var length = UInt64(header.count).littleEndian
+        var data = withUnsafeBytes(of: &length) { Data($0) }
+        data.append(header)
+        try data.write(to: url)
+    }
+}

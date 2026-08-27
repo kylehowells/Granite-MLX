@@ -31,7 +31,7 @@
     }
   },
   "audio": {
-    "path": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+    "path": "${BENCHMARK_AUDIO}",
     "sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
     "duration_seconds": 6118.72
   },
@@ -47,10 +47,10 @@
       "runs": [
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.0928419828414917,
           "inference_seconds": 17.013629913330078,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8",
           "model_load_seconds": 0.3052029609680176,
           "real_time_factor": 0.0027805864483633957,
           "realtime_multiple": 359.63636397227725,
@@ -61,10 +61,10 @@
         },
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.09092700481414795,
           "inference_seconds": 20.69359791278839,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8",
           "model_load_seconds": 0.3052769899368286,
           "real_time_factor": 0.003382014197869553,
           "realtime_multiple": 295.6817865016458,
@@ -75,10 +75,10 @@
         },
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.08841598033905029,
           "inference_seconds": 20.678346991539,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8",
           "model_load_seconds": 0.30889999866485596,
           "real_time_factor": 0.0033795216959656596,
           "realtime_multiple": 295.8998609755223,
@@ -110,10 +110,10 @@
       "runs": [
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.09076905250549316,
           "inference_seconds": 16.805621027946472,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
           "model_load_seconds": 0.367406964302063,
           "real_time_factor": 0.0027465909582308837,
           "realtime_multiple": 364.08770552573054,
@@ -124,10 +124,10 @@
         },
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.09798598289489746,
           "inference_seconds": 20.250635981559753,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
           "model_load_seconds": 0.3140510320663452,
           "real_time_factor": 0.0033096196559999074,
           "realtime_multiple": 302.149522887662,
@@ -138,10 +138,10 @@
         },
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.09319496154785156,
           "inference_seconds": 20.262346982955933,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
           "model_load_seconds": 0.306164026260376,
           "real_time_factor": 0.003311533618625453,
           "realtime_multiple": 301.97488993485706,
@@ -175,10 +175,10 @@
       "runs": [
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.0928720235824585,
           "inference_seconds": 19.1719970703125,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
           "model_load_seconds": 0.3105039596557617,
           "real_time_factor": 0.003133334597810081,
           "realtime_multiple": 319.1488073756662,
@@ -199,10 +199,10 @@
         "runs": [
           {
             "audio_duration_seconds": 6118.72,
-            "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_file": "${BENCHMARK_AUDIO}",
             "audio_load_seconds": 0.09530901908874512,
             "inference_seconds": 16.815696001052856,
-            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+            "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
             "model_load_seconds": 0.3009049892425537,
             "real_time_factor": 0.0027482375400496926,
             "realtime_multiple": 363.8695656496703,
@@ -236,10 +236,10 @@
       "runs": [
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.09639501571655273,
           "inference_seconds": 20.29340088367462,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
           "model_load_seconds": 0.3093760013580322,
           "real_time_factor": 0.0033166088468952037,
           "realtime_multiple": 301.51279399020353,
@@ -260,10 +260,10 @@
         "runs": [
           {
             "audio_duration_seconds": 6118.72,
-            "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_file": "${BENCHMARK_AUDIO}",
             "audio_load_seconds": 0.08881998062133789,
             "inference_seconds": 19.187387943267822,
-            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+            "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
             "model_load_seconds": 0.29988598823547363,
             "real_time_factor": 0.003135849972423615,
             "realtime_multiple": 318.89280698818845,
@@ -297,10 +297,10 @@
       "runs": [
         {
           "audio_duration_seconds": 6118.72,
-          "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+          "audio_file": "${BENCHMARK_AUDIO}",
           "audio_load_seconds": 0.11300992965698242,
           "inference_seconds": 20.539054036140442,
-          "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
           "model_load_seconds": 0.3528190851211548,
           "real_time_factor": 0.00335675664781857,
           "realtime_multiple": 297.9066119225123,
@@ -321,10 +321,10 @@
         "runs": [
           {
             "audio_duration_seconds": 6118.72,
-            "audio_file": "/private/tmp/granite-cme295-lecture1-16k-mono.wav",
+            "audio_file": "${BENCHMARK_AUDIO}",
             "audio_load_seconds": 0.09526193141937256,
             "inference_seconds": 20.256271958351135,
-            "model": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+            "model": "${MODEL_ROOT}/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
             "model_load_seconds": 0.31526803970336914,
             "real_time_factor": 0.003310540759889509,
             "realtime_multiple": 302.0654547184538,

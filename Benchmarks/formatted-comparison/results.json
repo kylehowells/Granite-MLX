@@ -5,7 +5,7 @@
     "engine": "onnxruntime-cpu",
     "precision": "fp32",
     "source_transcript": "Benchmarks/model-publication/apache-q8.txt",
-    "model_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english",
+    "model_directory": "${MODEL_ROOT}/punctuation_fullstop_truecase_english",
     "output": "Benchmarks/punctuation/onnx-fp32.txt",
     "input_characters": 69168,
     "output_characters": 71116,
@@ -76,14 +76,14 @@
       "current_contended_wall_seconds": 47.35,
       "representative_wall_seconds": 27.16081267595291,
       "realtime_multiple": 225.27750082446053,
-      "formatted_transcript": "/Users/kylehowells/Developer/Github/Granite-MLX/Benchmarks/formatted-comparison/granite/formatted.txt"
+      "formatted_transcript": "${REPOSITORY_ROOT}/Benchmarks/formatted-comparison/granite/formatted.txt"
     },
     "parakeet": {
       "model": "mlx-community/parakeet-tdt-0.6b-v2",
       "current_contended_wall_seconds": 95.56,
       "representative_wall_seconds": 54.45735133392736,
       "realtime_multiple": 112.35801687233344,
-      "formatted_transcript": "/Users/kylehowells/Developer/Github/Granite-MLX/Benchmarks/formatted-comparison/parakeet/granite-cme295-lecture1-16k-mono.txt"
+      "formatted_transcript": "${REPOSITORY_ROOT}/Benchmarks/formatted-comparison/parakeet/granite-cme295-lecture1-16k-mono.txt"
     },
     "transcript_similarity_parakeet_reference": {
       "formatted_character_similarity_percent": 90.47960517990467,

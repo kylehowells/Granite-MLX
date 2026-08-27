@@ -53,7 +53,7 @@
       "decoder.cap.1.weight"
     ]
   },
-  "model_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english-mlx-q6",
+  "model_directory": "${MODEL_ROOT}/punctuation_fullstop_truecase_english-mlx-q6",
   "model_bytes": 43362323,
   "output": "Benchmarks/punctuation/mlx-q6.txt",
   "sentence_count": 835,

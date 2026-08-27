@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
 
 
-MODEL_ROOT = Path("/Users/kylehowells/Developer/ML-Models")
 PROJECT = Path(__file__).resolve().parents[1]
 VARIANTS = ("fp16", "q8", "q6", "q5", "q4")
 PREFIX = "punctuation-fullstop-truecase-english-mlx-"
@@ -29,13 +29,13 @@ def label(variant: str) -> str:
     return "FP16" if variant == "fp16" else variant.upper()
 
 
-def metrics() -> dict[str, dict]:
+def metrics(model_root: Path) -> dict[str, dict]:
     values = {}
     for variant in VARIANTS:
         result = json.loads(
             (PROJECT / "Benchmarks" / "punctuation" / f"mlx-{variant}.json").read_text()
         )
-        directory = MODEL_ROOT / f"punctuation_fullstop_truecase_english-mlx-{variant}"
+        directory = model_root / f"punctuation_fullstop_truecase_english-mlx-{variant}"
         weight = directory / "model.safetensors"
         values[variant] = {
             "weight_bytes": weight.stat().st_size,
@@ -144,16 +144,21 @@ These converted model weights retain the original model's Apache 2.0 license. Gr
 
 
 def main() -> None:
-    values = metrics()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--model-root", type=Path, required=True,
+        help="Directory containing the converted punctuation checkpoints.")
+    args = parser.parse_args()
+    values = metrics(args.model_root)
     publication = {"source_model": SOURCE_ID, "repositories": []}
     for variant in VARIANTS:
-        directory = MODEL_ROOT / f"punctuation_fullstop_truecase_english-mlx-{variant}"
+        directory = args.model_root / f"punctuation_fullstop_truecase_english-mlx-{variant}"
         (directory / "README.md").write_text(model_card(values, variant), encoding="utf-8")
         publication["repositories"].append(
             {
                 "variant": variant,
                 "repo_id": f"iky1e/{PREFIX}{variant}",
-                "local_directory": str(directory),
+                "local_directory": directory.name,
                 **values[variant],
             }
         )

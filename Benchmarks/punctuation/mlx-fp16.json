@@ -2,7 +2,7 @@
   "engine": "mlx",
   "precision": "fp16",
   "quantization": null,
-  "model_directory": "/Users/kylehowells/Developer/ML-Models/punctuation_fullstop_truecase_english-mlx-fp16",
+  "model_directory": "${MODEL_ROOT}/punctuation_fullstop_truecase_english-mlx-fp16",
   "model_bytes": 105305951,
   "output": "Benchmarks/punctuation/mlx-fp16.txt",
   "sentence_count": 821,

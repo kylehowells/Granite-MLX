@@ -2,70 +2,70 @@
   "repositories": [
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-mlx-fp16",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-fp16",
+      "local_directory": "granite-speech-5.0-470m-turboctc-mlx-fp16",
       "family": "apache",
       "variant": "fp16",
       "license": "apache-2.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-mlx-q8",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+      "local_directory": "granite-speech-5.0-470m-turboctc-mlx-q8-g128",
       "family": "apache",
       "variant": "q8",
       "license": "apache-2.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-mlx-q6",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q6",
+      "local_directory": "granite-speech-5.0-470m-turboctc-mlx-q6",
       "family": "apache",
       "variant": "q6",
       "license": "apache-2.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-mlx-q5",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q5",
+      "local_directory": "granite-speech-5.0-470m-turboctc-mlx-q5",
       "family": "apache",
       "variant": "q5",
       "license": "apache-2.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-mlx-q4",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-mlx-q4",
+      "local_directory": "granite-speech-5.0-470m-turboctc-mlx-q4",
       "family": "apache",
       "variant": "q4",
       "license": "apache-2.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-nc-mlx-fp16",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-nc-mlx-fp16",
+      "local_directory": "granite-speech-5.0-470m-turboctc-nc-mlx-fp16",
       "family": "non_commercial",
       "variant": "fp16",
       "license": "cc-by-nc-sa-4.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-nc-mlx-q8",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-nc-mlx-q8",
+      "local_directory": "granite-speech-5.0-470m-turboctc-nc-mlx-q8",
       "family": "non_commercial",
       "variant": "q8",
       "license": "cc-by-nc-sa-4.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-nc-mlx-q6",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-nc-mlx-q6",
+      "local_directory": "granite-speech-5.0-470m-turboctc-nc-mlx-q6",
       "family": "non_commercial",
       "variant": "q6",
       "license": "cc-by-nc-sa-4.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-nc-mlx-q5",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-nc-mlx-q5",
+      "local_directory": "granite-speech-5.0-470m-turboctc-nc-mlx-q5",
       "family": "non_commercial",
       "variant": "q5",
       "license": "cc-by-nc-sa-4.0"
     },
     {
       "repo_id": "iky1e/granite-speech-5.0-470m-turboctc-nc-mlx-q4",
-      "local_directory": "/Users/kylehowells/Developer/ML-Models/granite-speech-5.0-470m-turboctc-nc-mlx-q4",
+      "local_directory": "granite-speech-5.0-470m-turboctc-nc-mlx-q4",
       "family": "non_commercial",
       "variant": "q4",
       "license": "cc-by-nc-sa-4.0"
