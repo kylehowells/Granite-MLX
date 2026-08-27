@@ -4,6 +4,9 @@ These experiments converted Granite Speech 5.0 TurboCTC into a fixed-shape
 Core ML ML Program and searched compute-unit placement, graph output,
 quantization, and long-audio chunk sizing on an M1 Max Mac. The result is a
 native Swift Core ML backend that can beat this project's release MLX backend.
+The selected package is published with its tokenizer, configuration, source
+provenance, checksums, and model card at
+[`iky1e/granite-speech-5.0-470m-turboctc-coreml-q8`](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8).
 
 ## Result
 
@@ -86,8 +89,8 @@ uv run python Scripts/quantize_granite_coreml.py \
   --granularity per-channel --block-size 1
 ```
 
-Build and run the native backend. `--model` currently supplies the matching
-Granite tokenizer/config directory; `--coreml-model` supplies the fixed graph:
+Build and run the native backend. The published package is downloaded and
+cached automatically:
 
 ```bash
 swift build -c release
@@ -95,12 +98,14 @@ Scripts/build_mlx_metallib.sh release
 
 .build/release/granite-mlx lecture.wav \
   --backend coreml \
-  --coreml-model /path/to/granite-coreml-q8-g1-16384.mlpackage \
-  --model /path/to/granite-speech-5.0-470m-turboctc \
   --output-format txt --benchmark
 ```
 
-The first load compiles the package and persists an OS-specific `.mlmodelc`
+For a local conversion, additionally pass
+`--coreml-model /path/to/model.mlpackage --model /path/to/tokenizer`.
+
+The first load downloads the repository and compiles the package into an
+OS-specific `.mlmodelc`
 under `~/Library/Caches/GraniteMLX/CoreML`. Later runs reuse it. Core ML can
 still perform lazy device preparation on model load, so model-load timing is
 reported separately from speech inference.

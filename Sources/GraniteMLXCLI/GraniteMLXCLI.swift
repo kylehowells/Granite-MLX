@@ -66,6 +66,7 @@ private enum OutputFormat: String, CaseIterable {
 
 private struct BenchmarkResult: Encodable {
     let audioFile: String
+    let backend: String
     let model: String
     let audioDurationSeconds: Double
     let audioLoadSeconds: Double
@@ -96,6 +97,7 @@ private struct BenchmarkResult: Encodable {
 
 private struct TranscriptionDocument: Encodable {
     let audioFile: String
+    let backend: String
     let text: String
     let rawText: String
     let formattedText: String?
@@ -141,11 +143,16 @@ struct GraniteMLXCLI: ParsableCommand {
           granite-mlx lecture.mp4 --output-format vtt
           granite-mlx interview.m4a --output-format all --output-dir ./transcripts
           granite-mlx recording.wav --no-punctuate --output-format txt
+          granite-mlx recording.wav --backend coreml
           granite-mlx models list
-          granite-mlx models download apache-q8 punctuation-q8
+          granite-mlx models download apache-coreml-q8 punctuation-q8
 
         `transcribe` is the default command, so `granite-mlx recording.wav` and
         `granite-mlx transcribe recording.wav` are equivalent.
+
+        MLX is the default speech backend. Use --backend coreml for one run, or
+        set GRANITE_MLX_BACKEND=coreml to make Core ML the shell default.
+        The published Core ML model requires macOS 15 or newer.
         """,
         version: "0.1.0",
         subcommands: [TranscribeCommand.self, ModelsCommand.self],
@@ -164,20 +171,27 @@ struct TranscribeCommand: ParsableCommand {
           granite-mlx lecture.mp4 --output-format all --output-dir ./transcripts
           granite-mlx a.wav b.mp3 --output-dir ./transcripts
           granite-mlx recording.wav --model apache-q6 --no-punctuate
-          granite-mlx a.wav --backend coreml --coreml-model G.mlpackage --model ./model
+          granite-mlx recording.wav --backend coreml
+          granite-mlx recording.wav --backend coreml --model apache-coreml-q8
+          granite-mlx a.wav --backend coreml --coreml-model ./repo/G.mlpackage
 
         SRT is written to stdout by default. Use --output-format txt for plain
         text, or --output-dir to create files. The first run downloads and
         caches the selected models with progress on stderr.
+
+        MLX uses apache-q8 by default; Core ML uses apache-coreml-q8. Set
+        GRANITE_MLX_BACKEND=coreml to change the default backend without adding
+        --backend to every command. An explicit --backend always wins. The
+        published Core ML model requires macOS 15 or newer.
         """)
 
     @Argument(help: "Audio or video file(s) to transcribe.")
     var inputs: [String]
-    @Option(help: "Catalog alias, local model directory, or Hugging Face repository ID.")
-    var model: String = GraniteModelLoader.defaultModelID
-    @Option(help: "Speech backend: mlx or coreml.")
-    var backend: String = "mlx"
-    @Option(help: "Fixed-shape .mlpackage used by --backend coreml.")
+    @Option(help: "Backend-compatible catalog alias, local repository directory, or Hugging Face repository ID. Defaults to apache-q8 for MLX or apache-coreml-q8 for Core ML.")
+    var model: String?
+    @Option(help: "Speech backend: mlx or coreml. Overrides GRANITE_MLX_BACKEND; default is mlx.")
+    var backend: String?
+    @Option(help: "Advanced: local fixed-shape .mlpackage override for Core ML. Use --model for its tokenizer directory.")
     var coremlModel: String?
     @Option(help: "Core ML compute units: cpu-gpu, all, cpu-ne, or cpu.")
     var coremlComputeUnits: String = GraniteCoreMLComputeUnits.cpuAndGPU.rawValue
@@ -205,7 +219,7 @@ struct TranscribeCommand: ParsableCommand {
     var verbose = false
     @Flag(help: "Write machine-readable timing results to stderr.")
     var benchmark = false
-    @Option(help: "Encoder activations: baseline, fp16, fp8-emulated, or int8-emulated.")
+    @Option(help: "MLX-only encoder activations: baseline, fp16, fp8-emulated, or int8-emulated.")
     var activationPrecision: String = GraniteActivationPrecision.fp16.rawValue
     @Option(help: "Stream final CTC argmax in vocabulary tiles; 0 materializes all logits.")
     var ctcVocabularyTile: Int = 0
@@ -243,11 +257,31 @@ struct TranscribeCommand: ParsableCommand {
         guard GraniteActivationPrecision(rawValue: activationPrecision) != nil else {
             throw ValidationError("[GMLX-CLI-009] Unsupported activation precision `\(activationPrecision)`. Use baseline, fp16, fp8-emulated, or int8-emulated.")
         }
-        guard ["mlx", "coreml"].contains(backend.lowercased()) else {
-            throw ValidationError("[GMLX-CLI-013] Unsupported speech backend `\(backend)`. Use mlx or coreml.")
+        let selectedBackend = try resolvedBackend()
+        if selectedBackend == .coreML {
+            guard #available(macOS 15.0, *) else {
+                throw ValidationError(
+                    "[GMLX-CLI-018] The published Core ML backend requires macOS 15 or newer. "
+                    + "Use --backend mlx on this Mac.")
+            }
         }
-        if backend.lowercased() == "coreml", coremlModel == nil {
-            throw ValidationError("[GMLX-CLI-014] --backend coreml requires --coreml-model MODEL.mlpackage.")
+        if selectedBackend == .mlx, coremlModel != nil {
+            throw ValidationError("[GMLX-CLI-014] --coreml-model requires --backend coreml (or GRANITE_MLX_BACKEND=coreml).")
+        }
+        if let model,
+           let catalogModel = GraniteModelCatalog.models.first(where: {
+               $0.alias.caseInsensitiveCompare(model) == .orderedSame
+                   || $0.repositoryID.caseInsensitiveCompare(model) == .orderedSame
+           }) {
+            let expectedKind: GraniteManagedModelKind = selectedBackend == .coreML
+                ? .coreMLSpeech : .speech
+            guard catalogModel.kind == expectedKind else {
+                throw ValidationError(
+                    "[GMLX-CLI-017] Model `\(model)` is a \(catalogModel.kind.rawValue) model "
+                    + "and cannot run with backend `\(selectedBackend.rawValue)`. "
+                    + "Use --backend \(catalogModel.kind == .coreMLSpeech ? "coreml" : "mlx") "
+                    + "or select a backend-compatible speech model.")
+            }
         }
         guard GraniteCoreMLComputeUnits(rawValue: coremlComputeUnits.lowercased()) != nil else {
             throw ValidationError("[GMLX-CLI-015] Unsupported Core ML compute-unit policy `\(coremlComputeUnits)`. Use cpu-gpu, all, cpu-ne, or cpu.")
@@ -259,6 +293,10 @@ struct TranscribeCommand: ParsableCommand {
         let cancellationToken = interruptHandler.cancellationToken
         let format = OutputFormat(rawValue: outputFormat.lowercased())!
         let precision = GraniteActivationPrecision(rawValue: activationPrecision)!
+        let selectedBackend = try resolvedBackend()
+        let selectedModel = model ?? (selectedBackend == .coreML
+            ? GraniteCoreMLModelLoader.defaultModelID
+            : GraniteModelLoader.defaultModelID)
         let outputDirectory: URL?
         do { outputDirectory = try prepareOutputDirectory() }
         catch {
@@ -274,23 +312,48 @@ struct TranscribeCommand: ParsableCommand {
         let modelStart = Date()
         let mlxRecognizer: GraniteRecognizer?
         let coreMLRecognizer: GraniteCoreMLRecognizer?
-        if backend.lowercased() == "coreml" {
+        let coreMLArtifact: GraniteCoreMLModelArtifact?
+        if selectedBackend == .coreML {
             mlxRecognizer = nil
             do {
-                coreMLRecognizer = try GraniteCoreMLRecognizer(
-                    modelURL: URL(fileURLWithPath: coremlModel!).standardizedFileURL,
-                    tokenizerURL: URL(fileURLWithPath: model).standardizedFileURL,
-                    computeUnits: GraniteCoreMLComputeUnits(
-                        rawValue: coremlComputeUnits.lowercased())!)
+                if let coremlModel {
+                    coreMLArtifact = nil
+                    let packageURL = URL(fileURLWithPath: coremlModel)
+                        .standardizedFileURL
+                    let tokenizerURL: URL
+                    if let model {
+                        tokenizerURL = URL(fileURLWithPath: model)
+                            .standardizedFileURL
+                    } else {
+                        tokenizerURL = packageURL.deletingLastPathComponent()
+                    }
+                    coreMLRecognizer = try GraniteCoreMLRecognizer(
+                        modelURL: packageURL,
+                        tokenizerURL: tokenizerURL,
+                        computeUnits: GraniteCoreMLComputeUnits(
+                            rawValue: coremlComputeUnits.lowercased())!)
+                } else {
+                    let artifact = try GraniteCoreMLModelLoader.load(
+                        source: selectedModel,
+                        hfToken: effectiveHFToken,
+                        progressHandler: downloadReporter.handler,
+                        cancellationToken: cancellationToken)
+                    coreMLArtifact = artifact
+                    coreMLRecognizer = try GraniteCoreMLRecognizer(
+                        artifact: artifact,
+                        computeUnits: GraniteCoreMLComputeUnits(
+                            rawValue: coremlComputeUnits.lowercased())!)
+                }
             } catch {
                 throw CLIRuntimeError.wrapping(
                     error, code: "GMLX-CLI-020", operation: "Core ML speech model initialization")
             }
         } else {
             coreMLRecognizer = nil
+            coreMLArtifact = nil
             do {
                 mlxRecognizer = try GraniteRecognizer(
-                    modelSource: model, hfToken: effectiveHFToken,
+                    modelSource: selectedModel, hfToken: effectiveHFToken,
                     progressHandler: downloadReporter.handler,
                     cancellationToken: cancellationToken)
             } catch {
@@ -320,8 +383,9 @@ struct TranscribeCommand: ParsableCommand {
         } else {
             chunkDuration = 122.88
         }
-        let speechModelDescription = coremlModel ?? model
+        let speechModelDescription = coremlModel ?? selectedModel
         let speechWeightBits = mlxRecognizer?.artifact.configuration.quantization?.bits
+            ?? coreMLArtifact?.configuration.quantization.bits
         let runtimePrecision = coreMLRecognizer == nil ? precision.rawValue : "coreml-fp16"
 
         let formatter: (any GraniteTranscriptFormatter)?
@@ -438,6 +502,7 @@ struct TranscribeCommand: ParsableCommand {
             let coreMLPerformance = coreMLRecognizer?.lastPerformance
             let report = BenchmarkResult(
                 audioFile: inputURL.path,
+                backend: selectedBackend.rawValue,
                 model: speechModelDescription,
                 audioDurationSeconds: audio.duration,
                 audioLoadSeconds: audioLoadSeconds,
@@ -466,6 +531,7 @@ struct TranscribeCommand: ParsableCommand {
                 coremlOutputCopySeconds: coreMLPerformance?.outputCopySeconds)
             let document = TranscriptionDocument(
                 audioFile: inputURL.path,
+                backend: selectedBackend.rawValue,
                 text: result.text,
                 rawText: result.rawText,
                 formattedText: result.formattedText,
@@ -509,6 +575,17 @@ struct TranscribeCommand: ParsableCommand {
             stderr("[GMLX-CLI-031] Completed batch with \(failedInputs) failed input(s) out of \(inputs.count). Successfully generated outputs were retained. Technical details: failures=\(failedInputs); total=\(inputs.count)")
             throw ExitCode.failure
         }
+    }
+
+    private func resolvedBackend() throws -> GraniteSpeechBackend {
+        let value = backend
+            ?? ProcessInfo.processInfo.environment["GRANITE_MLX_BACKEND"]
+            ?? GraniteSpeechBackend.mlx.rawValue
+        guard let backend = GraniteSpeechBackend(rawValue: value.lowercased()) else {
+            throw ValidationError(
+                "[GMLX-CLI-013] Unsupported speech backend `\(value)`. Use mlx or coreml.")
+        }
+        return backend
     }
 
     private func prepareOutputDirectory() throws -> URL? {

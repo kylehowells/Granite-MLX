@@ -127,6 +127,7 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertEqual(help.status, 0)
         XCTAssertTrue(help.stdout.contains("COMMON EXAMPLES"))
         XCTAssertTrue(help.stdout.contains("models download"))
+        XCTAssertTrue(help.stdout.contains("GRANITE_MLX_BACKEND"))
         XCTAssertEqual(help.stderr, "")
 
         let version = try runCLI(["--version"])
@@ -139,9 +140,16 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertEqual(invalid.stdout, "")
         XCTAssertTrue(invalid.stderr.contains("GMLX-CLI-002"))
 
-        let missingCoreMLModel = try runCLI(["file.wav", "--backend", "coreml"])
-        XCTAssertNotEqual(missingCoreMLModel.status, 0)
-        XCTAssertTrue(missingCoreMLModel.stderr.contains("GMLX-CLI-014"))
+        let conflictingCoreMLModel = try runCLI([
+            "file.wav", "--backend", "mlx", "--coreml-model", "Granite.mlpackage",
+        ])
+        XCTAssertNotEqual(conflictingCoreMLModel.status, 0)
+        XCTAssertTrue(conflictingCoreMLModel.stderr.contains("GMLX-CLI-014"))
+
+        let invalidEnvironmentBackend = try runCLI(
+            ["file.wav"], environment: ["GRANITE_MLX_BACKEND": "tensor-core"])
+        XCTAssertNotEqual(invalidEnvironmentBackend.status, 0)
+        XCTAssertTrue(invalidEnvironmentBackend.stderr.contains("GMLX-CLI-013"))
 
         let invalidComputeUnits = try runCLI([
             "file.wav", "--backend", "coreml", "--coreml-model", "Granite.mlpackage",
@@ -149,6 +157,13 @@ final class GraniteMLXCLITests: XCTestCase {
         ])
         XCTAssertNotEqual(invalidComputeUnits.status, 0)
         XCTAssertTrue(invalidComputeUnits.stderr.contains("GMLX-CLI-015"))
+
+        let mismatchedBackendModel = try runCLI([
+            "file.wav", "--backend", "coreml", "--model", "apache-q8",
+        ])
+        XCTAssertNotEqual(mismatchedBackendModel.status, 0)
+        XCTAssertTrue(mismatchedBackendModel.stderr.contains("GMLX-CLI-017"))
+        XCTAssertTrue(mismatchedBackendModel.stderr.contains("--backend mlx"))
     }
 
     func testModelListReportsAbsentPartialCompleteAndWarmCache() throws {
@@ -181,6 +196,7 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertEqual(states["apache-q8"], "downloaded")
         XCTAssertEqual(states["punctuation-q8"], "partial")
         XCTAssertEqual(states["apache-q6"], "absent")
+        XCTAssertEqual(states["apache-coreml-q8"], "absent")
 
         let warm = try runCLI(
             ["models", "download", "apache-q8"], environment: environment)
@@ -297,6 +313,66 @@ final class GraniteMLXCLITests: XCTestCase {
             result.stdout.trimmingCharacters(in: .whitespacesAndNewlines),
             "hello hello everyone and welcome to cme 295 transformers and large language models so my name is afshin and i will be teaching this class with shervin who is in the back and")
         XCTAssertEqual(result.stderr, "")
+    }
+
+    func testOptInPublishedCoreMLFreshDownloadWarmRunAndRemoval() throws {
+        let processEnvironment = ProcessInfo.processInfo.environment
+        guard processEnvironment["GRANITE_TEST_COREML_NETWORK"] == "1",
+              let audio = processEnvironment["GRANITE_TEST_COREML_AUDIO"] else {
+            throw XCTSkip(
+                "Set GRANITE_TEST_COREML_NETWORK=1 and GRANITE_TEST_COREML_AUDIO to run the published Core ML lifecycle gate.")
+        }
+        let temporary = try temporaryDirectory()
+        let hub = temporary.appendingPathComponent("hub")
+        let compiled = temporary.appendingPathComponent("compiled")
+        let environment = [
+            "GRANITE_MLX_HUB_DIRECTORY": hub.path,
+            "GRANITE_MLX_COREML_CACHE_DIRECTORY": compiled.path,
+            "GRANITE_MLX_BACKEND": "coreml",
+        ]
+
+        let download = try runCLI(
+            ["models", "download", "apache-coreml-q8"],
+            environment: environment, timeout: 1_200)
+        XCTAssertEqual(download.status, 0, download.stderr)
+        XCTAssertTrue(download.stderr.contains("Downloaded:"), download.stderr)
+
+        let arguments = [
+            audio, "--no-punctuate", "--no-chunking", "--output-format", "txt",
+        ]
+        let fresh = try runCLI(arguments, environment: environment, timeout: 300)
+        XCTAssertEqual(fresh.status, 0, fresh.stderr)
+        let expected = "hello hello everyone and welcome to cme 295 transformers and large language models so my name is afshin and i will be teaching this class with shervin who is in the back and"
+        XCTAssertEqual(
+            fresh.stdout.trimmingCharacters(in: .whitespacesAndNewlines), expected)
+
+        let warm = try runCLI(arguments, environment: environment, timeout: 300)
+        XCTAssertEqual(warm.status, 0, warm.stderr)
+        XCTAssertEqual(warm.stdout, fresh.stdout)
+        XCTAssertFalse(warm.stderr.contains("Downloading"), warm.stderr)
+
+        let list = try runCLI(["models", "list", "--json"], environment: environment)
+        XCTAssertEqual(list.status, 0, list.stderr)
+        let records = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(list.stdout.utf8)) as? [[String: Any]])
+        let coreML = try XCTUnwrap(records.first { ($0["alias"] as? String) == "apache-coreml-q8" })
+        XCTAssertEqual(coreML["cache_state"] as? String, "downloaded")
+        XCTAssertGreaterThan(coreML["downloaded_bytes"] as? Int ?? 0, 600_000_000)
+        XCTAssertGreaterThan(coreML["compiled_cache_bytes"] as? Int ?? 0, 600_000_000)
+
+        let removal = try runCLI(
+            ["models", "remove", "apache-coreml-q8", "--yes"],
+            environment: environment)
+        XCTAssertEqual(removal.status, 0, removal.stderr)
+        XCTAssertTrue(removal.stdout.contains("Reclaimed"), removal.stdout)
+        let afterRemoval = try runCLI(
+            ["models", "list", "--json"], environment: environment)
+        let afterRecords = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(afterRemoval.stdout.utf8)) as? [[String: Any]])
+        let afterCoreML = try XCTUnwrap(
+            afterRecords.first { ($0["alias"] as? String) == "apache-coreml-q8" })
+        XCTAssertEqual(afterCoreML["cache_state"] as? String, "absent")
+        XCTAssertEqual(afterCoreML["compiled_cache_bytes"] as? Int ?? 0, 0)
     }
 
     func testCorruptInputWithoutFFmpegHasCodedError() throws {

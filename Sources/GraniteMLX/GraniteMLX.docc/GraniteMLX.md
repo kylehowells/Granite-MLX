@@ -51,17 +51,18 @@ application's main actor. For long recordings, specify the block-aligned chunk
 profile shown above; unlike the CLI, the lower-level recognizer API uses a
 single pass when `audioChunkDuration` is omitted.
 
-### Use a converted Core ML graph
+### Use the published Core ML backend
 
-``GraniteCoreMLRecognizer`` loads a fixed-shape converted ML Program and the
-matching Granite tokenizer/config directory. It shares audio preparation, CTC
-decoding, timestamps, progress, and cancellation behavior with the MLX path:
+``GraniteCoreMLRecognizer`` downloads and loads the recommended fixed-shape ML
+Program and matching Granite tokenizer/config on first use. It shares audio
+preparation, CTC decoding, timestamps, progress, and cancellation behavior
+with the MLX path:
 
 ```swift
 let coreML = try GraniteCoreMLRecognizer(
-    modelURL: URL(fileURLWithPath: "/path/to/granite-q8.mlpackage"),
-    tokenizerURL: URL(fileURLWithPath: "/path/to/granite-tokenizer"),
-    computeUnits: .cpuAndGPU
+    modelSource: GraniteCoreMLModelLoader.defaultModelID,
+    computeUnits: .cpuAndGPU,
+    cancellationToken: cancellation
 )
 let raw = try coreML.transcribe(
     audio,
@@ -71,9 +72,10 @@ let raw = try coreML.transcribe(
 ```
 
 Omitting the Core ML chunk duration fills the graph after reserving context.
-Compiled packages are cached under `~/Library/Caches/GraniteMLX/CoreML` by
-default. Converted packages are currently supplied by applications rather than
-downloaded through ``GraniteModelCatalog``.
+Downloaded repositories use the shared model cache. Compiled packages are
+cached under `~/Library/Caches/GraniteMLX/CoreML` by default, and both are
+reported and removed together through ``GraniteModelCache``. Applications can
+still create a recognizer from local model and tokenizer URLs.
 
 ### Apply presentation formatting
 
@@ -165,6 +167,10 @@ The default cache is the Swift Hugging Face materialization directory. Set
 ### Models and cache
 
 - ``GraniteModelLoader``
+- ``GraniteCoreMLModelLoader``
+- ``GraniteCoreMLModelArtifact``
+- ``GraniteCoreMLModelConfiguration``
+- ``GraniteSpeechBackend``
 - ``GraniteModelCatalog``
 - ``GraniteModelCache``
 - ``GranitePublishedModel``

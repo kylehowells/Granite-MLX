@@ -49,3 +49,17 @@ swift test --filter GraniteMLXCLITests/testOptInInterruptedDownloadResumesToComp
 This test uses an isolated temporary model directory, interrupts the first
 download, resumes it, validates the completed cache, and deletes the temporary
 directory afterward.
+
+The published Core ML release lifecycle is a separate opt-in network gate:
+
+```bash
+GRANITE_TEST_COREML_NETWORK=1 \
+GRANITE_TEST_COREML_AUDIO=/path/to/granite-reference-test-20s.wav \
+swift test --filter GraniteMLXCLITests/testOptInPublishedCoreMLFreshDownloadWarmRunAndRemoval
+```
+
+It downloads `apache-coreml-q8` into an isolated cache, verifies the known
+20-second transcript using `GRANITE_MLX_BACKEND=coreml`, checks warm reuse and
+compiled-cache accounting, removes both caches, and confirms the model is
+absent afterward. It intentionally transfers and compiles about 700 MB, so it
+does not run as part of the ordinary offline suite.

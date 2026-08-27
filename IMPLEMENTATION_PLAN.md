@@ -313,7 +313,7 @@ capitalization, and segmentation model derived from
 - [x] Check in conversion/quantization/benchmark scripts, JSON results, a PNG
   comparison chart, documentation, unit coverage, and an opt-in real-model CLI
   parity test.
-- [ ] Publish the selected Core ML package with matching tokenizer assets and
+- [x] Publish the selected Core ML package with matching tokenizer assets and
   add it to the CLI's automatic model download/cache-management catalog.
 - [ ] Validate the Core ML backend on newer Apple Silicon generations and on
   physical iPhone/iPad hardware before making it the general default.
@@ -549,12 +549,13 @@ Max, approximately 2% faster than uniform G64. Full machine-readable results
 and PNG charts live in `Benchmarks/q8-optimization`.
 
 The model runtime, publication work, and intended `0.1.0` CLI feature surface
-are complete. Ten converted checkpoints are published under `iky1e`: FP16,
-Q8, Q6, Q5, and Q4 for both source-weight families. Their full-lecture
-agreement results and publication metadata live in
-`Benchmarks/model-publication`; Apache Q8 is the verified automatic-download
-default. The release-critical path is now the remaining opt-in integration
-gates, GitHub Releases, and Homebrew packaging.
+are complete. Ten converted MLX checkpoints are published under `iky1e`: FP16,
+Q8, Q6, Q5, and Q4 for both source-weight families. The selected Apache Core ML
+Q8 package is published separately. Full-lecture agreement results and
+publication metadata live in `Benchmarks/model-publication` and
+`Benchmarks/coreml`; Apache MLX Q8 remains the general default. The
+release-critical path is now the remaining opt-in integration gates, GitHub
+Releases, and Homebrew packaging.
 
 The Swift CLI now processes every input while reusing one loaded ASR model and
 one loaded formatter. It derives CTC token/word times at 12.5 fps, maps native
@@ -571,12 +572,15 @@ smoke test generated all four files successfully.
 
 The public README, command help, benchmark guides, implementation plan, test
 guide, and DocC catalog have been audited for machine-specific paths and broken
-relative links. All 282 exported Swift symbols carry source documentation.
+relative links. Every source-declared public API carries `///` documentation.
+DocC reports 100% type/global coverage and 93% member coverage because it also
+counts 21 compiler-synthesized Codable and RawRepresentable initializers that
+have no source declaration to annotate.
 
 The download UX is now implemented. Both automatic first-use downloads and
 explicit `models download` operations report repository, role, expected size,
 cache path, completion, and throughput on stderr; warm cache hits skip network
-access. `models list` reports the complete 15-model catalog, defaults, expected
+access. `models list` reports the complete 16-model catalog, defaults, expected
 or actual sizes, cache status, and JSON; `models remove` supports confirmation,
 `--yes`, and Granite-only `--all`. Architecture-aware cache scanning prevents
 the manager from listing or deleting unrelated Swift Hub models. A fresh
@@ -584,7 +588,7 @@ punctuation-Q4 download was observed through completion and then removed again,
 and cache-hit, noninteractive-removal protection, debug tests, release build,
 and cached default transcription were verified.
 
-The experimental native Core ML backend is also working. A macOS 15 Q8
+The optional native Core ML backend is also working. A macOS 15 Q8
 palettized, per-channel 16,384-frame graph runs the full 101m59s lecture in
 17.32 seconds of speech inference on the M1 Max, 29% faster than the 24.41s
 bounded MLX release profile. It uses 2.10 GB peak footprint rather than 1.64
@@ -592,8 +596,11 @@ GB and differs from the MLX transcript by 0.265% of reference words. The
 formatting-enabled path completes processing in 19.83 seconds and retains
 99.65% lexical agreement with formatted MLX output. Reproducible scripts,
 negative ANE/INT8 results, machine-readable measurements, and a PNG comparison
-are in `Benchmarks/coreml`. Core ML remains opt-in until the selected package
-is published and integrated with automatic model management.
+are in `Benchmarks/coreml`. The selected package is published as
+`iky1e/granite-speech-5.0-470m-turboctc-coreml-q8`, integrated with automatic
+download, list, compiled-cache accounting, and removal, and selectable as the
+shell default through `GRANITE_MLX_BACKEND=coreml`. MLX remains the general
+default pending validation on newer Macs and physical iPhone/iPad hardware.
 - [ ] Homebrew formula installation works.
 - [x] Default model download and cache behavior are documented.
 

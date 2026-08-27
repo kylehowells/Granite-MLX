@@ -98,8 +98,14 @@ public struct GraniteCoreMLPerformance: Codable, Sendable, Equatable {
 /// ``GraniteRecognizer`` and returns one greedy CTC token ID per output frame.
 public final class GraniteCoreMLRecognizer: @unchecked Sendable {
     /// Default directory used for persistent, OS-specific compiled Core ML models.
+    /// Set `GRANITE_MLX_COREML_CACHE_DIRECTORY` before process launch to use an
+    /// isolated location for an application or test.
     public static var defaultCompiledModelCacheURL: URL {
-        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        if let path = ProcessInfo.processInfo.environment[
+            "GRANITE_MLX_COREML_CACHE_DIRECTORY"] {
+            return URL(fileURLWithPath: path).standardizedFileURL
+        }
+        return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("GraniteMLX/CoreML", isDirectory: true)
     }
 
@@ -179,6 +185,48 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
         self.model = model
         self.featureFrameCount = constraint.shape[1].intValue
         self.featureExtractor = GraniteFeatureExtractor(sampleRate: configuration.sampleRate)
+    }
+
+    /// Downloads or loads a published Core ML Granite model and initializes it.
+    ///
+    /// - Parameters:
+    ///   - modelSource: Catalog alias, Hugging Face repository ID, or local
+    ///     repository directory containing `coreml_config.json`.
+    ///   - computeUnits: Core ML device-placement policy.
+    ///   - hfToken: Optional Hugging Face token for private or gated models.
+    ///   - compiledModelCacheURL: Persistent compiled-model cache directory.
+    ///   - progressHandler: Optional model-download progress callback.
+    ///   - cancellationToken: Optional cooperative cancellation token.
+    public convenience init(
+        modelSource: String = GraniteCoreMLModelLoader.defaultModelID,
+        computeUnits: GraniteCoreMLComputeUnits = .cpuAndGPU,
+        hfToken: String? = nil,
+        compiledModelCacheURL: URL? = GraniteCoreMLRecognizer.defaultCompiledModelCacheURL,
+        progressHandler: GraniteModelDownloadProgressHandler? = nil,
+        cancellationToken: GraniteCancellationToken? = nil
+    ) throws {
+        let artifact = try GraniteCoreMLModelLoader.load(
+            source: modelSource,
+            hfToken: hfToken,
+            progressHandler: progressHandler,
+            cancellationToken: cancellationToken)
+        try self.init(
+            artifact: artifact,
+            computeUnits: computeUnits,
+            compiledModelCacheURL: compiledModelCacheURL)
+    }
+
+    /// Initializes a recognizer from a validated Core ML model artifact.
+    public convenience init(
+        artifact: GraniteCoreMLModelArtifact,
+        computeUnits: GraniteCoreMLComputeUnits = .cpuAndGPU,
+        compiledModelCacheURL: URL? = GraniteCoreMLRecognizer.defaultCompiledModelCacheURL
+    ) throws {
+        try self.init(
+            modelURL: artifact.modelURL,
+            tokenizerURL: artifact.tokenizerURL,
+            computeUnits: computeUnits,
+            compiledModelCacheURL: compiledModelCacheURL)
     }
 
     deinit {
@@ -378,9 +426,8 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
         if let cacheDirectory {
             try FileManager.default.createDirectory(
                 at: cacheDirectory, withIntermediateDirectories: true)
-            cachedURL = cacheDirectory
-                .appendingPathComponent(try compilationCacheKey(for: url))
-                .appendingPathExtension("mlmodelc")
+            cachedURL = try compiledModelCacheURL(
+                for: url, cacheDirectory: cacheDirectory)
             if FileManager.default.fileExists(atPath: cachedURL!.path) {
                 return cachedURL!
             }
@@ -412,6 +459,37 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
             try? FileManager.default.removeItem(at: compiled)
             throw error
         }
+    }
+
+    static func compiledModelCacheSize(
+        for modelURL: URL,
+        cacheDirectory: URL = GraniteCoreMLRecognizer.defaultCompiledModelCacheURL
+    ) -> Int64 {
+        guard let url = try? compiledModelCacheURL(
+            for: modelURL, cacheDirectory: cacheDirectory),
+              FileManager.default.fileExists(atPath: url.path) else { return 0 }
+        return GraniteModelCache.directorySize(url)
+    }
+
+    @discardableResult
+    static func removeCompiledModelCache(
+        for modelURL: URL,
+        cacheDirectory: URL = GraniteCoreMLRecognizer.defaultCompiledModelCacheURL
+    ) throws -> Int64 {
+        let url = try compiledModelCacheURL(
+            for: modelURL, cacheDirectory: cacheDirectory)
+        guard FileManager.default.fileExists(atPath: url.path) else { return 0 }
+        let bytes = GraniteModelCache.directorySize(url)
+        try FileManager.default.removeItem(at: url)
+        return bytes
+    }
+
+    private static func compiledModelCacheURL(
+        for modelURL: URL, cacheDirectory: URL
+    ) throws -> URL {
+        cacheDirectory
+            .appendingPathComponent(try compilationCacheKey(for: modelURL))
+            .appendingPathExtension("mlmodelc")
     }
 
     private static func compilationCacheKey(for modelURL: URL) throws -> String {

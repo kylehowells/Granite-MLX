@@ -15,7 +15,7 @@ Swift library; transcription runs locally after the selected model is cached.
 
 ## Highlights
 
-- Native Swift inference with MLX, plus an experimental fixed-shape Core ML
+- Native Swift inference with MLX, plus an optimized fixed-shape Core ML
   backend; no Python runtime is required after conversion.
 - Audio and video input through AVFoundation with an `ffmpeg` fallback.
 - Automatic, visible model downloads plus cache listing and removal commands.
@@ -30,6 +30,7 @@ Swift library; transcription runs locally after the selected model is cached.
 
 - Apple Silicon Mac (`arm64`)
 - macOS 14 Sonoma or newer
+- macOS 15 or newer for the optional published Core ML model
 - Swift 6.2 and the full Xcode 26 toolchain or newer when building from source
 - `ffmpeg` for containers that AVFoundation cannot decode directly
 
@@ -64,10 +65,12 @@ granite-mlx recording.m4a --output-format txt
 granite-mlx lecture.mp4 > lecture.srt
 ```
 
-On first use, Granite-MLX downloads approximately 550 MB for the default Apache
-Q8 speech and punctuation models. Progress is written to stderr and the files
-are reused from the local cache on later runs. Run `granite-mlx --help` for
-common examples and `granite-mlx transcribe --help` for every option.
+On first use, Granite-MLX downloads approximately 550 MB for the default MLX
+Apache Q8 speech and punctuation models. The Core ML backend downloads about
+752 MB for its speech and punctuation models, then creates an OS-specific
+compiled cache on first load. Progress is written to stderr and the files are
+reused on later runs. Run `granite-mlx --help` for common examples and
+`granite-mlx transcribe --help` for every option.
 
 ## CLI guide
 
@@ -137,24 +140,30 @@ each result remains distinct. JSON preserves `raw_text`, user-facing `text`,
 optional `formatted_text`, timed words and subtitle segments, model settings,
 and performance metadata. All progress and benchmark records go to stderr.
 
-### Experimental Core ML backend
+### Optimized Core ML backend
 
 Granite-MLX also includes a native Swift Core ML recognizer for converted,
-fixed-shape ML Programs. On the development M1 Max, a macOS 15 Q8 palettized
-16,384-frame graph transcribed the 101m59s lecture in 17.32 seconds of speech
-inference versus 24.41 seconds for the release MLX Q8 profile. Process wall was
-22.09 versus 24.88 seconds. The Core ML transcript had 0.265% word disagreement
-with the MLX output, while peak footprint increased from 1.64 to 2.10 GB.
+fixed-shape ML Programs. On the development M1 Max, the published macOS 15 Q8
+palettized 16,384-frame graph transcribed the 101m59s lecture in 17.32 seconds
+of speech inference versus 24.41 seconds for the release MLX Q8 profile.
+Process wall was 22.09 versus 24.88 seconds. The Core ML transcript had 0.265%
+word disagreement with the MLX output, while peak footprint increased from
+1.64 to 2.10 GB.
 
-Core ML model packages are not yet part of the downloadable model catalog. Use
-a converted package and the matching source tokenizer/config directory:
+The selected model is published at
+[`iky1e/granite-speech-5.0-470m-turboctc-coreml-q8`](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8)
+and appears in the model catalog as `apache-coreml-q8`. The CLI downloads it
+automatically when Core ML is selected:
 
 ```bash
-granite-mlx lecture.wav \
-  --backend coreml \
-  --coreml-model /path/to/granite-coreml-q8-g1-16384.mlpackage \
-  --model /path/to/granite-speech-5.0-470m-turboctc
+granite-mlx lecture.wav --backend coreml
+granite-mlx models download apache-coreml-q8
+GRANITE_MLX_BACKEND=coreml granite-mlx lecture.wav
 ```
+
+`--backend` overrides `GRANITE_MLX_BACKEND`, and MLX remains the default when
+neither is supplied. Advanced users can still run a local converted package
+with `--coreml-model /path/to/model.mlpackage --model /path/to/tokenizer`.
 
 When no chunk duration is supplied, the Core ML backend automatically uses the
 largest central chunk that fits the selected graph after reserving context.
@@ -173,8 +182,8 @@ repository, approximate size, cache destination, completion percentage, and
 transfer speed on stderr. Subsequent runs use the local cache without network
 access or progress noise.
 
-Use the built-in model manager to inspect all 15 published checkpoints and the
-space occupied by downloaded models:
+Use the built-in model manager to inspect all 16 published checkpoints and the
+space occupied by downloaded models and compiled Core ML caches:
 
 ```bash
 granite-mlx models list
@@ -186,6 +195,7 @@ Models can be selected by the short aliases shown in that list:
 
 ```bash
 granite-mlx models download apache-q8 punctuation-q8
+granite-mlx models download apache-coreml-q8
 granite-mlx models download nc-q6
 granite-mlx lecture.mp4 --model apache-q8
 ```

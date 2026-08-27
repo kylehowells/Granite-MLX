@@ -5,6 +5,8 @@ import Hub
 public enum GraniteManagedModelKind: String, Codable, Sendable {
     /// Granite speech-recognition model.
     case speech
+    /// Granite speech-recognition model converted to a Core ML ML Program.
+    case coreMLSpeech = "coreml-speech"
     /// Punctuation, capitalization, and sentence-boundary model.
     case punctuation
 }
@@ -118,6 +120,8 @@ public struct GraniteCachedModel: Codable, Sendable {
     public let directory: URL
     /// Logical size of files beneath ``directory``.
     public let sizeBytes: Int64
+    /// Logical size of the compiled Core ML cache associated with this model.
+    public let compiledCacheBytes: Int64
     /// Matching catalog alias, if this is a published GraniteMLX checkpoint.
     public let catalogAlias: String?
     /// Completeness state of the materialized checkpoint.
@@ -205,6 +209,9 @@ public enum GraniteModelCatalog {
         speech("nc-q6", "granite-speech-5.0-470m-turboctc-nc-mlx-q6", "Non-commercial", "Q6", 387_616_768),
         speech("nc-q5", "granite-speech-5.0-470m-turboctc-nc-mlx-q5", "Non-commercial", "Q5", 328_593_408),
         speech("nc-q4", "granite-speech-5.0-470m-turboctc-nc-mlx-q4", "Non-commercial", "Q4", 269_565_952),
+        coreMLSpeech(
+            "apache-coreml-q8", "granite-speech-5.0-470m-turboctc-coreml-q8",
+            "Apache 2.0", "Core ML Q8", 693_040_765, isDefault: true),
         punctuation("punctuation-fp16", "FP16", 107_429_888),
         punctuation("punctuation-q8", "Q8", 58_527_744, isDefault: true),
         punctuation("punctuation-q6", "Q6", 45_486_080),
@@ -249,6 +256,16 @@ public enum GraniteModelCatalog {
             repositoryID: "iky1e/punctuation-fullstop-truecase-english-mlx-\(precision.lowercased())",
             kind: .punctuation, family: "Formatter", precision: precision,
             expectedBytes: bytes, isDefault: isDefault)
+    }
+
+    private static func coreMLSpeech(
+        _ alias: String, _ repository: String, _ family: String, _ precision: String,
+        _ bytes: Int64, isDefault: Bool = false
+    ) -> GranitePublishedModel {
+        GranitePublishedModel(
+            alias: alias, repositoryID: "iky1e/\(repository)", kind: .coreMLSpeech,
+            family: family, precision: precision, expectedBytes: bytes,
+            isDefault: isDefault)
     }
 }
 
@@ -325,6 +342,8 @@ public enum GraniteModelCache {
                     kind: kind,
                     directory: repository,
                     sizeBytes: directorySize(repository),
+                    compiledCacheBytes: compiledCacheSize(
+                        at: repository, kind: kind),
                     catalogAlias: GraniteModelCatalog.model(for: repositoryID)?.alias,
                     state: .downloaded,
                     stateDetails: nil))
@@ -337,6 +356,8 @@ public enum GraniteModelCache {
             result.append(GraniteCachedModel(
                 repositoryID: model.repositoryID, kind: model.kind,
                 directory: directory, sizeBytes: directorySize(directory),
+                compiledCacheBytes: compiledCacheSize(
+                    at: directory, kind: model.kind),
                 catalogAlias: model.alias, state: .partial,
                 stateDetails: cacheValidationDetails(at: directory, kind: model.kind)))
         }
@@ -379,14 +400,29 @@ public enum GraniteModelCache {
         event(.checking, 0, nil)
         try preflightDiskSpace(at: destination, expectedBytes: expectedBytes)
         let hub = hub(hfToken: hfToken)
-        let patterns = kind == .punctuation
-            ? ["*.safetensors", "*.json", "*.model", "*.yaml"]
-            : ["*.safetensors", "*.json", "*.txt", "*.model"]
+        let patterns: [String] = switch kind {
+        case .punctuation:
+            ["*.safetensors", "*.json", "*.model", "*.yaml"]
+        case .speech:
+            ["*.safetensors", "*.json", "*.txt", "*.model"]
+        case .coreMLSpeech:
+            ["*.mlpackage/*", "*.json", "*.txt", "*.model"]
+        }
         let downloaded: URL
         do {
             downloaded = try GraniteModelLoader.runBlocking(cancellationToken: cancellationToken) {
-                try await hub.snapshot(from: id, matching: patterns) { progress, speed in
-                    event(.downloading, progress.fractionCompleted, speed)
+                let metadata = try? await hub.getFileMetadata(
+                    from: .init(id: id), matching: patterns)
+                let fileSizes: [Int64]? = metadata.flatMap { values in
+                    let sizes = values.compactMap(\.size).map(Int64.init)
+                    return sizes.count == values.count ? sizes : nil
+                }
+                return try await hub.snapshot(from: id, matching: patterns) { progress, speed in
+                    event(
+                        .downloading,
+                        weightedDownloadFraction(
+                            progress.fractionCompleted, fileSizes: fileSizes),
+                        speed)
                 }
             }
         } catch let error as GraniteOperationError { throw error }
@@ -418,10 +454,18 @@ public enum GraniteModelCache {
         let cacheState = state(of: resolved.id, kind: kind)
         let record = GraniteCachedModel(
             repositoryID: resolved.id, kind: kind, directory: destination,
-            sizeBytes: directorySize(destination), catalogAlias: resolved.model?.alias,
+            sizeBytes: directorySize(destination),
+            compiledCacheBytes: compiledCacheSize(at: destination, kind: kind),
+            catalogAlias: resolved.model?.alias,
             state: cacheState,
             stateDetails: cacheState == .partial ? cacheValidationDetails(at: destination, kind: kind) : nil)
-        do { try FileManager.default.removeItem(at: destination) }
+        do {
+            if kind == .coreMLSpeech,
+               let package = coreMLPackageURL(at: destination) {
+                try GraniteCoreMLRecognizer.removeCompiledModelCache(for: package)
+            }
+            try FileManager.default.removeItem(at: destination)
+        }
         catch {
             throw GraniteModelManagementError.removalFailed(
                 repositoryID: resolved.id, cacheDirectory: destination,
@@ -434,8 +478,7 @@ public enum GraniteModelCache {
     public static func directorySize(_ directory: URL) -> Int64 {
         let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileSizeKey, .isSymbolicLinkKey]
         guard let enumerator = FileManager.default.enumerator(
-            at: directory, includingPropertiesForKeys: Array(keys),
-            options: [.skipsPackageDescendants]) else { return 0 }
+            at: directory, includingPropertiesForKeys: Array(keys)) else { return 0 }
         var total: Int64 = 0
         for case let file as URL in enumerator {
             guard let values = try? file.resourceValues(forKeys: keys),
@@ -456,6 +499,12 @@ public enum GraniteModelCache {
 
     static func detectedKind(at directory: URL) -> GraniteManagedModelKind? {
         let manager = FileManager.default
+        if manager.fileExists(
+            atPath: directory.appendingPathComponent("coreml_config.json").path),
+           cacheValidationDetails(at: directory, kind: .coreMLSpeech)
+            == "required files and configuration are valid" {
+            return .coreMLSpeech
+        }
         let weights = directory.appendingPathComponent("model.safetensors")
         guard manager.fileExists(atPath: weights.path) else { return nil }
         let tokenizer = directory.appendingPathComponent("tokenizer.json")
@@ -482,9 +531,42 @@ public enum GraniteModelCache {
         return kind
     }
 
-    private static func cacheValidationDetails(
+    static func cacheValidationDetails(
         at directory: URL, kind: GraniteManagedModelKind
     ) -> String {
+        if kind == .coreMLSpeech {
+            let required = ["coreml_config.json", "config.json", "tokenizer.json"]
+            let missing = required.filter {
+                !FileManager.default.fileExists(
+                    atPath: directory.appendingPathComponent($0).path)
+            }
+            if !missing.isEmpty {
+                return "missing_files=\(missing.joined(separator: ","))"
+            }
+            guard let package = coreMLPackageURL(at: directory) else {
+                return "invalid_coreml=model_package is absent, unsafe, or not an mlpackage"
+            }
+            let packageFiles = [
+                "Manifest.json",
+                "Data/com.apple.CoreML/model.mlmodel",
+                "Data/com.apple.CoreML/weights/weight.bin",
+            ]
+            let missingPackageFiles = packageFiles.filter {
+                !FileManager.default.fileExists(
+                    atPath: package.appendingPathComponent($0).path)
+            }
+            if !missingPackageFiles.isEmpty {
+                return "invalid_coreml=missing_package_files; files=\(missingPackageFiles.joined(separator: ","))"
+            }
+            let weight = package.appendingPathComponent(
+                "Data/com.apple.CoreML/weights/weight.bin")
+            let weightBytes = (try? weight.resourceValues(
+                forKeys: [.fileSizeKey]).fileSize) ?? 0
+            guard weightBytes > 100 * 1_024 * 1_024 else {
+                return "invalid_coreml=weight_blob_too_small; bytes=\(weightBytes)"
+            }
+            return "required files and configuration are valid"
+        }
         let required = kind == .speech
             ? ["model.safetensors", "config.json", "tokenizer.json"]
             : ["model.safetensors", "mlx_config.json", "tokenizer.json"]
@@ -497,6 +579,39 @@ public enum GraniteModelCache {
             return details
         }
         return "required files exist but configuration architecture or model kind is invalid"
+    }
+
+    static func coreMLPackageURL(
+        at directory: URL, relativePath: String? = nil
+    ) -> URL? {
+        let directory = directory.standardizedFileURL
+        let configuredPath: String
+        if let relativePath {
+            configuredPath = relativePath
+        } else {
+            let configurationURL = directory.appendingPathComponent(
+                "coreml_config.json")
+            guard let data = try? Data(contentsOf: configurationURL),
+                  let object = try? JSONSerialization.jsonObject(with: data)
+                    as? [String: Any],
+                  let value = object["model_package"] as? String else {
+                return nil
+            }
+            configuredPath = value
+        }
+        guard !configuredPath.hasPrefix("/"),
+              !configuredPath.split(separator: "/").contains("..") else {
+            return nil
+        }
+        let package = directory.appendingPathComponent(configuredPath)
+            .standardizedFileURL
+        guard package.path.hasPrefix(directory.path + "/"),
+              package.pathExtension == "mlpackage",
+              (try? package.resourceValues(
+                forKeys: [.isDirectoryKey]).isDirectory) == true else {
+            return nil
+        }
+        return package
     }
 
     static func safetensorsValidationDetails(
@@ -536,7 +651,39 @@ public enum GraniteModelCache {
     }
 
     private static func inferredKind(from repositoryID: String) -> GraniteManagedModelKind {
-        repositoryID.localizedCaseInsensitiveContains("punctuation") ? .punctuation : .speech
+        if repositoryID.localizedCaseInsensitiveContains("punctuation") {
+            return .punctuation
+        }
+        if repositoryID.localizedCaseInsensitiveContains("coreml") {
+            return .coreMLSpeech
+        }
+        return .speech
+    }
+
+    private static func compiledCacheSize(
+        at directory: URL, kind: GraniteManagedModelKind
+    ) -> Int64 {
+        guard kind == .coreMLSpeech,
+              let package = coreMLPackageURL(at: directory) else { return 0 }
+        return GraniteCoreMLRecognizer.compiledModelCacheSize(for: package)
+    }
+
+    static func weightedDownloadFraction(
+        _ fileWeightedFraction: Double, fileSizes: [Int64]?
+    ) -> Double {
+        guard let fileSizes, !fileSizes.isEmpty else {
+            return fileWeightedFraction
+        }
+        let total = fileSizes.reduce(Int64(0), +)
+        guard total > 0 else { return fileWeightedFraction }
+        let clamped = min(1, max(0, fileWeightedFraction))
+        if clamped >= 1 { return 1 }
+        let scaled = clamped * Double(fileSizes.count)
+        let activeIndex = min(fileSizes.count - 1, Int(scaled))
+        let activeFraction = scaled - Double(activeIndex)
+        let completed = fileSizes[..<activeIndex].reduce(Int64(0), +)
+        let active = Double(fileSizes[activeIndex]) * activeFraction
+        return min(1, (Double(completed) + active) / Double(total))
     }
 
     private static func isDirectory(_ url: URL) -> Bool {

@@ -39,6 +39,18 @@ final class GraniteMLXTests: XCTestCase {
             performance)
     }
 
+    func testModelDownloadProgressIsWeightedByFileBytes() {
+        let sizes: [Int64] = [10, 90]
+        XCTAssertEqual(
+            GraniteModelCache.weightedDownloadFraction(0.25, fileSizes: sizes),
+            0.05, accuracy: 0.0001)
+        XCTAssertEqual(
+            GraniteModelCache.weightedDownloadFraction(0.75, fileSizes: sizes),
+            0.55, accuracy: 0.0001)
+        XCTAssertEqual(
+            GraniteModelCache.weightedDownloadFraction(1, fileSizes: sizes), 1)
+    }
+
     func testLocalPunctuationFormatterMatchesMLXReference() throws {
         guard let path = ProcessInfo.processInfo.environment["GRANITE_PUNCTUATION_MODEL"] else {
             throw XCTSkip("Set GRANITE_PUNCTUATION_MODEL to run the local formatter parity test.")
@@ -167,14 +179,77 @@ final class GraniteMLXTests: XCTestCase {
     }
 
     func testPublishedModelCatalogAliasesAndDefaults() throws {
-        XCTAssertEqual(GraniteModelCatalog.models.count, 15)
-        XCTAssertEqual(Set(GraniteModelCatalog.models.map(\.alias)).count, 15)
-        XCTAssertEqual(Set(GraniteModelCatalog.models.map(\.repositoryID)).count, 15)
-        XCTAssertEqual(GraniteModelCatalog.models.filter(\.isDefault).count, 2)
+        XCTAssertEqual(GraniteModelCatalog.models.count, 16)
+        XCTAssertEqual(Set(GraniteModelCatalog.models.map(\.alias)).count, 16)
+        XCTAssertEqual(Set(GraniteModelCatalog.models.map(\.repositoryID)).count, 16)
+        XCTAssertEqual(GraniteModelCatalog.models.filter(\.isDefault).count, 3)
         let resolved = try GraniteModelCatalog.resolve("apache-q8")
         XCTAssertEqual(resolved.id, GraniteModelLoader.defaultModelID)
         XCTAssertEqual(resolved.model?.kind, .speech)
+        let coreML = try GraniteModelCatalog.resolve("apache-coreml-q8")
+        XCTAssertEqual(coreML.id, GraniteCoreMLModelLoader.defaultModelID)
+        XCTAssertEqual(coreML.model?.kind, .coreMLSpeech)
         XCTAssertThrowsError(try GraniteModelCatalog.resolve("not-a-model"))
+    }
+
+    func testCoreMLRepositoryDetectionAndArtifactLoading() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let package = directory.appendingPathComponent(
+            "GraniteSpeech.mlpackage", isDirectory: true)
+        let weights = package.appendingPathComponent(
+            "Data/com.apple.CoreML/weights", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: weights, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(
+            to: package.appendingPathComponent("Manifest.json"))
+        try Data("fixture".utf8).write(
+            to: package.appendingPathComponent(
+                "Data/com.apple.CoreML/model.mlmodel"))
+        let weight = weights.appendingPathComponent("weight.bin")
+        FileManager.default.createFile(atPath: weight.path, contents: nil)
+        let handle = try FileHandle(forWritingTo: weight)
+        try handle.truncate(atOffset: 101 * 1_024 * 1_024)
+        try handle.close()
+        try Data(#"{"model_type":"granite_speech5_ctc"}"#.utf8)
+            .write(to: directory.appendingPathComponent("config.json"))
+        try Data("{}".utf8).write(
+            to: directory.appendingPathComponent("tokenizer.json"))
+        try Data("""
+        {
+          "model_type": "granite_speech5_coreml_ctc",
+          "backend": "coreml",
+          "model_package": "GraniteSpeech.mlpackage",
+          "source_model": "owner/source",
+          "source_revision": "revision",
+          "minimum_deployment_target": "macOS 15.0",
+          "feature_frames": 16384,
+          "audio_seconds": 327.68,
+          "output_frames": 4096,
+          "weight_precision": "q8",
+          "quantization": {
+            "method": "uniform_palettization",
+            "bits": 8,
+            "granularity": "per_grouped_channel",
+            "group_size": 1
+          },
+          "recommended_compute_units": "cpu-gpu",
+          "recommended_chunk_duration_seconds": 286.72,
+          "recommended_chunk_context_seconds": 20.48,
+          "weight_sha256": "fixture"
+        }
+        """.utf8).write(
+            to: directory.appendingPathComponent("coreml_config.json"))
+
+        XCTAssertEqual(
+            GraniteModelCache.state(at: directory, kind: .coreMLSpeech),
+            .downloaded)
+        XCTAssertEqual(GraniteModelCache.detectedKind(at: directory), .coreMLSpeech)
+        let artifact = try GraniteCoreMLModelLoader.load(from: directory)
+        XCTAssertEqual(artifact.modelURL, package)
+        XCTAssertEqual(artifact.configuration.quantization.bits, 8)
+        XCTAssertEqual(artifact.configuration.featureFrames, 16_384)
+        XCTAssertGreaterThan(GraniteModelCache.directorySize(directory), 100 * 1_024 * 1_024)
     }
 
     func testModelCacheDirectorySizeDoesNotFollowSymlinks() throws {

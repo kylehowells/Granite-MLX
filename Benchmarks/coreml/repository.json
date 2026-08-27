@@ -1,0 +1,26 @@
+{
+  "repository_id": "iky1e/granite-speech-5.0-470m-turboctc-coreml-q8",
+  "url": "https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8",
+  "revision": "a316b9ba7cdbce6b1d2ef3d4b6605f5d8865c6c6",
+  "published_at": "2026-08-27",
+  "source_model": "ibm-granite/granite-speech-5.0-470m-turboctc",
+  "source_revision": "7e74c6438b7cfb5090cb6a131538f5e8515a7de3",
+  "source_license": "apache-2.0",
+  "package": "GraniteSpeech.mlpackage",
+  "repository_download_bytes": 693040765,
+  "package_bytes": 691894962,
+  "weight_bytes": 691520192,
+  "weight_sha256": "3ef27cdaa3968451f92c74d33c9b8cd885b3793a751c16d19acdc0fb8f07eaf4",
+  "quantization": {
+    "method": "uniform_palettization",
+    "bits": 8,
+    "granularity": "per_grouped_channel",
+    "group_size": 1
+  },
+  "minimum_deployment_target": "macOS 15",
+  "recommended_compute_units": "cpuAndGPU",
+  "feature_frames": 16384,
+  "audio_seconds": 327.68,
+  "recommended_chunk_duration_seconds": 286.72,
+  "recommended_chunk_context_seconds": 20.48
+}
