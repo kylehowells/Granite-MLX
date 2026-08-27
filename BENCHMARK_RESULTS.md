@@ -1,5 +1,12 @@
 # Granite-MLX benchmark results
 
+> Historical one-pass baseline. The production CLI now uses bounded temporal
+> chunks by default, so the large one-pass memory figures below do not describe
+> its normal behavior. See
+> [`Benchmarks/memory-optimization`](Benchmarks/memory-optimization) for the
+> current bounded-memory results and [`Benchmarks/q8-optimization`](Benchmarks/q8-optimization)
+> for the selected Q8 checkpoint.
+
 Measured 26 August 2026 on a 10-core Apple M1 Max MacBook Pro with 64 GB RAM,
 macOS 26.5.2, Swift 6.2.3, MLX Swift 0.31.4, Python 3.10.15, PyTorch 2.13.0,
 and Transformers 5.15.1. Swift measurements use the release build.

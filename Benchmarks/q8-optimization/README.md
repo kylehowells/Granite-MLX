@@ -1,5 +1,10 @@
 # Q8-native optimization results
 
+> These optimization measurements deliberately use one-pass inference to
+> isolate kernel and precision changes. The production CLI instead defaults to
+> bounded temporal chunks; see [`../memory-optimization`](../memory-optimization)
+> for representative current memory use.
+
 The recommended Granite-MLX configuration is affine Q8 with group size 128
 where matrix dimensions permit it, group size 64 for
 `encoder.input_linear`, and FP16 encoder activations with FP32 softmax

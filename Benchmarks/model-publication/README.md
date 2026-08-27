@@ -35,8 +35,8 @@ and not ground-truth WER. Each checkpoint was run once on the full recording.
 [`results.json`](results.json) contains timings, memory measurements, file
 hashes, BLEU, chrF2, character similarity, word edits, and agreement values.
 [`repositories.json`](repositories.json) records the ten repository IDs and
-their local publication sources. The accompanying text files are the decoded
-transcripts used for the comparisons.
+the checkpoint directory names used by the publication tooling. The
+accompanying text files are the decoded transcripts used for the comparisons.
 
 The Swift CLI's published Q8 default was also tested from an isolated empty
 Hugging Face cache. It downloaded the repository without a `--model` argument,

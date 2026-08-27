@@ -1,5 +1,10 @@
 # Granite-MLX quantization benchmark
 
+> This is the original uniform-group-size comparison. The published Q8 default
+> was subsequently refined to mixed G128/G64 quantization; see
+> [`../q8-optimization`](../q8-optimization) for its final speed, size, and
+> agreement results.
+
 Measured on 26 August 2026 using an Apple M1 Max with 64 GB RAM. Every runtime
 used the same native Swift/MLX release binary and the same 16 kHz mono WAV. The
 full recording is 6,118.72 seconds (101m 58.72s).

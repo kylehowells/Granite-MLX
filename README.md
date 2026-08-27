@@ -1,12 +1,35 @@
 # Granite-MLX
 
-Native Swift/MLX Granite Speech 5.0 TurboCTC CLI for Apple Silicon.
+Native Swift/MLX speech recognition with IBM Granite Speech 5.0 TurboCTC on
+Apple Silicon. Granite-MLX provides both a command-line tool and a reusable
+Swift library; transcription runs locally after the selected model is cached.
+
+> Granite-MLX is preparing for its first `0.1.0` release. Source builds are
+> supported now; the versioned GitHub release and Homebrew formula are the
+> remaining distribution steps.
+
+[CLI guide](#cli-guide) ·
+[Swift library](#using-granitemlx-as-a-swift-library) ·
+[Model management](#model-downloads-and-disk-usage) ·
+[Testing](#testing)
+
+## Highlights
+
+- Native Swift inference with MLX; no Python runtime is required.
+- Audio and video input through AVFoundation with an `ffmpeg` fallback.
+- Automatic, visible model downloads plus cache listing and removal commands.
+- Bounded-memory long-form transcription by default.
+- Presentation-ready capitalization, punctuation, and sentence boundaries.
+- Plain text, SRT, WebVTT, structured JSON, and combined export modes.
+- Approximate CTC word timestamps and highlighted-word subtitles.
+- Cooperative cancellation, progress callbacks, and stable diagnostic codes
+  for application integration.
 
 ## Requirements
 
 - Apple Silicon Mac (`arm64`)
 - macOS 14 Sonoma or newer
-- Swift 6.2 and Xcode 26 or newer when building from source
+- Swift 6.2 and the full Xcode 26 toolchain or newer when building from source
 - `ffmpeg` for containers that AVFoundation cannot decode directly
 
 The SwiftPM dependencies are pinned to MLX Swift 0.31.4, Swift Transformers
@@ -20,18 +43,36 @@ Install the media fallback with:
 brew install ffmpeg
 ```
 
-## Native Swift CLI
+## Quick start
 
-The Swift runtime now performs end-to-end Granite 5.0 CTC transcription. It
-accepts WAV/audio files directly and falls back to `ffmpeg` for video and less
-common containers.
+Clone and build the executable and MLX Metal library:
 
 ```bash
+git clone https://github.com/kylehowells/Granite-MLX.git
+cd Granite-MLX
 swift build -c release
 Scripts/build_mlx_metallib.sh release
-
-.build/release/granite-mlx input.webm
+export PATH="$PWD/.build/release:$PATH"
 ```
+
+The executable and `mlx.metallib` must remain together. Transcribe a file as
+plain text, or use the default timestamped SRT output:
+
+```bash
+granite-mlx recording.m4a --output-format txt
+granite-mlx lecture.mp4 > lecture.srt
+```
+
+On first use, Granite-MLX downloads approximately 550 MB for the default Apache
+Q8 speech and punctuation models. Progress is written to stderr and the files
+are reused from the local cache on later runs. Run `granite-mlx --help` for
+common examples and `granite-mlx transcribe --help` for every option.
+
+## CLI guide
+
+The CLI performs end-to-end Granite 5.0 CTC transcription. AVFoundation reads
+common audio formats directly; `ffmpeg` handles additional audio/video
+containers. Model inference and formatting remain local after download.
 
 `--model` accepts either a Hugging Face repository ID or a local directory.
 The default is the published Apache 2.0
@@ -39,7 +80,10 @@ The default is the published Apache 2.0
 checkpoint, which is downloaded and cached automatically on first use.
 The loader can run the original Granite checkpoint directly and also supports
 checkpoints produced by `Scripts/convert_granite.py`, including FP16, FP32,
-and affine Q8/Q6/Q5/Q4/Q3/Q2 weights.
+and affine Q8/Q6/Q5/Q4/Q3/Q2 weights. The original BF16 tensors do not require
+a separately saved MLX checkpoint, but the loader must normalize incompatible
+tensor layouts in memory. Pre-converted MLX checkpoints avoid that work and
+offer more useful size/performance choices.
 
 FP16, Q8, Q6, Q5, and Q4 MLX checkpoints for both the Apache 2.0 and
 non-commercial model families are grouped in the
@@ -254,11 +298,76 @@ uv run python Scripts/chart_quantization.py \
   Benchmarks/quantization/charts
 ```
 
-## Reference CLI
+## Using GraniteMLX as a Swift library
+
+Add the package and library product to your SwiftPM project:
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/kylehowells/Granite-MLX.git",
+        from: "0.1.0"
+    ),
+],
+targets: [
+    .target(
+        name: "MyApp",
+        dependencies: [
+            .product(name: "GraniteMLX", package: "Granite-MLX"),
+        ]
+    ),
+]
+```
+
+Load audio, run bounded-memory recognition, and optionally apply the default
+formatter:
+
+```swift
+import Foundation
+import GraniteMLX
+
+let cancellation = GraniteCancellationToken()
+let audio = try GraniteAudioInput.load(
+    url: URL(fileURLWithPath: "/path/to/recording.m4a"),
+    cancellationToken: cancellation
+)
+
+let recognizer = try GraniteRecognizer(
+    modelSource: GraniteModelLoader.defaultModelID,
+    cancellationToken: cancellation
+)
+let raw = try recognizer.transcribe(
+    audio,
+    activationPrecision: .fp16,
+    audioChunkDuration: 122.88,
+    audioChunkContext: 20.48,
+    cancellationToken: cancellation
+)
+
+let formatter = try GraniteTranscriptFormatterFactory.load(
+    cancellationToken: cancellation
+)
+let formatting = try formatter.format(
+    raw.rawText,
+    cancellationToken: cancellation,
+    progressHandler: nil
+)
+let transcript = raw.applyingFormatting(formatting)
+print(transcript.text)
+```
+
+These calls are synchronous, so GUI applications should execute them away from
+the main actor. `GraniteRecognizer.transcribe`, `GraniteAudioInput.load`, model
+downloads, and formatting accept progress/cancellation hooks. Errors conform
+to `GraniteDiagnosticError` and expose stable `GMLX-*` support codes. The full
+API guide is in the bundled DocC catalog at
+[`Sources/GraniteMLX/GraniteMLX.docc`](Sources/GraniteMLX/GraniteMLX.docc).
+
+## Development reference CLI
 
 The Python reference CLI defines the command-line behavior and provides the
 PyTorch baseline for validating the Swift implementation. It is development
-tooling only and will not be required by the finished native CLI.
+tooling only and is not required by the native CLI.
 
 Install its dependencies in an isolated environment, then run:
 
@@ -315,6 +424,9 @@ model exporter tests, the generated media-container matrix, isolated network
 interruption/resume test, and the 101-minute bounded-memory release gate are
 documented in [`Tests/README.md`](Tests/README.md). Large model and audio paths
 are supplied through environment variables and are never committed.
+
+`Scripts/check_documentation.sh` builds the DocC catalog with warnings treated
+as errors and reports public-symbol documentation coverage.
 
 ## License
 

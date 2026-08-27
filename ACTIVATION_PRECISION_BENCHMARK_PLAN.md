@@ -1,5 +1,11 @@
 # Activation Precision Benchmark Plan
 
+> Historical planning document. The Q8 activation investigation is complete;
+> current results and selected defaults are documented in
+> [`Benchmarks/q8-optimization`](Benchmarks/q8-optimization). Unchecked items
+> below describe possible Q6/Q5 and streaming follow-up work, not blockers for
+> the first CLI release.
+
 ## Objective
 
 Measure whether reducing Granite Speech activation precision lowers peak memory

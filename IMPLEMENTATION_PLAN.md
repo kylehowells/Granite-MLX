@@ -18,11 +18,12 @@ The project should provide a native Swift runtime, a Hugging Face/local model lo
 
 The original model is an English-only, encoder-only CTC model. It uses a 16-layer Conformer encoder, 1,024 hidden dimensions, a 16,384-token BPE vocabulary, 16 kHz audio, 80-bin log-mel features plus deltas, temporal subsampling by 8, block attention, and greedy CTC decoding.
 
-Model weights must remain outside this repository. The local source checkpoint currently lives at:
-
-`/path/to/granite-speech-5.0-470m-turboctc`
-
-Converted weights should eventually be published as a separate Hugging Face model repository and downloaded/cached by the CLI.
+Model weights remain outside this repository. The authoritative Apache source
+checkpoint is
+[`ibm-granite/granite-speech-5.0-470m-turboctc`](https://huggingface.co/ibm-granite/granite-speech-5.0-470m-turboctc),
+and users can select its compatible non-commercial counterpart when those
+weight terms are appropriate. Converted MLX checkpoints are published in
+separate Hugging Face repositories and downloaded and cached by the CLI.
 
 ## Reference projects
 
@@ -327,10 +328,10 @@ Both recordings are predominantly single-speaker lectures and have local SRT/VTT
 
 ## Phase 9: CLI release completion
 
-The native ASR and punctuation runtimes, timestamps, batch input loop, and
-Parakeet-compatible exporters are working. The remaining release-critical CLI
-work is download/cache UX, broader integration coverage, stable errors, and
-packaging polish. Complete this phase before creating the first Homebrew release.
+The native ASR and punctuation runtimes, timestamps, batch input loop,
+Parakeet-compatible exporters, download/cache UX, stable errors, and
+application integration APIs are working. The remaining release work is the
+opt-in integration gates and distribution packaging.
 
 ### Parakeet-compatible outputs
 
@@ -350,8 +351,8 @@ packaging polish. Complete this phase before creating the first Homebrew release
 - [x] Process every supplied input path rather than only `inputs.first`.
 - [x] Load the ASR and punctuation models once and reuse them across all inputs in one invocation.
 - [x] Handle duplicate basenames and output-path collisions predictably.
-- [ ] Test WAV, MP3, M4A, FLAC, WebM, and MP4 inputs.
-- [ ] Test mono/stereo conversion, non-16 kHz resampling, silence, empty audio,
+- [x] Test WAV, MP3, M4A, FLAC, WebM, and MP4 inputs.
+- [-] Test mono/stereo conversion, non-16 kHz resampling, silence, empty audio,
   missing inputs, unsupported formats, and corrupt files.
 - [x] If ffmpeg is absent, retain AVFoundation's directly readable formats and
   return coded installation/recovery guidance for unsupported containers.
@@ -439,6 +440,8 @@ corruption without depending on the public service.
   reproducible project files in Git.
 - [x] Review the repository for local absolute paths, caches, downloaded weights,
   credentials, and temporary files.
+- [x] Add and validate a DocC catalog, document every exported Swift declaration,
+  and add a repeatable warnings-as-errors documentation check.
 - [x] Create local implementation and release-hardening commits.
 - [ ] Create the `kylehowells/Granite-MLX` GitHub remote and push the repository.
 
@@ -510,13 +513,13 @@ mixed G128/G64 affine-Q8 checkpoint with FP16 activations. It transcribes the
 Max, approximately 2% faster than uniform G64. Full machine-readable results
 and PNG charts live in `Benchmarks/q8-optimization`.
 
-The model runtime and publication work are complete, but the CLI is not yet
-release-ready. Ten converted checkpoints are published under `iky1e`: FP16,
+The model runtime, publication work, and intended `0.1.0` CLI feature surface
+are complete. Ten converted checkpoints are published under `iky1e`: FP16,
 Q8, Q6, Q5, and Q4 for both source-weight families. Their full-lecture
 agreement results and publication metadata live in
 `Benchmarks/model-publication`; Apache Q8 is the verified automatic-download
-default. The release-critical path is now Phase 9 output/input/download work,
-followed by GitHub Releases and Homebrew packaging.
+default. The release-critical path is now the remaining opt-in integration
+gates, GitHub Releases, and Homebrew packaging.
 
 The Swift CLI now processes every input while reusing one loaded ASR model and
 one loaded formatter. It derives CTC token/word times at 12.5 fps, maps native
@@ -524,9 +527,16 @@ formatter sentence ranges onto timed words, applies subtitle safety limits,
 and exports TXT, SRT, Parakeet-style WebVTT, JSON, or all four. Output
 directories, templates, highlighted words, duplicate-path collision suffixes,
 raw/formatted JSON fields, `--version`, and argument validation are wired up.
-Unit tests cover timing, segmentation, and subtitle rendering; a real 20-second
-Q8/Q8 smoke test generated all four files successfully. Release-level
-integration coverage remains a Phase 9 priority.
+Unit tests cover timing, segmentation, subtitle rendering, cache management,
+audio conversion, model validation, diagnostics, and cancellation. The
+integration suite covers all exporters, collisions, stdout/stderr separation,
+download interruption, Ctrl-C, and bounded-memory long-form transcription,
+with network and model-heavy gates explicitly opt-in. A real 20-second Q8/Q8
+smoke test generated all four files successfully.
+
+The public README, command help, benchmark guides, implementation plan, test
+guide, and DocC catalog have been audited for machine-specific paths and broken
+relative links. All 282 exported Swift symbols carry source documentation.
 
 The download UX is now implemented. Both automatic first-use downloads and
 explicit `models download` operations report repository, role, expected size,

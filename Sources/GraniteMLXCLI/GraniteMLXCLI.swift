@@ -158,21 +158,25 @@ struct TranscribeCommand: ParsableCommand {
           granite-mlx lecture.mp4 --output-format all --output-dir ./transcripts
           granite-mlx a.wav b.mp3 --output-dir ./transcripts
           granite-mlx recording.wav --model apache-q6 --no-punctuate
+
+        SRT is written to stdout by default. Use --output-format txt for plain
+        text, or --output-dir to create files. The first run downloads and
+        caches the selected models with progress on stderr.
         """)
 
     @Argument(help: "Audio or video file(s) to transcribe.")
     var inputs: [String]
-    @Option(help: "Local model directory or Hugging Face model identifier.")
+    @Option(help: "Catalog alias, local model directory, or Hugging Face repository ID.")
     var model: String = GraniteModelLoader.defaultModelID
-    @Option(help: "Local punctuation model directory or Hugging Face model identifier.")
+    @Option(help: "Catalog alias, local punctuation model directory, or Hugging Face repository ID.")
     var punctuationModel: String = PunctuationModelLoader.defaultModelID
     @Option(help: "Hugging Face access token for private or gated repositories; overrides HF_TOKEN.")
     var hfToken: String?
     @Flag(inversion: .prefixedNo, help: "Restore punctuation, capitalization, and sentence boundaries.")
     var punctuate = true
-    @Option(help: "Output format: txt, srt, vtt, json, or all.")
+    @Option(help: "Output format: txt, srt, vtt, json, or all; all requires --output-dir.")
     var outputFormat: String = "srt"
-    @Option(help: "Directory for generated output files.")
+    @Option(help: "Directory for generated files; without it, output is written to stdout.")
     var outputDir: String?
     @Option(help: "Output basename template. Supports {filename}, {parent}, {index}, and {date}.")
     var outputTemplate: String = "{filename}"

@@ -89,6 +89,12 @@ struct ModelsCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "models",
         abstract: "List, download, and remove Granite-MLX models.",
+        discussion: """
+        EXAMPLES:
+          granite-mlx models list
+          granite-mlx models download apache-q8 punctuation-q8
+          granite-mlx models remove apache-fp16
+        """,
         subcommands: [ModelsListCommand.self, ModelsDownloadCommand.self, ModelsRemoveCommand.self],
         defaultSubcommand: ModelsListCommand.self)
 }
@@ -111,7 +117,13 @@ private struct ModelListRecord: Encodable {
 struct ModelsListCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "list",
-        abstract: "List available models, download status, and disk usage.")
+        abstract: "List available models, download status, and disk usage.",
+        discussion: """
+        EXAMPLES:
+          granite-mlx models list
+          granite-mlx models list --downloaded-only
+          granite-mlx models list --json
+        """)
 
     @Flag(help: "Show only complete or partial model cache entries.")
     var downloadedOnly = false
@@ -189,7 +201,14 @@ struct ModelsListCommand: ParsableCommand {
 struct ModelsDownloadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "download",
-        abstract: "Download one or more models into the local cache.")
+        abstract: "Download one or more models into the local cache.",
+        discussion: """
+        EXAMPLES:
+          granite-mlx models download apache-q8 punctuation-q8
+          granite-mlx models download owner/repository
+
+        Set HF_TOKEN or pass --hf-token for private and gated repositories.
+        """)
 
     @Argument(help: "Catalog alias or Hugging Face repository ID.")
     var models: [String]
@@ -224,7 +243,15 @@ struct ModelsDownloadCommand: ParsableCommand {
 struct ModelsRemoveCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "remove",
-        abstract: "Remove downloaded models to reclaim disk space.")
+        abstract: "Remove downloaded models to reclaim disk space.",
+        discussion: """
+        EXAMPLES:
+          granite-mlx models remove apache-fp16
+          granite-mlx models remove punctuation-q4 --yes
+          granite-mlx models remove --all
+
+        Models can be downloaded again at any time.
+        """)
 
     @Argument(help: "Catalog alias or Hugging Face repository ID.")
     var models: [String] = []
