@@ -559,7 +559,6 @@ final class GraniteMLXCLITests: XCTestCase {
         var arguments = [
             audio, "--no-punctuate", "--output-format", "json",
             "--output-dir", temporary.path, "--output-template", "long",
-            "--audio-chunk-duration", "122.88", "--audio-chunk-context", "20.48",
             "--mlx-cache-limit-mb", "64",
         ]
         arguments += try realModelArguments().filter { $0 != "--no-punctuate" }
@@ -571,7 +570,7 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertFalse(text.isEmpty)
         let performance = try XCTUnwrap(document["performance"] as? [String: Any])
         XCTAssertEqual(performance["audio_chunk_duration_seconds"] as? Double, 122.88)
-        XCTAssertEqual(performance["audio_chunk_context_seconds"] as? Double, 20.48)
+        XCTAssertEqual(performance["audio_chunk_context_seconds"] as? Double, 10.24)
         let peak = try XCTUnwrap(performance["mlx_peak_memory_bytes"] as? Int)
         let maximum = Int(ProcessInfo.processInfo.environment["GRANITE_TEST_MAX_MLX_PEAK_BYTES"] ?? "2500000000")!
         XCTAssertLessThan(peak, maximum, "MLX peak memory exceeded the release threshold")

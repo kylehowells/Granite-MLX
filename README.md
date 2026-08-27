@@ -143,12 +143,19 @@ and performance metadata. All progress and benchmark records go to stderr.
 ### Optimized Core ML backend
 
 Granite-MLX also includes a native Swift Core ML recognizer for converted,
-fixed-shape ML Programs. In the current three-round interleaved M1 Max
+fixed-shape ML Programs. In the quiet three-round interleaved M1 Max release
 benchmark, the published macOS 15 Q8 palettized 16,384-frame graph transcribed
 the 101m59s lecture in a median 24.50 seconds of speech inference versus 37.11
-seconds for bounded MLX Q8. Process wall was 26.16 versus 37.62 seconds. The
-Core ML transcript had 0.265% word disagreement with the MLX output, while peak
-footprint increased from 1.72 to 2.04 GB.
+seconds for the then-current 122.88/20.48-second bounded MLX profile. Process
+wall was 26.16 versus 37.62 seconds. The Core ML transcript had 0.265% word
+disagreement with that MLX output, while peak footprint increased from 1.72 to
+2.04 GB.
+
+The MLX default now uses 122.88 seconds of central audio and 10.24 seconds of
+context. A separate paired experiment found it 13.2% faster than the old MLX
+profile while using 25 MB less memory. Because that experiment ran under much
+higher system load, its absolute timing is not directly comparable with the
+quiet Core ML release matrix.
 
 The selected model is published at
 [`iky1e/granite-speech-5.0-470m-turboctc-coreml-q8`](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8)
@@ -259,17 +266,18 @@ granite-mlx lecture.wav \
   --model /path/to/granite-speech-5.0-470m-turboctc-mlx-q8-g128 \
   --mlx-cache-limit-mb 64 \
   --audio-chunk-duration 122.88 \
-  --audio-chunk-context 20.48
+  --audio-chunk-context 10.24
 ```
 
 The chunk and context durations are aligned to Granite's 10.24-second attention
-blocks. The original memory experiment reduced macOS peak footprint from 34.67
-GB to 1.64 GB and took 24.41 seconds. The current three-round interleaved
-matrix measured a 1.72 GB median peak and 37.11-second median inference under
-the newer, busier benchmark session. Both retained 0.169% word disagreement
-against the same Q8 one-pass transcript. These comparisons are diagnostics,
-not ground-truth WER. See [`Benchmarks/memory-optimization`](Benchmarks/memory-optimization)
-and [`Benchmarks/backend-matrix`](Benchmarks/backend-matrix).
+blocks. The original 20.48-second-context memory experiment reduced macOS peak
+footprint from 34.67 GB to 1.64 GB and took 24.41 seconds. A later interleaved
+profile test found that one 10.24-second attention block of context was 13.2%
+faster and used 25 MB less peak memory. It changed 13 words relative to the
+20.48-second-context transcript across 13,610 reference words. These
+comparisons are diagnostics, not ground-truth WER. See
+[`Benchmarks/memory-optimization`](Benchmarks/memory-optimization) and
+[`Benchmarks/bounded-profile-optimization`](Benchmarks/bounded-profile-optimization).
 
 Run the complete recording through the encoder in one pass with:
 
@@ -388,7 +396,7 @@ let raw = try recognizer.transcribe(
     audio,
     activationPrecision: .fp16,
     audioChunkDuration: 122.88,
-    audioChunkContext: 20.48,
+    audioChunkContext: 10.24,
     cancellationToken: cancellation
 )
 

@@ -1,0 +1,806 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-27T15:38:22+0100",
+  "audio": {
+    "file_name": "granite-cme295-lecture1-16k-mono.wav",
+    "duration_seconds": 6118.72,
+    "sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab"
+  },
+  "methodology": {
+    "runs_per_configuration": 3,
+    "scheduling": "Rotated interleaving; no configuration ran three times consecutively.",
+    "model": "Granite Speech 5.0 TurboCTC MLX mixed-G128/G64 Q8",
+    "activation_precision": "FP16 with FP32 softmax stability islands",
+    "mlx_cache_limit_mib": 64,
+    "system_load": "The profile matrix load average rose from 18.23 to 35.03; the prototype matrix rose from 25.41 to 64.54 while macOS media analysis and indexing were active. Use paired relative results rather than cross-session absolute timing."
+  },
+  "chunk_profiles": {
+    "current": {
+      "chunk_duration_seconds": 122.88,
+      "context_seconds": 20.48,
+      "deterministic_across_rounds": true,
+      "transcript": "transcripts/current.txt",
+      "transcript_sha256": "ada8e220c120f5b2527f6b09122d0b0d876010b9d2f2a28bffa399180aa3feb5",
+      "word_count": 13610,
+      "runs": [
+        {
+          "round": 1,
+          "inference_seconds": 22.386469960212708,
+          "processing_seconds": 22.506160974502563,
+          "process_wall_seconds": 22.97,
+          "peak_physical_footprint_bytes": 1652393376,
+          "maximum_resident_bytes": 1336508416,
+          "mlx_peak_memory_bytes": 1247702378,
+          "mlx_cache_memory_bytes": 48384064,
+          "transcript_sha256": "ada8e220c120f5b2527f6b09122d0b0d876010b9d2f2a28bffa399180aa3feb5",
+          "word_count": 13610
+        },
+        {
+          "round": 2,
+          "inference_seconds": 25.766692996025085,
+          "processing_seconds": 25.854443073272705,
+          "process_wall_seconds": 26.21,
+          "peak_physical_footprint_bytes": 1652557216,
+          "maximum_resident_bytes": 1335427072,
+          "mlx_peak_memory_bytes": 1247705450,
+          "mlx_cache_memory_bytes": 0,
+          "transcript_sha256": "ada8e220c120f5b2527f6b09122d0b0d876010b9d2f2a28bffa399180aa3feb5",
+          "word_count": 13610
+        },
+        {
+          "round": 3,
+          "inference_seconds": 25.28071701526642,
+          "processing_seconds": 25.37846004962921,
+          "process_wall_seconds": 25.73,
+          "peak_physical_footprint_bytes": 1650394552,
+          "maximum_resident_bytes": 1335459840,
+          "mlx_peak_memory_bytes": 1247702378,
+          "mlx_cache_memory_bytes": 0,
+          "transcript_sha256": "ada8e220c120f5b2527f6b09122d0b0d876010b9d2f2a28bffa399180aa3feb5",
+          "word_count": 13610
+        }
+      ],
+      "summary": {
+        "inference_seconds": {
+          "median": 25.28071701526642,
+          "minimum": 22.386469960212708,
+          "maximum": 25.766692996025085,
+          "mean": 24.477959990501404,
+          "sample_standard_deviation": 1.827509527626695,
+          "coefficient_of_variation_percent": 7.4659388622902165
+        },
+        "processing_seconds": {
+          "median": 25.37846004962921,
+          "minimum": 22.506160974502563,
+          "maximum": 25.854443073272705,
+          "mean": 24.57968803246816,
+          "sample_standard_deviation": 1.8114292160572538,
+          "coefficient_of_variation_percent": 7.369618416899654
+        },
+        "process_wall_seconds": {
+          "median": 25.73,
+          "minimum": 22.97,
+          "maximum": 26.21,
+          "mean": 24.97,
+          "sample_standard_deviation": 1.7485994395515525,
+          "coefficient_of_variation_percent": 7.0028011195496696
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1652393376.0,
+          "minimum": 1650394552.0,
+          "maximum": 1652557216.0,
+          "mean": 1651781714.6666667,
+          "sample_standard_deviation": 1204108.003563357,
+          "coefficient_of_variation_percent": 0.07289752591832926
+        },
+        "maximum_resident_bytes": {
+          "median": 1335459840.0,
+          "minimum": 1335427072.0,
+          "maximum": 1336508416.0,
+          "mean": 1335798442.6666667,
+          "sample_standard_deviation": 615073.1956355547,
+          "coefficient_of_variation_percent": 0.046045359538500315
+        },
+        "mlx_peak_memory_bytes": {
+          "median": 1247702378.0,
+          "minimum": 1247702378.0,
+          "maximum": 1247705450.0,
+          "mean": 1247703402.0,
+          "sample_standard_deviation": 1773.6200269505302,
+          "coefficient_of_variation_percent": 0.00014215077270026793
+        },
+        "mlx_cache_memory_bytes": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 48384064.0,
+          "mean": 16128021.333333334,
+          "sample_standard_deviation": 27934552.37488808,
+          "coefficient_of_variation_percent": 173.20508075688772
+        }
+      },
+      "agreement_vs_current": {
+        "reference_words": 13610,
+        "candidate_words": 13610,
+        "word_edits": 0,
+        "word_agreement_percent": 100.0,
+        "character_similarity_percent": 100.0
+      }
+    },
+    "low-context": {
+      "chunk_duration_seconds": 122.88,
+      "context_seconds": 10.24,
+      "deterministic_across_rounds": true,
+      "transcript": "transcripts/low-context.txt",
+      "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+      "word_count": 13605,
+      "runs": [
+        {
+          "round": 1,
+          "inference_seconds": 21.53809893131256,
+          "processing_seconds": 21.636714935302734,
+          "process_wall_seconds": 21.98,
+          "peak_physical_footprint_bytes": 1627047376,
+          "maximum_resident_bytes": 1335492608,
+          "mlx_peak_memory_bytes": 1153694058,
+          "mlx_cache_memory_bytes": 46958656,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 2,
+          "inference_seconds": 22.63832402229309,
+          "processing_seconds": 22.72675907611847,
+          "process_wall_seconds": 23.08,
+          "peak_physical_footprint_bytes": 1626785304,
+          "maximum_resident_bytes": 1335296000,
+          "mlx_peak_memory_bytes": 1153694058,
+          "mlx_cache_memory_bytes": 0,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 3,
+          "inference_seconds": 21.95200800895691,
+          "processing_seconds": 22.05172097682953,
+          "process_wall_seconds": 22.4,
+          "peak_physical_footprint_bytes": 1627080168,
+          "maximum_resident_bytes": 1335066624,
+          "mlx_peak_memory_bytes": 1153694058,
+          "mlx_cache_memory_bytes": 9248,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        }
+      ],
+      "summary": {
+        "inference_seconds": {
+          "median": 21.95200800895691,
+          "minimum": 21.53809893131256,
+          "maximum": 22.63832402229309,
+          "mean": 22.042810320854187,
+          "sample_standard_deviation": 0.5557046046148949,
+          "coefficient_of_variation_percent": 2.5210243001054895
+        },
+        "processing_seconds": {
+          "median": 22.05172097682953,
+          "minimum": 21.636714935302734,
+          "maximum": 22.72675907611847,
+          "mean": 22.138398329416912,
+          "sample_standard_deviation": 0.5501670471959824,
+          "coefficient_of_variation_percent": 2.485125793698161
+        },
+        "process_wall_seconds": {
+          "median": 22.4,
+          "minimum": 21.98,
+          "maximum": 23.08,
+          "mean": 22.486666666666665,
+          "sample_standard_deviation": 0.555097589017762,
+          "coefficient_of_variation_percent": 2.468563247929567
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1627047376.0,
+          "minimum": 1626785304.0,
+          "maximum": 1627080168.0,
+          "mean": 1626970949.3333333,
+          "sample_standard_deviation": 161607.4600918328,
+          "coefficient_of_variation_percent": 0.009933026779491852
+        },
+        "maximum_resident_bytes": {
+          "median": 1335296000.0,
+          "minimum": 1335066624.0,
+          "maximum": 1335492608.0,
+          "mean": 1335285077.3333333,
+          "sample_standard_deviation": 213201.9478084882,
+          "coefficient_of_variation_percent": 0.01596677379442215
+        },
+        "mlx_peak_memory_bytes": {
+          "median": 1153694058.0,
+          "minimum": 1153694058.0,
+          "maximum": 1153694058.0,
+          "mean": 1153694058.0,
+          "sample_standard_deviation": 0.0,
+          "coefficient_of_variation_percent": 0.0
+        },
+        "mlx_cache_memory_bytes": {
+          "median": 9248.0,
+          "minimum": 0.0,
+          "maximum": 46958656.0,
+          "mean": 15655968.0,
+          "sample_standard_deviation": 27108923.40909878,
+          "coefficient_of_variation_percent": 173.1539270462151
+        }
+      },
+      "agreement_vs_current": {
+        "reference_words": 13610,
+        "candidate_words": 13605,
+        "word_edits": 13,
+        "word_agreement_percent": 99.90448199853049,
+        "character_similarity_percent": 99.93783252371038
+      }
+    },
+    "same-memory": {
+      "chunk_duration_seconds": 143.36,
+      "context_seconds": 10.24,
+      "deterministic_across_rounds": true,
+      "transcript": "transcripts/same-memory.txt",
+      "transcript_sha256": "7f90817583c6024b54a2ca2168afb941f3de7413be9c55fcdbc3deb13cc5fe1c",
+      "word_count": 13612,
+      "runs": [
+        {
+          "round": 1,
+          "inference_seconds": 21.581789016723633,
+          "processing_seconds": 21.679908990859985,
+          "process_wall_seconds": 22.02,
+          "peak_physical_footprint_bytes": 1670399416,
+          "maximum_resident_bytes": 1338474496,
+          "mlx_peak_memory_bytes": 1247702378,
+          "mlx_cache_memory_bytes": 46958656,
+          "transcript_sha256": "7f90817583c6024b54a2ca2168afb941f3de7413be9c55fcdbc3deb13cc5fe1c",
+          "word_count": 13612
+        },
+        {
+          "round": 2,
+          "inference_seconds": 22.481420040130615,
+          "processing_seconds": 22.5769259929657,
+          "process_wall_seconds": 22.93,
+          "peak_physical_footprint_bytes": 1652721080,
+          "maximum_resident_bytes": 1335443456,
+          "mlx_peak_memory_bytes": 1247702378,
+          "mlx_cache_memory_bytes": 44182048,
+          "transcript_sha256": "7f90817583c6024b54a2ca2168afb941f3de7413be9c55fcdbc3deb13cc5fe1c",
+          "word_count": 13612
+        },
+        {
+          "round": 3,
+          "inference_seconds": 21.82868504524231,
+          "processing_seconds": 21.919113993644714,
+          "process_wall_seconds": 22.26,
+          "peak_physical_footprint_bytes": 1653310928,
+          "maximum_resident_bytes": 1335541760,
+          "mlx_peak_memory_bytes": 1247702378,
+          "mlx_cache_memory_bytes": 46958656,
+          "transcript_sha256": "7f90817583c6024b54a2ca2168afb941f3de7413be9c55fcdbc3deb13cc5fe1c",
+          "word_count": 13612
+        }
+      ],
+      "summary": {
+        "inference_seconds": {
+          "median": 21.82868504524231,
+          "minimum": 21.581789016723633,
+          "maximum": 22.481420040130615,
+          "mean": 21.963964700698853,
+          "sample_standard_deviation": 0.4648219373635504,
+          "coefficient_of_variation_percent": 2.1162934092166
+        },
+        "processing_seconds": {
+          "median": 21.919113993644714,
+          "minimum": 21.679908990859985,
+          "maximum": 22.5769259929657,
+          "mean": 22.0586496591568,
+          "sample_standard_deviation": 0.46450245099364706,
+          "coefficient_of_variation_percent": 2.105761042362023
+        },
+        "process_wall_seconds": {
+          "median": 22.26,
+          "minimum": 22.02,
+          "maximum": 22.93,
+          "mean": 22.403333333333332,
+          "sample_standard_deviation": 0.47162838478333036,
+          "coefficient_of_variation_percent": 2.1051705912066523
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1653310928.0,
+          "minimum": 1652721080.0,
+          "maximum": 1670399416.0,
+          "mean": 1658810474.6666667,
+          "sample_standard_deviation": 10040649.933463337,
+          "coefficient_of_variation_percent": 0.6052921709142799
+        },
+        "maximum_resident_bytes": {
+          "median": 1335541760.0,
+          "minimum": 1335443456.0,
+          "maximum": 1338474496.0,
+          "mean": 1336486570.6666667,
+          "sample_standard_deviation": 1722295.3484479175,
+          "coefficient_of_variation_percent": 0.12886738903697337
+        },
+        "mlx_peak_memory_bytes": {
+          "median": 1247702378.0,
+          "minimum": 1247702378.0,
+          "maximum": 1247702378.0,
+          "mean": 1247702378.0,
+          "sample_standard_deviation": 0.0,
+          "coefficient_of_variation_percent": 0.0
+        },
+        "mlx_cache_memory_bytes": {
+          "median": 46958656.0,
+          "minimum": 44182048.0,
+          "maximum": 46958656.0,
+          "mean": 46033120.0,
+          "sample_standard_deviation": 1603075.3762340683,
+          "coefficient_of_variation_percent": 3.482439113912045
+        }
+      },
+      "agreement_vs_current": {
+        "reference_words": 13610,
+        "candidate_words": 13612,
+        "word_edits": 35,
+        "word_agreement_percent": 99.7428361498898,
+        "character_similarity_percent": 99.85253509520162
+      }
+    }
+  },
+  "runtime_prototypes": {
+    "baseline": {
+      "compiled_layers": false,
+      "retain_chunk_cache": false,
+      "deterministic_across_rounds": true,
+      "transcript": "transcripts/baseline.txt",
+      "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+      "word_count": 13605,
+      "runs": [
+        {
+          "round": 1,
+          "inference_seconds": 23.482347011566162,
+          "processing_seconds": 23.627377033233643,
+          "process_wall_seconds": 23.99,
+          "peak_physical_footprint_bytes": 1627473360,
+          "maximum_resident_bytes": 1335771136,
+          "mlx_peak_memory_bytes": 1153694058,
+          "mlx_cache_memory_bytes": 46958656,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 2,
+          "inference_seconds": 22.151376962661743,
+          "processing_seconds": 22.271894931793213,
+          "process_wall_seconds": 22.63,
+          "peak_physical_footprint_bytes": 1627211240,
+          "maximum_resident_bytes": 1335820288,
+          "mlx_peak_memory_bytes": 1153694058,
+          "mlx_cache_memory_bytes": 46958656,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 3,
+          "inference_seconds": 21.849295020103455,
+          "processing_seconds": 21.997381925582886,
+          "process_wall_seconds": 22.39,
+          "peak_physical_footprint_bytes": 1637090864,
+          "maximum_resident_bytes": 1337982976,
+          "mlx_peak_memory_bytes": 1153694058,
+          "mlx_cache_memory_bytes": 9248,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        }
+      ],
+      "summary": {
+        "inference_seconds": {
+          "median": 22.151376962661743,
+          "minimum": 21.849295020103455,
+          "maximum": 23.482347011566162,
+          "mean": 22.49433966477712,
+          "sample_standard_deviation": 0.8688683807037688,
+          "coefficient_of_variation_percent": 3.862608965864826
+        },
+        "processing_seconds": {
+          "median": 22.271894931793213,
+          "minimum": 21.997381925582886,
+          "maximum": 23.627377033233643,
+          "mean": 22.63221796353658,
+          "sample_standard_deviation": 0.8726944070778152,
+          "coefficient_of_variation_percent": 3.85598269018016
+        },
+        "process_wall_seconds": {
+          "median": 22.63,
+          "minimum": 22.39,
+          "maximum": 23.99,
+          "mean": 23.003333333333334,
+          "sample_standard_deviation": 0.8628634499927157,
+          "coefficient_of_variation_percent": 3.7510365888684927
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1627473360.0,
+          "minimum": 1627211240.0,
+          "maximum": 1637090864.0,
+          "mean": 1630591821.3333333,
+          "sample_standard_deviation": 5629861.757713535,
+          "coefficient_of_variation_percent": 0.3452649328947328
+        },
+        "maximum_resident_bytes": {
+          "median": 1335820288.0,
+          "minimum": 1335771136.0,
+          "maximum": 1337982976.0,
+          "mean": 1336524800.0,
+          "sample_standard_deviation": 1263056.5763290257,
+          "coefficient_of_variation_percent": 0.09450304074634647
+        },
+        "mlx_peak_memory_bytes": {
+          "median": 1153694058.0,
+          "minimum": 1153694058.0,
+          "maximum": 1153694058.0,
+          "mean": 1153694058.0,
+          "sample_standard_deviation": 0.0,
+          "coefficient_of_variation_percent": 0.0
+        },
+        "mlx_cache_memory_bytes": {
+          "median": 46958656.0,
+          "minimum": 9248.0,
+          "maximum": 46958656.0,
+          "mean": 31308853.333333332,
+          "sample_standard_deviation": 27106253.34709357,
+          "coefficient_of_variation_percent": 86.5769597452315
+        }
+      },
+      "agreement_vs_baseline": {
+        "reference_words": 13605,
+        "candidate_words": 13605,
+        "word_edits": 0,
+        "word_agreement_percent": 100.0,
+        "character_similarity_percent": 100.0
+      }
+    },
+    "retained": {
+      "compiled_layers": false,
+      "retain_chunk_cache": true,
+      "deterministic_across_rounds": true,
+      "transcript": "transcripts/retained.txt",
+      "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+      "word_count": 13605,
+      "runs": [
+        {
+          "round": 1,
+          "inference_seconds": 25.23533797264099,
+          "processing_seconds": 25.34602999687195,
+          "process_wall_seconds": 25.7,
+          "peak_physical_footprint_bytes": 1665811968,
+          "maximum_resident_bytes": 1335377920,
+          "mlx_peak_memory_bytes": 1153690986,
+          "mlx_cache_memory_bytes": 74104842,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 2,
+          "inference_seconds": 22.685346007347107,
+          "processing_seconds": 22.79550802707672,
+          "process_wall_seconds": 23.16,
+          "peak_physical_footprint_bytes": 1689601512,
+          "maximum_resident_bytes": 1337950208,
+          "mlx_peak_memory_bytes": 1153690986,
+          "mlx_cache_memory_bytes": 69287948,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 3,
+          "inference_seconds": 22.509765028953552,
+          "processing_seconds": 22.621789932250977,
+          "process_wall_seconds": 22.97,
+          "peak_physical_footprint_bytes": 1667352064,
+          "maximum_resident_bytes": 1335279616,
+          "mlx_peak_memory_bytes": 1153690986,
+          "mlx_cache_memory_bytes": 110002186,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        }
+      ],
+      "summary": {
+        "inference_seconds": {
+          "median": 22.685346007347107,
+          "minimum": 22.509765028953552,
+          "maximum": 25.23533797264099,
+          "mean": 23.476816336313885,
+          "sample_standard_deviation": 1.5254526964368105,
+          "coefficient_of_variation_percent": 6.49769830195095
+        },
+        "processing_seconds": {
+          "median": 22.79550802707672,
+          "minimum": 22.621789932250977,
+          "maximum": 25.34602999687195,
+          "mean": 23.587775985399883,
+          "sample_standard_deviation": 1.5251679811616428,
+          "coefficient_of_variation_percent": 6.46592532549773
+        },
+        "process_wall_seconds": {
+          "median": 23.16,
+          "minimum": 22.97,
+          "maximum": 25.7,
+          "mean": 23.94333333333333,
+          "sample_standard_deviation": 1.5242812513881199,
+          "coefficient_of_variation_percent": 6.366203193880496
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1667352064.0,
+          "minimum": 1665811968.0,
+          "maximum": 1689601512.0,
+          "mean": 1674255181.3333333,
+          "sample_standard_deviation": 13312602.022907067,
+          "coefficient_of_variation_percent": 0.7951357816497995
+        },
+        "maximum_resident_bytes": {
+          "median": 1335377920.0,
+          "minimum": 1335279616.0,
+          "maximum": 1337950208.0,
+          "mean": 1336202581.3333333,
+          "sample_standard_deviation": 1514287.0083433106,
+          "coefficient_of_variation_percent": 0.11332765177210445
+        },
+        "mlx_peak_memory_bytes": {
+          "median": 1153690986.0,
+          "minimum": 1153690986.0,
+          "maximum": 1153690986.0,
+          "mean": 1153690986.0,
+          "sample_standard_deviation": 0.0,
+          "coefficient_of_variation_percent": 0.0
+        },
+        "mlx_cache_memory_bytes": {
+          "median": 74104842.0,
+          "minimum": 69287948.0,
+          "maximum": 110002186.0,
+          "mean": 84464992.0,
+          "sample_standard_deviation": 22246613.78720447,
+          "coefficient_of_variation_percent": 26.33826542859848
+        }
+      },
+      "agreement_vs_baseline": {
+        "reference_words": 13605,
+        "candidate_words": 13605,
+        "word_edits": 0,
+        "word_agreement_percent": 100.0,
+        "character_similarity_percent": 100.0
+      }
+    },
+    "compiled": {
+      "compiled_layers": true,
+      "retain_chunk_cache": false,
+      "deterministic_across_rounds": true,
+      "transcript": "transcripts/compiled.txt",
+      "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+      "word_count": 13605,
+      "runs": [
+        {
+          "round": 1,
+          "inference_seconds": 22.658862948417664,
+          "processing_seconds": 22.769212007522583,
+          "process_wall_seconds": 23.12,
+          "peak_physical_footprint_bytes": 1628030368,
+          "maximum_resident_bytes": 1335066624,
+          "mlx_peak_memory_bytes": 1153687132,
+          "mlx_cache_memory_bytes": 46958656,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 2,
+          "inference_seconds": 21.931975960731506,
+          "processing_seconds": 22.041857957839966,
+          "process_wall_seconds": 22.39,
+          "peak_physical_footprint_bytes": 1628767672,
+          "maximum_resident_bytes": 1335361536,
+          "mlx_peak_memory_bytes": 1153687134,
+          "mlx_cache_memory_bytes": 0,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 3,
+          "inference_seconds": 22.75036096572876,
+          "processing_seconds": 22.86475706100464,
+          "process_wall_seconds": 23.23,
+          "peak_physical_footprint_bytes": 1628489192,
+          "maximum_resident_bytes": 1335312384,
+          "mlx_peak_memory_bytes": 1153687132,
+          "mlx_cache_memory_bytes": 46958656,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        }
+      ],
+      "summary": {
+        "inference_seconds": {
+          "median": 22.658862948417664,
+          "minimum": 21.931975960731506,
+          "maximum": 22.75036096572876,
+          "mean": 22.44706662495931,
+          "sample_standard_deviation": 0.44842141571734206,
+          "coefficient_of_variation_percent": 1.9976838096909018
+        },
+        "processing_seconds": {
+          "median": 22.769212007522583,
+          "minimum": 22.041857957839966,
+          "maximum": 22.86475706100464,
+          "mean": 22.558609008789062,
+          "sample_standard_deviation": 0.45006216326633053,
+          "coefficient_of_variation_percent": 1.9950794088898909
+        },
+        "process_wall_seconds": {
+          "median": 23.12,
+          "minimum": 22.39,
+          "maximum": 23.23,
+          "mean": 22.913333333333334,
+          "sample_standard_deviation": 0.4565449959569521,
+          "coefficient_of_variation_percent": 1.9924861621630146
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1628489192.0,
+          "minimum": 1628030368.0,
+          "maximum": 1628767672.0,
+          "mean": 1628429077.3333333,
+          "sample_standard_deviation": 372309.8534357281,
+          "coefficient_of_variation_percent": 0.02286312978673972
+        },
+        "maximum_resident_bytes": {
+          "median": 1335312384.0,
+          "minimum": 1335066624.0,
+          "maximum": 1335361536.0,
+          "mean": 1335246848.0,
+          "sample_standard_deviation": 158001.57406810857,
+          "coefficient_of_variation_percent": 0.011833135895791201
+        },
+        "mlx_peak_memory_bytes": {
+          "median": 1153687132.0,
+          "minimum": 1153687132.0,
+          "maximum": 1153687134.0,
+          "mean": 1153687132.6666667,
+          "sample_standard_deviation": 1.1547005383792515,
+          "coefficient_of_variation_percent": 1.0008784060113788e-07
+        },
+        "mlx_cache_memory_bytes": {
+          "median": 46958656.0,
+          "minimum": 0.0,
+          "maximum": 46958656.0,
+          "mean": 31305770.666666668,
+          "sample_standard_deviation": 27111592.682383034,
+          "coefficient_of_variation_percent": 86.60254037844386
+        }
+      },
+      "agreement_vs_baseline": {
+        "reference_words": 13605,
+        "candidate_words": 13605,
+        "word_edits": 0,
+        "word_agreement_percent": 100.0,
+        "character_similarity_percent": 100.0
+      }
+    },
+    "both": {
+      "compiled_layers": true,
+      "retain_chunk_cache": true,
+      "deterministic_across_rounds": true,
+      "transcript": "transcripts/both.txt",
+      "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+      "word_count": 13605,
+      "runs": [
+        {
+          "round": 1,
+          "inference_seconds": 22.85987401008606,
+          "processing_seconds": 22.97647202014923,
+          "process_wall_seconds": 23.35,
+          "peak_physical_footprint_bytes": 1672906192,
+          "maximum_resident_bytes": 1336098816,
+          "mlx_peak_memory_bytes": 1153687136,
+          "mlx_cache_memory_bytes": 110002176,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 2,
+          "inference_seconds": 21.934601068496704,
+          "processing_seconds": 22.049673914909363,
+          "process_wall_seconds": 22.41,
+          "peak_physical_footprint_bytes": 1687700896,
+          "maximum_resident_bytes": 1335492608,
+          "mlx_peak_memory_bytes": 1153687132,
+          "mlx_cache_memory_bytes": 68173824,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        },
+        {
+          "round": 3,
+          "inference_seconds": 21.931142926216125,
+          "processing_seconds": 22.072500944137573,
+          "process_wall_seconds": 22.51,
+          "peak_physical_footprint_bytes": 1682064800,
+          "maximum_resident_bytes": 1336868864,
+          "mlx_peak_memory_bytes": 1153687136,
+          "mlx_cache_memory_bytes": 110002176,
+          "transcript_sha256": "53e0fc634665340e21ff7920dc609bae5700b3a6a0c385828c7b8435d068dbe3",
+          "word_count": 13605
+        }
+      ],
+      "summary": {
+        "inference_seconds": {
+          "median": 21.934601068496704,
+          "minimum": 21.931142926216125,
+          "maximum": 22.85987401008606,
+          "mean": 22.241872668266296,
+          "sample_standard_deviation": 0.535207654612001,
+          "coefficient_of_variation_percent": 2.4063066208251938
+        },
+        "processing_seconds": {
+          "median": 22.072500944137573,
+          "minimum": 22.049673914909363,
+          "maximum": 22.97647202014923,
+          "mean": 22.366215626398724,
+          "sample_standard_deviation": 0.5286207694565909,
+          "coefficient_of_variation_percent": 2.363478821301636
+        },
+        "process_wall_seconds": {
+          "median": 22.51,
+          "minimum": 22.41,
+          "maximum": 23.35,
+          "mean": 22.756666666666668,
+          "sample_standard_deviation": 0.5162686639079829,
+          "coefficient_of_variation_percent": 2.2686480031111005
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1682064800.0,
+          "minimum": 1672906192.0,
+          "maximum": 1687700896.0,
+          "mean": 1680890629.3333333,
+          "sample_standard_deviation": 7466915.305382092,
+          "coefficient_of_variation_percent": 0.4442237451429891
+        },
+        "maximum_resident_bytes": {
+          "median": 1336098816.0,
+          "minimum": 1335492608.0,
+          "maximum": 1336868864.0,
+          "mean": 1336153429.3333333,
+          "sample_standard_deviation": 689751.4817072402,
+          "coefficient_of_variation_percent": 0.051622176507932035
+        },
+        "mlx_peak_memory_bytes": {
+          "median": 1153687136.0,
+          "minimum": 1153687132.0,
+          "maximum": 1153687136.0,
+          "mean": 1153687134.6666667,
+          "sample_standard_deviation": 2.309401076758503,
+          "coefficient_of_variation_percent": 2.0017568085525675e-07
+        },
+        "mlx_cache_memory_bytes": {
+          "median": 110002176.0,
+          "minimum": 68173824.0,
+          "maximum": 110002176.0,
+          "mean": 96059392.0,
+          "sample_standard_deviation": 24149610.286958423,
+          "coefficient_of_variation_percent": 25.140290589137212
+        }
+      },
+      "agreement_vs_baseline": {
+        "reference_words": 13605,
+        "candidate_words": 13605,
+        "word_edits": 0,
+        "word_agreement_percent": 100.0,
+        "character_similarity_percent": 100.0
+      }
+    }
+  },
+  "decision": {
+    "selected": "low-context",
+    "new_mlx_default_chunk_duration_seconds": 122.88,
+    "new_mlx_default_context_seconds": 10.24,
+    "inference_speed_improvement_percent": 13.16698812102276,
+    "peak_memory_change_bytes": -25346000.0,
+    "reason": "The low-context profile was materially faster, used less memory, remained deterministic, and had only 13 word edits versus the prior default. Compilation and cache retention did not improve speed without increasing memory."
+  }
+}

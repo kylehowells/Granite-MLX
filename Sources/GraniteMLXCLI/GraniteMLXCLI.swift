@@ -230,7 +230,7 @@ struct TranscribeCommand: ParsableCommand {
     var mlxCacheLimitMB: Int = 64
     @Option(help: "Central audio seconds per chunk. Defaults to 122.88 for MLX or the largest input that fits the selected Core ML graph. Multiples of 10.24s preserve attention-block alignment.")
     var audioChunkDuration: Double?
-    @Option(help: "Extra context on each side of a chunk. Defaults to 20.48s, or less when required by a small Core ML graph.")
+    @Option(help: "Extra context on each side of a chunk. Defaults to 10.24s for MLX or up to 20.48s for Core ML.")
     var audioChunkContext: Double?
     @Flag(help: "Disable temporal chunking and run the complete recording in one encoder pass.")
     var noChunking = false
@@ -371,7 +371,7 @@ struct TranscribeCommand: ParsableCommand {
         } else if let coreMLRecognizer {
             chunkContext = min(20.48, coreMLRecognizer.maximumAudioDuration / 4)
         } else {
-            chunkContext = 20.48
+            chunkContext = 10.24
         }
         let chunkDuration: Double
         if noChunking {

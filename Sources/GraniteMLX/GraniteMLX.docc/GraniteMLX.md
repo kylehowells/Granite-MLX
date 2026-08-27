@@ -41,7 +41,7 @@ let raw = try recognizer.transcribe(
     audio,
     activationPrecision: .fp16,
     audioChunkDuration: 122.88,
-    audioChunkContext: 20.48,
+    audioChunkContext: 10.24,
     cancellationToken: cancellation
 )
 ```

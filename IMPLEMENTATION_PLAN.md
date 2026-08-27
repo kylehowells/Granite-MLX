@@ -270,9 +270,16 @@ capitalization, and segmentation model derived from
   after disabling cache retention.
 - [x] Add block-aligned temporal inference with left/right context, central
   emission cropping, and one global CTC collapse/tokenizer decode.
-- [x] Make the bounded 122.88s/20.48s temporal profile and 64 MiB MLX cache the
+- [x] Make the bounded 122.88s/10.24s temporal profile and 64 MiB MLX cache the
   CLI defaults, with `--no-chunking` and `--audio-chunk-duration 0` one-pass
   overrides.
+- [x] Compare the prior 20.48s context, 10.24s context, and a larger central
+  chunk in three rotated long-form rounds. Select 10.24s context after it was
+  13.2% faster, used 25 MB less peak memory, and retained 99.9045% word
+  agreement with the prior bounded transcript.
+- [x] Prototype per-Conformer-layer MLX compilation and retaining the allocator
+  cache between chunks. Reject both because neither delivered a useful speed
+  improvement without increasing peak memory.
 - [x] Benchmark Q8/Q6/Q5 bounded-memory profiles and preserve machine-readable
   results plus PNG charts.
 - [ ] Replace context-window approximation with exact layer-wise temporal
@@ -595,8 +602,8 @@ and cached default transcription were verified.
 The optional native Core ML backend is also working. A macOS 15 Q8
 palettized, per-channel 16,384-frame graph runs the full 101m59s lecture in
 17.32 seconds of speech inference on the M1 Max, 29% faster than the 24.41s
-bounded MLX release profile. It uses 2.10 GB peak footprint rather than 1.64
-GB and differs from the MLX transcript by 0.265% of reference words. The
+then-current bounded MLX release profile. It uses 2.10 GB peak footprint rather
+than 1.64 GB and differs from the MLX transcript by 0.265% of reference words. The
 formatting-enabled path completes processing in 19.83 seconds and retains
 99.65% lexical agreement with formatted MLX output. Reproducible scripts,
 negative ANE/INT8 results, machine-readable measurements, and a PNG comparison
@@ -608,6 +615,13 @@ setting is stored in the user's Application Support configuration rather than
 an environment variable; explicit `--backend` still wins. MLX remains the
 general default pending validation on newer Macs and physical iPhone/iPad
 hardware.
+
+The MLX default has since moved from 20.48 to 10.24 seconds of context. In a
+separate three-round paired experiment under heavy background load, that cut
+median MLX Q8 inference from 25.281 to 21.952 seconds and peak footprint from
+1.652 to 1.627 GB. Those absolute timings are not directly comparable to the
+quieter Core ML release run; a future quiet cross-backend release matrix should
+measure the new default directly.
 - [ ] Homebrew formula installation works.
 - [x] Default model download and cache behavior are documented.
 

@@ -36,7 +36,7 @@ swift test --filter GraniteMLXCLITests/testOptInLongFormBoundedMemoryRegression
 
 The selected expected transcript must come from the exact checkpoint supplied
 in `GRANITE_TEST_SPEECH_MODEL`. The gate validates exact raw transcript output,
-the 122.88-second/20.48-second bounded-memory profile, and MLX peak memory.
+the 122.88-second/10.24-second bounded-memory profile, and MLX peak memory.
 
 Network interruption and resume behavior is also opt-in so ordinary tests do
 not depend on Hugging Face availability:

@@ -22,7 +22,7 @@ keeps 20.48 seconds of context on each side and advances by 286.72 seconds.
 | IBM source promoted to FP32 / Python MPS, one pass | 30.95 s (30.42–31.18) | 35.96 s | 27.48 GB | 97.5395% |
 | IBM source / native Swift MLX, bounded | 46.88 s (46.29–51.73) | 47.33 s | 2.67 GB | 100.0000% |
 | Converted FP16 / native Swift MLX, one pass | **21.28 s (21.16–22.99)** | **21.94 s** | 13.25 GB | 99.7650% |
-| MLX release Q8, bounded | 37.11 s (36.35–37.17) | 37.62 s | **1.72 GB** | 99.8825% |
+| MLX release Q8, 122.88/20.48 bounded | 37.11 s (36.35–37.17) | 37.62 s | **1.72 GB** | 99.8825% |
 | **Core ML Q8/G1, 16,384, bounded** | **24.50 s (24.32–26.38)** | **26.16 s** | 2.04 GB | **99.7797%** |
 
 These are medians of three complete, interleaved rounds. Core ML was 34.0%
