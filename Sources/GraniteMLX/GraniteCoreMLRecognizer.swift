@@ -247,6 +247,29 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
     /// chooses up to 20.48 seconds of context per side and the largest central
     /// chunk that fits. Set the duration to zero only when the complete input
     /// fits in one invocation.
+    ///
+    /// - Parameters:
+    ///   - audio: Mono audio at the checkpoint's required sample rate, normally
+    ///     produced by ``GraniteAudioInput/load(url:targetSampleRate:cancellationToken:progressHandler:)``.
+    ///   - audioChunkDuration: Seconds of central, non-overlapping audio retained
+    ///     from each invocation. `nil` chooses the largest core that fits the
+    ///     fixed Core ML input after reserving context. `0` disables chunking and
+    ///     therefore requires the complete input to fit the model graph.
+    ///   - audioChunkContext: Seconds of overlapping audio evaluated on each side
+    ///     of a central chunk and discarded from its output. `nil` chooses up to
+    ///     20.48 seconds per side. More context improves boundary information but
+    ///     leaves less graph capacity for central audio.
+    ///   - cancellationToken: Optional cooperative cancellation token, checked
+    ///     before predictions and between chunks. An active Core ML prediction
+    ///     cannot stop immediately.
+    ///   - progressHandler: Receives synchronous phase and chunk progress updates
+    ///     on the thread performing transcription.
+    /// - Returns: Raw text plus collapsed CTC token timing, approximate word
+    ///   timing, source duration, and model metadata.
+    /// - Throws: ``GraniteAudioError`` for incompatible audio,
+    ///   ``GraniteCoreMLRecognizerError`` when the selected graph cannot hold the
+    ///   requested input/profile, and ``GraniteOperationError`` for cancellation
+    ///   or wrapped framework failures.
     public func transcribe(
         _ audio: GraniteAudio,
         audioChunkDuration: Double? = nil,

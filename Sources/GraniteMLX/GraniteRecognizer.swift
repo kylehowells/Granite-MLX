@@ -197,16 +197,32 @@ public struct GraniteTranscription: Codable, Sendable {
     }
 }
 
-/// Storage precision used between Granite encoder stages.
+/// Storage precision used for temporary tensors between Granite encoder stages.
+///
+/// This setting does not change checkpoint weight precision. For example, the
+/// recommended configuration combines Q8 model weights with FP16 activations.
 public enum GraniteActivationPrecision: String, Codable, Sendable, CaseIterable {
-    /// Preserve the reference implementation's frontend dtype.
+    /// Preserves the reference frontend's FP32 activation path.
+    ///
+    /// Use this for implementation parity investigations; it generally consumes
+    /// more activation memory than ``fp16``.
     case baseline
-    /// Cast encoder input to FP16. Sensitive softmax operations remain FP32
-    /// and are cast back by the model implementation.
+    /// Stores ordinary encoder activations in FP16 while evaluating sensitive
+    /// softmax operations in FP32 before casting their results back.
+    ///
+    /// This is the recommended speed, memory, and accuracy balance.
     case fp16
-    /// E4M3 byte storage between layers; computation remains FP16.
+    /// Emulates E4M3 FP8 storage between layers, then restores FP16 for compute.
+    ///
+    /// This is an experimental storage round trip, not native FP8 matrix
+    /// multiplication. Current MLX/Apple GPU measurements are slower and less
+    /// accurate than ``fp16`` without a useful peak-memory reduction.
     case fp8Emulated = "fp8-emulated"
-    /// Signed INT8 storage between layers; computation remains FP16.
+    /// Emulates signed INT8 storage between layers, then restores FP16 for compute.
+    ///
+    /// This is an experimental storage round trip, not native integer matrix
+    /// multiplication. Current measurements are slower and materially less
+    /// accurate than ``fp16`` without a useful peak-memory reduction.
     case int8Emulated = "int8-emulated"
 }
 
@@ -260,14 +276,24 @@ public enum GraniteRecognizerError: Error, GraniteDiagnosticError {
     }
 }
 
-/// Public runtime façade. The model graph is intentionally added behind this
-/// stable API after the conversion manifest and tensor mapping are finalized.
+/// Loads and runs a Granite Speech checkpoint with the native MLX backend.
 public final class GraniteRecognizer: @unchecked Sendable {
-    /// Default encoder activation precision used by the recommended runtime profile.
+    /// Recommended encoder activation storage: FP16, with numerically sensitive
+    /// operations such as softmax evaluated in FP32.
+    ///
+    /// This is independent of checkpoint precision. The default checkpoint has
+    /// Q8 weights while temporary encoder activations use FP16.
     public static let defaultActivationPrecision: GraniteActivationPrecision = .fp16
-    /// Default central audio duration for bounded-memory transcription.
+    /// Seconds of non-overlapping central audio emitted by each default chunk.
+    ///
+    /// The value is aligned to Granite's 10.24-second attention blocks. Reducing
+    /// it generally lowers peak memory but increases chunk overhead.
     public static let defaultAudioChunkDuration = 122.88
-    /// Default context retained on each side of a bounded-memory audio chunk.
+    /// Seconds of overlapping context evaluated on each side of a default chunk.
+    ///
+    /// Context output is discarded; it gives the model surrounding speech at
+    /// chunk boundaries. More context can improve boundary stability at the cost
+    /// of additional computation and memory.
     public static let defaultAudioChunkContext = 10.24
 
     /// Materialized checkpoint directory.
@@ -314,6 +340,16 @@ public final class GraniteRecognizer: @unchecked Sendable {
     }
 
     /// Creates a recognizer from a local path, catalog alias, or Hugging Face ID.
+    /// - Parameters:
+    ///   - modelSource: Local checkpoint directory, a catalog alias such as
+    ///     `apache-q8`, or a Hugging Face repository ID. The recommended Q8
+    ///     checkpoint is downloaded and cached when omitted.
+    ///   - hfToken: Optional Hugging Face token for private or gated repositories.
+    ///     Avoid embedding long-lived tokens in application source.
+    ///   - progressHandler: Receives byte-weighted model-download progress. It
+    ///     may be called multiple times on the calling operation's thread.
+    ///   - cancellationToken: Cooperatively cancels model acquisition between
+    ///     network and file operations.
     public convenience init(
         modelSource: String = GraniteModelLoader.defaultModelID,
         hfToken: String? = nil,
@@ -333,8 +369,54 @@ public final class GraniteRecognizer: @unchecked Sendable {
 
     /// Transcribes prepared audio using the recommended bounded-memory profile.
     ///
-    /// Pass zero for `audioChunkDuration` and `audioChunkContext` to request a
-    /// single inference pass when the complete input fits in memory.
+    /// This method returns Granite's raw CTC recognition, including approximate
+    /// token and word times. It does not add punctuation or capitalization; apply
+    /// a ``GraniteTranscriptFormatter`` when presentation-ready text is required.
+    ///
+    /// - Parameters:
+    ///   - audio: Mono audio prepared at the checkpoint's sample rate, normally
+    ///     produced by ``GraniteAudioInput/load(url:targetSampleRate:cancellationToken:progressHandler:)``.
+    ///   - activationPrecision: Storage precision used between encoder layers.
+    ///     This is separate from model-weight quantization: the default Q8
+    ///     checkpoint still uses FP16 activations. ``GraniteActivationPrecision/fp8Emulated``
+    ///     and ``GraniteActivationPrecision/int8Emulated`` are experimental
+    ///     storage round trips, not native 8-bit matrix multiplication, and are
+    ///     currently slower and less accurate than FP16.
+    ///   - ctcVocabularyTileSize: Number of vocabulary entries evaluated at once
+    ///     by the final CTC projection before updating a running per-frame argmax.
+    ///     `0` (recommended) materializes the complete final logits tensor. A
+    ///     positive value can reduce that tensor's temporary memory, but adds
+    ///     projection launches and is usually slower; a value at least as large
+    ///     as the vocabulary has the same behavior as `0`.
+    ///   - middleCTCVocabularyTileSize: Number of vocabulary entries evaluated at
+    ///     once by Granite's middle-layer CTC conditioning head. `0` (recommended)
+    ///     evaluates its complete logits and softmax tensors. A positive value
+    ///     uses a two-pass online softmax and accumulates the projection without
+    ///     retaining the full vocabulary tensor, trading speed for lower temporary
+    ///     memory. For quantized checkpoints it must be a multiple of the
+    ///     `encoder.out_mid` quantization group size.
+    ///   - audioChunkDuration: Seconds of central, non-overlapping audio whose CTC
+    ///     frames are retained from each chunk. Smaller chunks generally lower
+    ///     peak activation memory but increase overhead and can change words near
+    ///     boundaries. `0` disables chunking and requires the entire input to fit
+    ///     in a single inference pass.
+    ///   - audioChunkContext: Seconds of overlapping audio added before and after
+    ///     each central chunk. Context frames are evaluated and then discarded,
+    ///     allowing boundary words to see surrounding speech. Larger values use
+    ///     more time and memory. This value has no effect when transcription does
+    ///     not enter the chunked path.
+    ///   - cancellationToken: Optional cooperative cancellation token. It is
+    ///     checked before inference and between chunks; Metal work already
+    ///     submitted for the current chunk cannot stop immediately.
+    ///   - progressHandler: Receives synchronous phase and chunk progress updates
+    ///     on the thread performing transcription. Dispatch UI work to the main
+    ///     actor when necessary.
+    /// - Returns: Raw text plus collapsed CTC token timing, approximate word
+    ///   timing, source duration, and model metadata.
+    /// - Throws: ``GraniteAudioError`` for incompatible prepared audio,
+    ///   ``GraniteRecognizerError`` for invalid runtime options or model state,
+    ///   and ``GraniteOperationError`` when cancelled or an underlying operation
+    ///   fails.
     public func transcribe(
         _ audio: GraniteAudio,
         activationPrecision: GraniteActivationPrecision = GraniteRecognizer.defaultActivationPrecision,
