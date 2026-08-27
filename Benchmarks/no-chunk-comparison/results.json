@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-27T08:19:21+0100",
+  "audio": {
+    "duration_seconds": 6118.72,
+    "sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab"
+  },
+  "methodology": {
+    "runs": "Three paired runs with alternating order under the same sustained-load session.",
+    "swift": "Native Swift MLX, converted FP16 weights, FP16 activations, no chunking, no formatter.",
+    "python": "PyTorch MPS, source BF16 values cast to FP16, deferred input cast, no chunking.",
+    "caution": "Absolute one-pass time varied materially with session load; use the paired ratio for backend comparison."
+  },
+  "runtimes": {
+    "swift": {
+      "runs": [
+        {
+          "pair": 1,
+          "speech_seconds": 21.53088390827179,
+          "processing_seconds": 21.660894989967346,
+          "model_load_seconds": 0.3774909973144531,
+          "audio_load_seconds": 0.1288090944290161,
+          "mlx_peak_memory_bytes": 12420339722,
+          "process_wall_seconds": 22.16,
+          "process_user_seconds": 0.61,
+          "process_system_seconds": 5.16,
+          "maximum_resident_bytes": 2190950400,
+          "peak_physical_footprint_bytes": 13247825840,
+          "text_sha256": "cb13bbd818d8c045ce76d852fbdf09db4dd7e648a8f67bb0fbcfc3e7ec15bfd1"
+        },
+        {
+          "pair": 2,
+          "speech_seconds": 22.172382950782776,
+          "processing_seconds": 22.298394918441772,
+          "model_load_seconds": 0.30910706520080566,
+          "audio_load_seconds": 0.12484896183013916,
+          "mlx_peak_memory_bytes": 12420339722,
+          "process_wall_seconds": 22.73,
+          "process_user_seconds": 0.59,
+          "process_system_seconds": 4.98,
+          "maximum_resident_bytes": 2190573568,
+          "peak_physical_footprint_bytes": 13247547312,
+          "text_sha256": "cb13bbd818d8c045ce76d852fbdf09db4dd7e648a8f67bb0fbcfc3e7ec15bfd1"
+        },
+        {
+          "pair": 3,
+          "speech_seconds": 22.072476029396057,
+          "processing_seconds": 22.200737953186035,
+          "model_load_seconds": 0.30280494689941406,
+          "audio_load_seconds": 0.12708497047424316,
+          "mlx_peak_memory_bytes": 12420339722,
+          "process_wall_seconds": 22.59,
+          "process_user_seconds": 0.58,
+          "process_system_seconds": 4.9,
+          "maximum_resident_bytes": 2190147584,
+          "peak_physical_footprint_bytes": 13246908312,
+          "text_sha256": "cb13bbd818d8c045ce76d852fbdf09db4dd7e648a8f67bb0fbcfc3e7ec15bfd1"
+        }
+      ],
+      "median": {
+        "speech_seconds": 22.072476029396057,
+        "processing_seconds": 22.200737953186035,
+        "process_wall_seconds": 22.59,
+        "maximum_resident_bytes": 2190573568,
+        "peak_physical_footprint_bytes": 13247547312
+      },
+      "transcript": "swift-fp16.txt",
+      "word_count": 13614
+    },
+    "python": {
+      "runs": [
+        {
+          "pair": 1,
+          "speech_seconds": 24.87127745896578,
+          "processing_seconds": 26.458061374956742,
+          "model_load_seconds": 0.6391945828218013,
+          "audio_load_seconds": 0.22528733289800584,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 29.98,
+          "process_user_seconds": 3.75,
+          "process_system_seconds": 1.89,
+          "maximum_resident_bytes": 1360429056,
+          "peak_physical_footprint_bytes": 14342227768,
+          "text_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c"
+        },
+        {
+          "pair": 2,
+          "speech_seconds": 26.302428376162425,
+          "processing_seconds": 27.911353749921545,
+          "model_load_seconds": 0.6591813750565052,
+          "audio_load_seconds": 0.22561370907351375,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 31.23,
+          "process_user_seconds": 3.76,
+          "process_system_seconds": 1.94,
+          "maximum_resident_bytes": 1362378752,
+          "peak_physical_footprint_bytes": 14345357112,
+          "text_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c"
+        },
+        {
+          "pair": 3,
+          "speech_seconds": 24.83376150112599,
+          "processing_seconds": 26.421953291166574,
+          "model_load_seconds": 0.6404324579052627,
+          "audio_load_seconds": 0.22416275017894804,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 29.49,
+          "process_user_seconds": 3.66,
+          "process_system_seconds": 1.88,
+          "maximum_resident_bytes": 1361739776,
+          "peak_physical_footprint_bytes": 14344800056,
+          "text_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c"
+        }
+      ],
+      "median": {
+        "speech_seconds": 24.87127745896578,
+        "processing_seconds": 26.458061374956742,
+        "process_wall_seconds": 29.98,
+        "maximum_resident_bytes": 1361739776,
+        "peak_physical_footprint_bytes": 14344800056
+      },
+      "transcript": "python-fp16.txt",
+      "word_count": 13595
+    }
+  },
+  "comparison": {
+    "swift_to_python_speech_time_ratio": 0.8874685293432409,
+    "swift_speed_advantage_percent": 11.253147065675906,
+    "output": {
+      "reference_words": 13595,
+      "candidate_words": 13614,
+      "word_edits": 326,
+      "word_agreement_percent": 97.60205958072821,
+      "character_similarity_percent": 98.66736044864568
+    }
+  }
+}

@@ -57,6 +57,15 @@ and the related greater-than-65,536-row biased-linear defect in
 Complete valid and failure-mode runs, memory counters, environment metadata,
 and transcripts are in `python-source-results.json` and the adjacent TXT files.
 
+A same-session paired comparison also ran converted Swift MLX FP16 and Python
+MPS FP16 with chunking disabled. Swift's three-run median was 22.07 seconds
+versus Python's 24.87 seconds, making Swift 11.3% faster under the same sustained
+load. The result confirms that repeated bounded chunks, rather than Swift
+language overhead, explain the earlier apparent gap. Absolute one-pass timing
+was highly session-sensitive, and Swift's 13.25 GB peak remains unsuitable as
+the production default. Full runs are in
+[`../no-chunk-comparison`](../no-chunk-comparison).
+
 With the user-facing Q8 punctuation model enabled, Core ML took 18.65 seconds
 for speech and 1.05 seconds for formatting. Processing finished in 19.83
 seconds and process wall time was 24.40 seconds. The formatted transcript had
