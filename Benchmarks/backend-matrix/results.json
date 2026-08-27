@@ -1,0 +1,2148 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-08-27T09:04:08+0100",
+  "methodology": {
+    "rounds": 3,
+    "order": [
+      "python-bf16-one-pass",
+      "swift-source-bounded",
+      "coreml-q8-bounded",
+      "python-fp16-one-pass",
+      "swift-q8-bounded",
+      "coreml-q8-formatted",
+      "python-fp32-one-pass",
+      "swift-fp16-one-pass",
+      "swift-q8-formatted"
+    ],
+    "scheduling": "Every configuration ran once per round in the same interleaved order; no configuration ran three times consecutively.",
+    "statistics": "Tables use the median of three clean processes. JSON retains every run, min/max, sample standard deviation, and coefficient of variation.",
+    "speech_timing": "Python: frontend + model.generate + decode. Swift: speech recognizer inference, excluding model/audio loading and punctuation.",
+    "wall_timing": "macOS /usr/bin/time -lp around the complete process.",
+    "memory": "Peak physical footprint from macOS process accounting; Python also records the MPS driver allocator.",
+    "agreement": "Levenshtein agreement against native Swift source output, not WER against a human transcript."
+  },
+  "system": {
+    "host": {
+      "platform": "macOS-26.5.2-arm64-arm-64bit",
+      "machine": "arm64"
+    },
+    "python": {
+      "python": "3.10.15",
+      "torch": "2.13.0",
+      "transformers": "5.16.1",
+      "platform": "macOS-26.5.2-arm64-arm-64bit",
+      "machine": "arm64"
+    }
+  },
+  "audio": {
+    "file_name": "granite-cme295-lecture1-16k-mono.wav",
+    "bytes": 195799118,
+    "sha256": "f3223fedde7e2212323df3dd59c84193b322fe3c794af60aa9feac7f4044e4ab",
+    "duration_seconds": 6118.72,
+    "description": "Stanford CME295 lecture, mono 16 kHz"
+  },
+  "configurations": {
+    "python-bf16-one-pass": {
+      "artifact_bytes": 946180704,
+      "transcript": "transcripts/python-bf16-one-pass.txt",
+      "transcript_sha256": "f0c1ef6c5a018944505ceff360046dcd795a71ef848d179c6fa597688d8e8978",
+      "word_count": 13593,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 31.50174333387986,
+          "processing_seconds": 33.571330916834995,
+          "model_load_seconds": 1.1143676249776036,
+          "audio_load_seconds": 0.2238071251194924,
+          "frontend_seconds": 0.6517122499644756,
+          "model_generate_seconds": 30.812677667010576,
+          "decode_seconds": 0.03735341690480709,
+          "maximum_resident_bytes": 1313177600,
+          "peak_physical_footprint_bytes": 14294910704,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 37.94,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:37:51+0100",
+            "load_average": [
+              4.00537109375,
+              9.6162109375,
+              19.94873046875
+            ],
+            "top": [
+              "CPU usage: 18.74% user, 15.66% sys, 65.59% idle ",
+              "PhysMem: 40G used (7296M wired, 3425M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408011(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:38:29+0100",
+            "load_average": [
+              4.35546875,
+              9.10009765625,
+              19.34375
+            ],
+            "top": [
+              "CPU usage: 24.67% user, 17.8% sys, 58.24% idle ",
+              "PhysMem: 41G used (7239M wired, 3425M compressor), 22G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408035(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "f0c1ef6c5a018944505ceff360046dcd795a71ef848d179c6fa597688d8e8978",
+          "word_count": 13593
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 34.99357174988836,
+          "processing_seconds": 36.52832275000401,
+          "model_load_seconds": 0.6120624169707298,
+          "audio_load_seconds": 0.22442070906981826,
+          "frontend_seconds": 0.4641711248550564,
+          "model_generate_seconds": 34.49829054204747,
+          "decode_seconds": 0.031110082985833287,
+          "maximum_resident_bytes": 1314848768,
+          "peak_physical_footprint_bytes": 14296926008,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 40.27,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:43:20+0100",
+            "load_average": [
+              7.74072265625,
+              7.84033203125,
+              15.72412109375
+            ],
+            "top": [
+              "CPU usage: 25.24% user, 18.54% sys, 56.20% idle ",
+              "PhysMem: 39G used (7377M wired, 3409M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408167(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:44:01+0100",
+            "load_average": [
+              6.33935546875,
+              7.4912109375,
+              15.23486328125
+            ],
+            "top": [
+              "CPU usage: 24.29% user, 18.36% sys, 57.34% idle ",
+              "PhysMem: 39G used (7288M wired, 3402M compressor), 24G unused.",
+              "VM: 536T vsize, 6144M framework vsize, 5408175(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "f0c1ef6c5a018944505ceff360046dcd795a71ef848d179c6fa597688d8e8978",
+          "word_count": 13593
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 33.78180941613391,
+          "processing_seconds": 35.323778124991804,
+          "model_load_seconds": 0.6190385001245886,
+          "audio_load_seconds": 0.22631324990652502,
+          "frontend_seconds": 0.45715283299796283,
+          "model_generate_seconds": 33.29358495818451,
+          "decode_seconds": 0.031071624951437116,
+          "maximum_resident_bytes": 1313931264,
+          "peak_physical_footprint_bytes": 14296549128,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 39.06,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:48:36+0100",
+            "load_average": [
+              7.70556640625,
+              8.50390625,
+              13.60791015625
+            ],
+            "top": [
+              "CPU usage: 17.86% user, 22.19% sys, 59.94% idle ",
+              "PhysMem: 38G used (7262M wired, 3448M compressor), 25G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408207(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:49:16+0100",
+            "load_average": [
+              6.56591796875,
+              8.09716796875,
+              13.22216796875
+            ],
+            "top": [
+              "CPU usage: 23.57% user, 19.85% sys, 56.57% idle ",
+              "PhysMem: 39G used (7263M wired, 3447M compressor), 25G unused.",
+              "VM: 536T vsize, 6144M framework vsize, 5408207(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "f0c1ef6c5a018944505ceff360046dcd795a71ef848d179c6fa597688d8e8978",
+          "word_count": 13593
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 33.78180941613391,
+          "minimum": 31.50174333387986,
+          "maximum": 34.99357174988836,
+          "mean": 33.425708166634045,
+          "sample_standard_deviation": 1.772941763463379,
+          "coefficient_of_variation_percent": 5.304126257026176,
+          "range_relative_to_median_percent": 10.336416184802802
+        },
+        "processing_seconds": {
+          "median": 35.323778124991804,
+          "minimum": 33.571330916834995,
+          "maximum": 36.52832275000401,
+          "mean": 35.14114393061027,
+          "sample_standard_deviation": 1.4869319460133692,
+          "coefficient_of_variation_percent": 4.231313439737381,
+          "range_relative_to_median_percent": 8.37110861331371
+        },
+        "model_load_seconds": {
+          "median": 0.6190385001245886,
+          "minimum": 0.6120624169707298,
+          "maximum": 1.1143676249776036,
+          "mean": 0.7818228473576406,
+          "sample_standard_deviation": 0.28801334739170564,
+          "coefficient_of_variation_percent": 36.8386966900643,
+          "range_relative_to_median_percent": 81.14280580380364
+        },
+        "audio_load_seconds": {
+          "median": 0.22442070906981826,
+          "minimum": 0.2238071251194924,
+          "maximum": 0.22631324990652502,
+          "mean": 0.22484702803194523,
+          "sample_standard_deviation": 0.0013063216507225802,
+          "coefficient_of_variation_percent": 0.5809823959678863,
+          "range_relative_to_median_percent": 1.1167083454196456
+        },
+        "maximum_resident_bytes": {
+          "median": 1313931264.0,
+          "minimum": 1313177600.0,
+          "maximum": 1314848768.0,
+          "mean": 1313985877.3333333,
+          "sample_standard_deviation": 836921.491652194,
+          "coefficient_of_variation_percent": 0.06369333994294392,
+          "range_relative_to_median_percent": 0.12718838844830166
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 14296549128.0,
+          "minimum": 14294910704.0,
+          "maximum": 14296926008.0,
+          "mean": 14296128613.333334,
+          "sample_standard_deviation": 1071441.5484595196,
+          "coefficient_of_variation_percent": 0.007494627233978826,
+          "range_relative_to_median_percent": 0.014096436713199535
+        },
+        "process_wall_seconds": {
+          "median": 39.06,
+          "minimum": 37.94,
+          "maximum": 40.27,
+          "mean": 39.09,
+          "sample_standard_deviation": 1.165289663560098,
+          "coefficient_of_variation_percent": 2.9810428845231463,
+          "range_relative_to_median_percent": 5.965181771633398
+        }
+      },
+      "agreement_vs_swift_source": {
+        "reference_words": 13615,
+        "candidate_words": 13593,
+        "word_edits": 329,
+        "word_agreement_percent": 97.58354755784062,
+        "character_similarity_percent": 98.66616569603607,
+        "lexical_word_edits": 329,
+        "lexical_word_agreement_percent": 97.58478931140802
+      },
+      "agreement_vs_python_fp32": {
+        "reference_words": 13595,
+        "candidate_words": 13593,
+        "word_edits": 12,
+        "word_agreement_percent": 99.91173225450534,
+        "character_similarity_percent": 99.94206425074591,
+        "lexical_word_edits": 12,
+        "lexical_word_agreement_percent": 99.91176470588236
+      }
+    },
+    "swift-source-bounded": {
+      "artifact_bytes": 946180704,
+      "transcript": "transcripts/swift-source-bounded.txt",
+      "transcript_sha256": "3b4ed38f97cddd0b260ed5a7b2680da85f30394a23fdd4b58299436fca1dea9f",
+      "word_count": 13615,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 51.73192000389099,
+          "processing_seconds": 51.829012989997864,
+          "model_load_seconds": 0.3098369836807251,
+          "audio_load_seconds": 0.09592199325561523,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 2.002716064453125e-05,
+          "maximum_resident_bytes": 1793769472,
+          "peak_physical_footprint_bytes": 2682242800,
+          "process_wall_seconds": 52.23,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 2302300552,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:38:30+0100",
+            "load_average": [
+              4.64697265625,
+              9.08154296875,
+              19.27685546875
+            ],
+            "top": [
+              "CPU usage: 21.78% user, 16.45% sys, 61.76% idle ",
+              "PhysMem: 41G used (7236M wired, 3425M compressor), 22G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408035(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:39:23+0100",
+            "load_average": [
+              6.6337890625,
+              9.087890625,
+              18.705078125
+            ],
+            "top": [
+              "CPU usage: 27.71% user, 17.15% sys, 55.13% idle ",
+              "PhysMem: 41G used (7330M wired, 3421M compressor), 22G unused.",
+              "VM: 538T vsize, 6144M framework vsize, 5408103(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "3b4ed38f97cddd0b260ed5a7b2680da85f30394a23fdd4b58299436fca1dea9f",
+          "word_count": 13615
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 46.879422068595886,
+          "processing_seconds": 46.97324299812317,
+          "model_load_seconds": 0.29148101806640625,
+          "audio_load_seconds": 0.09251892566680908,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 2.09808349609375e-05,
+          "maximum_resident_bytes": 1794359296,
+          "peak_physical_footprint_bytes": 2667349720,
+          "process_wall_seconds": 47.33,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 2302300552,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:44:02+0100",
+            "load_average": [
+              6.33935546875,
+              7.4912109375,
+              15.23486328125
+            ],
+            "top": [
+              "CPU usage: 21.56% user, 20.0% sys, 58.43% idle ",
+              "PhysMem: 39G used (7256M wired, 3402M compressor), 24G unused.",
+              "VM: 536T vsize, 6144M framework vsize, 5408175(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:44:50+0100",
+            "load_average": [
+              9.69921875,
+              8.34228515625,
+              15.11328125
+            ],
+            "top": [
+              "CPU usage: 27.17% user, 20.44% sys, 52.38% idle ",
+              "PhysMem: 39G used (7255M wired, 3397M compressor), 24G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408175(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "3b4ed38f97cddd0b260ed5a7b2680da85f30394a23fdd4b58299436fca1dea9f",
+          "word_count": 13615
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 46.29032802581787,
+          "processing_seconds": 46.38787293434143,
+          "model_load_seconds": 0.2955210208892822,
+          "audio_load_seconds": 0.09638893604278564,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 1.704692840576172e-05,
+          "maximum_resident_bytes": 1794064384,
+          "peak_physical_footprint_bytes": 2667808496,
+          "process_wall_seconds": 46.75,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 2302300552,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:49:16+0100",
+            "load_average": [
+              6.56591796875,
+              8.09716796875,
+              13.22216796875
+            ],
+            "top": [
+              "CPU usage: 24.49% user, 18.48% sys, 57.2% idle ",
+              "PhysMem: 39G used (7260M wired, 3447M compressor), 25G unused.",
+              "VM: 536T vsize, 6144M framework vsize, 5408207(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:50:04+0100",
+            "load_average": [
+              7.93359375,
+              8.2890625,
+              13.0302734375
+            ],
+            "top": [
+              "CPU usage: 27.47% user, 20.39% sys, 52.12% idle ",
+              "PhysMem: 39G used (7336M wired, 3446M compressor), 24G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408215(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "3b4ed38f97cddd0b260ed5a7b2680da85f30394a23fdd4b58299436fca1dea9f",
+          "word_count": 13615
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 46.879422068595886,
+          "minimum": 46.29032802581787,
+          "maximum": 51.73192000389099,
+          "mean": 48.300556699434914,
+          "sample_standard_deviation": 2.986209728599939,
+          "coefficient_of_variation_percent": 6.182557578337137,
+          "range_relative_to_median_percent": 11.607634518426359
+        },
+        "processing_seconds": {
+          "median": 46.97324299812317,
+          "minimum": 46.38787293434143,
+          "maximum": 51.829012989997864,
+          "mean": 48.39670964082082,
+          "sample_standard_deviation": 2.9868368282301456,
+          "coefficient_of_variation_percent": 6.171570031097445,
+          "range_relative_to_median_percent": 11.583488191083243
+        },
+        "model_load_seconds": {
+          "median": 0.2955210208892822,
+          "minimum": 0.29148101806640625,
+          "maximum": 0.3098369836807251,
+          "mean": 0.2989463408788045,
+          "sample_standard_deviation": 0.009645464280244874,
+          "coefficient_of_variation_percent": 3.226486817631004,
+          "range_relative_to_median_percent": 6.21139083747141
+        },
+        "audio_load_seconds": {
+          "median": 0.09592199325561523,
+          "minimum": 0.09251892566680908,
+          "maximum": 0.09638893604278564,
+          "mean": 0.09494328498840332,
+          "sample_standard_deviation": 0.0021124979246790456,
+          "coefficient_of_variation_percent": 2.225010357432938,
+          "range_relative_to_median_percent": 4.034539154814752
+        },
+        "punctuation_model_load_seconds": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "sample_standard_deviation": 0.0,
+          "coefficient_of_variation_percent": 0,
+          "range_relative_to_median_percent": 0
+        },
+        "punctuation_inference_seconds": {
+          "median": 2.002716064453125e-05,
+          "minimum": 1.704692840576172e-05,
+          "maximum": 2.09808349609375e-05,
+          "mean": 1.9351641337076824e-05,
+          "sample_standard_deviation": 2.0521086587389876e-06,
+          "coefficient_of_variation_percent": 10.60431321041097,
+          "range_relative_to_median_percent": 19.642857142857142
+        },
+        "maximum_resident_bytes": {
+          "median": 1794064384.0,
+          "minimum": 1793769472.0,
+          "maximum": 1794359296.0,
+          "mean": 1794064384.0,
+          "sample_standard_deviation": 294912.0,
+          "coefficient_of_variation_percent": 0.01643820604378042,
+          "range_relative_to_median_percent": 0.03287641208756084
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 2667808496.0,
+          "minimum": 2667349720.0,
+          "maximum": 2682242800.0,
+          "mean": 2672467005.3333335,
+          "sample_standard_deviation": 8469193.578975825,
+          "coefficient_of_variation_percent": 0.31690544961169587,
+          "range_relative_to_median_percent": 0.5582514645384051
+        },
+        "process_wall_seconds": {
+          "median": 47.33,
+          "minimum": 46.75,
+          "maximum": 52.23,
+          "mean": 48.769999999999996,
+          "sample_standard_deviation": 3.010448471573628,
+          "coefficient_of_variation_percent": 6.172746507224991,
+          "range_relative_to_median_percent": 11.578280160574682
+        }
+      },
+      "agreement_vs_swift_source": {
+        "reference_words": 13615,
+        "candidate_words": 13615,
+        "word_edits": 0,
+        "word_agreement_percent": 100.0,
+        "character_similarity_percent": 100.0,
+        "lexical_word_edits": 0,
+        "lexical_word_agreement_percent": 100.0
+      }
+    },
+    "coreml-q8-bounded": {
+      "artifact_bytes": 691894962,
+      "transcript": "transcripts/coreml-q8-bounded.txt",
+      "transcript_sha256": "a5f5bc235903f84f78c9684051ad41c339dd2134536e1c496b3e51e597847573",
+      "word_count": 13617,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 26.377156019210815,
+          "processing_seconds": 26.485687017440796,
+          "model_load_seconds": 3.136884927749634,
+          "audio_load_seconds": 0.10735201835632324,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 2.288818359375e-05,
+          "maximum_resident_bytes": 1669939200,
+          "peak_physical_footprint_bytes": 2021607176,
+          "process_wall_seconds": 29.71,
+          "backend": "coreml",
+          "model": "granite-speech-5.0-470m-turboctc-coreml-palette-uniform-q8-g1-macos15-16384.mlpackage",
+          "chunk_duration_seconds": 286.72,
+          "chunk_context_seconds": 20.48,
+          "coreml_chunk_count": 22,
+          "coreml_feature_extraction_seconds": 0.4110251672100276,
+          "coreml_input_copy_seconds": 0.030594083946198225,
+          "coreml_output_copy_seconds": 0.00036516692489385605,
+          "coreml_prediction_seconds": 25.795464374357834,
+          "mlx_peak_memory_bytes": 363721060,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:39:24+0100",
+            "load_average": [
+              6.6337890625,
+              9.087890625,
+              18.705078125
+            ],
+            "top": [
+              "CPU usage: 36.54% user, 18.98% sys, 44.47% idle ",
+              "PhysMem: 41G used (7325M wired, 3421M compressor), 22G unused.",
+              "VM: 538T vsize, 6144M framework vsize, 5408103(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:39:54+0100",
+            "load_average": [
+              5.75,
+              8.64599609375,
+              18.21142578125
+            ],
+            "top": [
+              "CPU usage: 27.53% user, 16.8% sys, 56.37% idle ",
+              "PhysMem: 42G used (7248M wired, 3421M compressor), 21G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408119(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "a5f5bc235903f84f78c9684051ad41c339dd2134536e1c496b3e51e597847573",
+          "word_count": 13617
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 24.498247027397156,
+          "processing_seconds": 24.593080043792725,
+          "model_load_seconds": 1.4835319519042969,
+          "audio_load_seconds": 0.0935889482498169,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 1.5020370483398438e-05,
+          "maximum_resident_bytes": 1538113536,
+          "peak_physical_footprint_bytes": 2040137432,
+          "process_wall_seconds": 26.16,
+          "backend": "coreml",
+          "model": "granite-speech-5.0-470m-turboctc-coreml-palette-uniform-q8-g1-macos15-16384.mlpackage",
+          "chunk_duration_seconds": 286.72,
+          "chunk_context_seconds": 20.48,
+          "coreml_chunk_count": 22,
+          "coreml_feature_extraction_seconds": 0.38123870827257633,
+          "coreml_input_copy_seconds": 0.030882374849170446,
+          "coreml_output_copy_seconds": 0.00046933372505009174,
+          "coreml_prediction_seconds": 23.928992125205696,
+          "mlx_peak_memory_bytes": 363721060,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:44:51+0100",
+            "load_average": [
+              9.69921875,
+              8.34228515625,
+              15.11328125
+            ],
+            "top": [
+              "CPU usage: 26.11% user, 19.4% sys, 54.83% idle ",
+              "PhysMem: 39G used (7261M wired, 3397M compressor), 24G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408175(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:45:18+0100",
+            "load_average": [
+              8.7470703125,
+              8.23193359375,
+              14.87646484375
+            ],
+            "top": [
+              "CPU usage: 23.91% user, 15.70% sys, 60.37% idle ",
+              "PhysMem: 40G used (7221M wired, 3394M compressor), 23G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408175(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "a5f5bc235903f84f78c9684051ad41c339dd2134536e1c496b3e51e597847573",
+          "word_count": 13617
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 24.323385000228882,
+          "processing_seconds": 24.445755004882812,
+          "model_load_seconds": 1.4883040189743042,
+          "audio_load_seconds": 0.12112998962402344,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 1.800060272216797e-05,
+          "maximum_resident_bytes": 1539997696,
+          "peak_physical_footprint_bytes": 2040415912,
+          "process_wall_seconds": 26.04,
+          "backend": "coreml",
+          "model": "granite-speech-5.0-470m-turboctc-coreml-palette-uniform-q8-g1-macos15-16384.mlpackage",
+          "chunk_duration_seconds": 286.72,
+          "chunk_context_seconds": 20.48,
+          "coreml_chunk_count": 22,
+          "coreml_feature_extraction_seconds": 0.3678713336121291,
+          "coreml_input_copy_seconds": 0.030397207709029317,
+          "coreml_output_copy_seconds": 0.0004903334192931652,
+          "coreml_prediction_seconds": 23.75166262499988,
+          "mlx_peak_memory_bytes": 363721060,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:50:05+0100",
+            "load_average": [
+              7.93359375,
+              8.2890625,
+              13.0302734375
+            ],
+            "top": [
+              "CPU usage: 22.52% user, 18.50% sys, 58.96% idle ",
+              "PhysMem: 39G used (7306M wired, 3446M compressor), 24G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408215(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:50:31+0100",
+            "load_average": [
+              6.7919921875,
+              7.97412109375,
+              12.75048828125
+            ],
+            "top": [
+              "CPU usage: 23.30% user, 17.98% sys, 58.70% idle ",
+              "PhysMem: 40G used (7269M wired, 3446M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408219(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "a5f5bc235903f84f78c9684051ad41c339dd2134536e1c496b3e51e597847573",
+          "word_count": 13617
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 24.498247027397156,
+          "minimum": 24.323385000228882,
+          "maximum": 26.377156019210815,
+          "mean": 25.06626268227895,
+          "sample_standard_deviation": 1.1386286434767126,
+          "coefficient_of_variation_percent": 4.542474711563949,
+          "range_relative_to_median_percent": 8.383338680049789
+        },
+        "processing_seconds": {
+          "median": 24.593080043792725,
+          "minimum": 24.445755004882812,
+          "maximum": 26.485687017440796,
+          "mean": 25.174840688705444,
+          "sample_standard_deviation": 1.137613616278244,
+          "coefficient_of_variation_percent": 4.518851302159891,
+          "range_relative_to_median_percent": 8.294739857413106
+        },
+        "model_load_seconds": {
+          "median": 1.4883040189743042,
+          "minimum": 1.4835319519042969,
+          "maximum": 3.136884927749634,
+          "mean": 2.036240299542745,
+          "sample_standard_deviation": 0.9531891949432393,
+          "coefficient_of_variation_percent": 46.81123319076269,
+          "range_relative_to_median_percent": 111.08973400372726
+        },
+        "audio_load_seconds": {
+          "median": 0.10735201835632324,
+          "minimum": 0.0935889482498169,
+          "maximum": 0.12112998962402344,
+          "mean": 0.10735698541005452,
+          "sample_standard_deviation": 0.013770521358963003,
+          "coefficient_of_variation_percent": 12.826851747341745,
+          "range_relative_to_median_percent": 25.65488921017974
+        },
+        "punctuation_model_load_seconds": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "sample_standard_deviation": 0.0,
+          "coefficient_of_variation_percent": 0,
+          "range_relative_to_median_percent": 0
+        },
+        "punctuation_inference_seconds": {
+          "median": 1.800060272216797e-05,
+          "minimum": 1.5020370483398438e-05,
+          "maximum": 2.288818359375e-05,
+          "mean": 1.8636385599772137e-05,
+          "sample_standard_deviation": 3.972251966510428e-06,
+          "coefficient_of_variation_percent": 21.314497627474477,
+          "range_relative_to_median_percent": 43.70860927152318
+        },
+        "maximum_resident_bytes": {
+          "median": 1539997696.0,
+          "minimum": 1538113536.0,
+          "maximum": 1669939200.0,
+          "mean": 1582683477.3333333,
+          "sample_standard_deviation": 75571544.6996294,
+          "coefficient_of_variation_percent": 4.774899452855858,
+          "range_relative_to_median_percent": 8.56012085877822
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 2040137432.0,
+          "minimum": 2021607176.0,
+          "maximum": 2040415912.0,
+          "mean": 2034053506.6666667,
+          "sample_standard_deviation": 10779737.84818561,
+          "coefficient_of_variation_percent": 0.5299633373878672,
+          "range_relative_to_median_percent": 0.9219347532661711
+        },
+        "process_wall_seconds": {
+          "median": 26.16,
+          "minimum": 26.04,
+          "maximum": 29.71,
+          "mean": 27.303333333333335,
+          "sample_standard_deviation": 2.0850979193633417,
+          "coefficient_of_variation_percent": 7.63678886349655,
+          "range_relative_to_median_percent": 14.029051987767591
+        }
+      },
+      "agreement_vs_swift_source": {
+        "reference_words": 13615,
+        "candidate_words": 13617,
+        "word_edits": 30,
+        "word_agreement_percent": 99.77965479250827,
+        "character_similarity_percent": 99.8699403170566,
+        "lexical_word_edits": 30,
+        "lexical_word_agreement_percent": 99.77976802231684
+      }
+    },
+    "python-fp16-one-pass": {
+      "artifact_bytes": 946180704,
+      "transcript": "transcripts/python-fp16-one-pass.txt",
+      "transcript_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+      "word_count": 13595,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 26.30329225026071,
+          "processing_seconds": 28.012711165938526,
+          "model_load_seconds": 0.6489491669926792,
+          "audio_load_seconds": 0.23128250008448958,
+          "frontend_seconds": 0.4598195841535926,
+          "model_generate_seconds": 25.801295125158504,
+          "decode_seconds": 0.04217754094861448,
+          "maximum_resident_bytes": 1358462976,
+          "peak_physical_footprint_bytes": 14340835080,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 31.16,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:39:55+0100",
+            "load_average": [
+              5.77001953125,
+              8.60205078125,
+              18.1396484375
+            ],
+            "top": [
+              "CPU usage: 31.54% user, 17.58% sys, 50.87% idle ",
+              "PhysMem: 42G used (7274M wired, 3421M compressor), 21G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408119(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:40:27+0100",
+            "load_average": [
+              5.7587890625,
+              8.3095703125,
+              17.701171875
+            ],
+            "top": [
+              "CPU usage: 12.96% user, 21.36% sys, 65.66% idle ",
+              "PhysMem: 42G used (7310M wired, 3253M compressor), 21G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408131(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+          "word_count": 13595
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 24.014701376203448,
+          "processing_seconds": 25.554574417183176,
+          "model_load_seconds": 0.618031666148454,
+          "audio_load_seconds": 0.2200632500462234,
+          "frontend_seconds": 0.4582776250317693,
+          "model_generate_seconds": 23.525886292103678,
+          "decode_seconds": 0.030537459068000317,
+          "maximum_resident_bytes": 1360445440,
+          "peak_physical_footprint_bytes": 14343161656,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 28.72,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:45:19+0100",
+            "load_average": [
+              8.7470703125,
+              8.23193359375,
+              14.87646484375
+            ],
+            "top": [
+              "CPU usage: 22.56% user, 17.3% sys, 60.40% idle ",
+              "PhysMem: 40G used (7230M wired, 3394M compressor), 23G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408175(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:45:48+0100",
+            "load_average": [
+              7.50830078125,
+              7.95849609375,
+              14.544921875
+            ],
+            "top": [
+              "CPU usage: 16.93% user, 18.23% sys, 64.83% idle ",
+              "PhysMem: 40G used (7327M wired, 3391M compressor), 23G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408179(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+          "word_count": 13595
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 24.33610766637139,
+          "processing_seconds": 25.86200554203242,
+          "model_load_seconds": 0.6066564579959959,
+          "audio_load_seconds": 0.22204254195094109,
+          "frontend_seconds": 0.47305025020614266,
+          "model_generate_seconds": 23.83164466614835,
+          "decode_seconds": 0.03141275001689792,
+          "maximum_resident_bytes": 1360445440,
+          "peak_physical_footprint_bytes": 14343685920,
+          "mps_driver_allocated_bytes": 13141065728,
+          "process_wall_seconds": 29.0,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:50:32+0100",
+            "load_average": [
+              6.7919921875,
+              7.97412109375,
+              12.75048828125
+            ],
+            "top": [
+              "CPU usage: 22.12% user, 19.25% sys, 58.62% idle ",
+              "PhysMem: 40G used (7267M wired, 3446M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408219(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:51:02+0100",
+            "load_average": [
+              7.017578125,
+              7.912109375,
+              12.56103515625
+            ],
+            "top": [
+              "CPU usage: 23.37% user, 18.98% sys, 57.64% idle ",
+              "PhysMem: 40G used (7345M wired, 3445M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408219(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "3d171cb84bf31e46f315abbea6bd5f49cd5add1e2caaa74439b33d95b12e8e1c",
+          "word_count": 13595
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 24.33610766637139,
+          "minimum": 24.014701376203448,
+          "maximum": 26.30329225026071,
+          "mean": 24.884700430945184,
+          "sample_standard_deviation": 1.2390026485894146,
+          "coefficient_of_variation_percent": 4.978973534472057,
+          "range_relative_to_median_percent": 9.404095779949765
+        },
+        "processing_seconds": {
+          "median": 25.86200554203242,
+          "minimum": 25.554574417183176,
+          "maximum": 28.012711165938526,
+          "mean": 26.476430375051375,
+          "sample_standard_deviation": 1.3393085811224232,
+          "coefficient_of_variation_percent": 5.058493770309943,
+          "range_relative_to_median_percent": 9.504818737898132
+        },
+        "model_load_seconds": {
+          "median": 0.618031666148454,
+          "minimum": 0.6066564579959959,
+          "maximum": 0.6489491669926792,
+          "mean": 0.6245457637123764,
+          "sample_standard_deviation": 0.02188591804959893,
+          "coefficient_of_variation_percent": 3.504293731736544,
+          "range_relative_to_median_percent": 6.843129780104902
+        },
+        "audio_load_seconds": {
+          "median": 0.22204254195094109,
+          "minimum": 0.2200632500462234,
+          "maximum": 0.23128250008448958,
+          "mean": 0.22446276402721801,
+          "sample_standard_deviation": 0.005988405382834201,
+          "coefficient_of_variation_percent": 2.667883650451732,
+          "range_relative_to_median_percent": 5.052747973289283
+        },
+        "maximum_resident_bytes": {
+          "median": 1360445440.0,
+          "minimum": 1358462976.0,
+          "maximum": 1360445440.0,
+          "mean": 1359784618.6666667,
+          "sample_standard_deviation": 1144576.1240587423,
+          "coefficient_of_variation_percent": 0.08417333953821698,
+          "range_relative_to_median_percent": 0.14572168362738605
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 14343161656.0,
+          "minimum": 14340835080.0,
+          "maximum": 14343685920.0,
+          "mean": 14342560885.333334,
+          "sample_standard_deviation": 1517404.4358197104,
+          "coefficient_of_variation_percent": 0.010579731527382981,
+          "range_relative_to_median_percent": 0.01987595251572336
+        },
+        "process_wall_seconds": {
+          "median": 29.0,
+          "minimum": 28.72,
+          "maximum": 31.16,
+          "mean": 29.626666666666665,
+          "sample_standard_deviation": 1.3352652670287408,
+          "coefficient_of_variation_percent": 4.506970973319333,
+          "range_relative_to_median_percent": 8.41379310344828
+        }
+      },
+      "agreement_vs_swift_source": {
+        "reference_words": 13615,
+        "candidate_words": 13595,
+        "word_edits": 334,
+        "word_agreement_percent": 97.546823356592,
+        "character_similarity_percent": 98.63581843668261,
+        "lexical_word_edits": 334,
+        "lexical_word_agreement_percent": 97.54808398179415
+      },
+      "agreement_vs_python_fp32": {
+        "reference_words": 13595,
+        "candidate_words": 13595,
+        "word_edits": 1,
+        "word_agreement_percent": 99.99264435454211,
+        "character_similarity_percent": 99.99855160626865,
+        "lexical_word_edits": 1,
+        "lexical_word_agreement_percent": 99.99264705882352
+      }
+    },
+    "swift-q8-bounded": {
+      "artifact_bytes": 488666129,
+      "transcript": "transcripts/swift-q8-bounded.txt",
+      "transcript_sha256": "ada8e220c120f5b2527f6b09122d0b0d876010b9d2f2a28bffa399180aa3feb5",
+      "word_count": 13610,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 37.108389019966125,
+          "processing_seconds": 37.20156407356262,
+          "model_load_seconds": 0.3516960144042969,
+          "audio_load_seconds": 0.09192097187042236,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 9.059906005859375e-06,
+          "maximum_resident_bytes": 1336115200,
+          "peak_physical_footprint_bytes": 1677624736,
+          "process_wall_seconds": 37.62,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 1247702378,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:40:28+0100",
+            "load_average": [
+              5.7587890625,
+              8.3095703125,
+              17.701171875
+            ],
+            "top": [
+              "CPU usage: 14.24% user, 22.58% sys, 63.16% idle ",
+              "PhysMem: 42G used (7304M wired, 3253M compressor), 21G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408131(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:41:06+0100",
+            "load_average": [
+              5.19091796875,
+              7.84521484375,
+              17.09765625
+            ],
+            "top": [
+              "CPU usage: 16.23% user, 18.11% sys, 65.65% idle ",
+              "PhysMem: 43G used (7244M wired, 3252M compressor), 21G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408143(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "ada8e220c120f5b2527f6b09122d0b0d876010b9d2f2a28bffa399180aa3feb5",
+          "word_count": 13610
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 36.354724049568176,
+          "processing_seconds": 36.45287299156189,
+          "model_load_seconds": 0.2914959192276001,
+          "audio_load_seconds": 0.09691107273101807,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 2.300739288330078e-05,
+          "maximum_resident_bytes": 1336590336,
+          "peak_physical_footprint_bytes": 1722680760,
+          "process_wall_seconds": 36.82,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 1247702378,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:45:49+0100",
+            "load_average": [
+              7.50830078125,
+              7.95849609375,
+              14.544921875
+            ],
+            "top": [
+              "CPU usage: 16.57% user, 19.85% sys, 63.57% idle ",
+              "PhysMem: 40G used (7333M wired, 3391M compressor), 23G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408179(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:46:26+0100",
+            "load_average": [
+              6.86279296875,
+              7.69140625,
+              14.14013671875
+            ],
+            "top": [
+              "CPU usage: 20.77% user, 16.90% sys, 62.32% idle ",
+              "PhysMem: 40G used (7216M wired, 3373M compressor), 23G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408203(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "ada8e220c120f5b2527f6b09122d0b0d876010b9d2f2a28bffa399180aa3feb5",
+          "word_count": 13610
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 37.165449023246765,
+          "processing_seconds": 37.26001596450806,
+          "model_load_seconds": 0.29221904277801514,
+          "audio_load_seconds": 0.09339499473571777,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 1.4066696166992188e-05,
+          "maximum_resident_bytes": 1336836096,
+          "peak_physical_footprint_bytes": 1722615248,
+          "process_wall_seconds": 37.62,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 1247702378,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:51:03+0100",
+            "load_average": [
+              7.017578125,
+              7.912109375,
+              12.56103515625
+            ],
+            "top": [
+              "CPU usage: 23.41% user, 20.23% sys, 56.35% idle ",
+              "PhysMem: 39G used (7232M wired, 3445M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408219(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:51:41+0100",
+            "load_average": [
+              6.69140625,
+              7.69140625,
+              12.2646484375
+            ],
+            "top": [
+              "CPU usage: 22.41% user, 15.57% sys, 62.0% idle ",
+              "PhysMem: 40G used (7212M wired, 3445M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408227(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "ada8e220c120f5b2527f6b09122d0b0d876010b9d2f2a28bffa399180aa3feb5",
+          "word_count": 13610
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 37.108389019966125,
+          "minimum": 36.354724049568176,
+          "maximum": 37.165449023246765,
+          "mean": 36.87618736426035,
+          "sample_standard_deviation": 0.45250077615503914,
+          "coefficient_of_variation_percent": 1.2270812372365631,
+          "range_relative_to_median_percent": 2.1847485032087466
+        },
+        "processing_seconds": {
+          "median": 37.20156407356262,
+          "minimum": 36.45287299156189,
+          "maximum": 37.26001596450806,
+          "mean": 36.971484343210854,
+          "sample_standard_deviation": 0.4500804999476763,
+          "coefficient_of_variation_percent": 1.2173720042439289,
+          "range_relative_to_median_percent": 2.169647951763848
+        },
+        "model_load_seconds": {
+          "median": 0.29221904277801514,
+          "minimum": 0.2914959192276001,
+          "maximum": 0.3516960144042969,
+          "mean": 0.311803658803304,
+          "sample_standard_deviation": 0.03454968528748619,
+          "coefficient_of_variation_percent": 11.080590080336828,
+          "range_relative_to_median_percent": 20.601017169995973
+        },
+        "audio_load_seconds": {
+          "median": 0.09339499473571777,
+          "minimum": 0.09192097187042236,
+          "maximum": 0.09691107273101807,
+          "mean": 0.09407567977905273,
+          "sample_standard_deviation": 0.0025637425272235182,
+          "coefficient_of_variation_percent": 2.725191604509002,
+          "range_relative_to_median_percent": 5.343006736834581
+        },
+        "punctuation_model_load_seconds": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "sample_standard_deviation": 0.0,
+          "coefficient_of_variation_percent": 0,
+          "range_relative_to_median_percent": 0
+        },
+        "punctuation_inference_seconds": {
+          "median": 1.4066696166992188e-05,
+          "minimum": 9.059906005859375e-06,
+          "maximum": 2.300739288330078e-05,
+          "mean": 1.537799835205078e-05,
+          "sample_standard_deviation": 7.065602070206377e-06,
+          "coefficient_of_variation_percent": 45.9461752332944,
+          "range_relative_to_median_percent": 99.15254237288136
+        },
+        "maximum_resident_bytes": {
+          "median": 1336590336.0,
+          "minimum": 1336115200.0,
+          "maximum": 1336836096.0,
+          "mean": 1336513877.3333333,
+          "sample_standard_deviation": 366479.4762129707,
+          "coefficient_of_variation_percent": 0.02742055151302921,
+          "range_relative_to_median_percent": 0.053935449073903824
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1722615248.0,
+          "minimum": 1677624736.0,
+          "maximum": 1722680760.0,
+          "mean": 1707640248.0,
+          "sample_standard_deviation": 25994216.537955977,
+          "coefficient_of_variation_percent": 1.5222302571282553,
+          "range_relative_to_median_percent": 2.615559339342386
+        },
+        "process_wall_seconds": {
+          "median": 37.62,
+          "minimum": 36.82,
+          "maximum": 37.62,
+          "mean": 37.35333333333333,
+          "sample_standard_deviation": 0.461880215351699,
+          "coefficient_of_variation_percent": 1.2365167285874503,
+          "range_relative_to_median_percent": 2.1265284423179085
+        }
+      },
+      "agreement_vs_swift_source": {
+        "reference_words": 13615,
+        "candidate_words": 13610,
+        "word_edits": 16,
+        "word_agreement_percent": 99.8824825560044,
+        "character_similarity_percent": 99.91907397505744,
+        "lexical_word_edits": 16,
+        "lexical_word_agreement_percent": 99.88254294523566
+      }
+    },
+    "coreml-q8-formatted": {
+      "artifact_bytes": 691894962,
+      "transcript": "transcripts/coreml-q8-formatted.txt",
+      "transcript_sha256": "2d14abf63cb7e55fef4daa143c8b13d0a6c77124fd5d52422f65528f2671db71",
+      "word_count": 13617,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 25.266635060310364,
+          "processing_seconds": 26.465906023979187,
+          "model_load_seconds": 0.43021297454833984,
+          "audio_load_seconds": 0.09601807594299316,
+          "punctuation_model_load_seconds": 0.42456305027008057,
+          "punctuation_inference_seconds": 1.101633906364441,
+          "maximum_resident_bytes": 1615003648,
+          "peak_physical_footprint_bytes": 2113455904,
+          "process_wall_seconds": 27.42,
+          "backend": "coreml",
+          "model": "granite-speech-5.0-470m-turboctc-coreml-palette-uniform-q8-g1-macos15-16384.mlpackage",
+          "chunk_duration_seconds": 286.72,
+          "chunk_context_seconds": 20.48,
+          "coreml_chunk_count": 22,
+          "coreml_feature_extraction_seconds": 0.3982834166381508,
+          "coreml_input_copy_seconds": 0.031849458580836654,
+          "coreml_output_copy_seconds": 0.00045841606333851814,
+          "coreml_prediction_seconds": 24.69682737463154,
+          "mlx_peak_memory_bytes": 419547870,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:41:07+0100",
+            "load_average": [
+              5.19091796875,
+              7.84521484375,
+              17.09765625
+            ],
+            "top": [
+              "CPU usage: 17.84% user, 19.13% sys, 63.2% idle ",
+              "PhysMem: 43G used (7277M wired, 3252M compressor), 21G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408143(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:41:35+0100",
+            "load_average": [
+              5.0322265625,
+              7.5986328125,
+              16.740234375
+            ],
+            "top": [
+              "CPU usage: 22.62% user, 21.60% sys, 55.76% idle ",
+              "PhysMem: 43G used (7278M wired, 3252M compressor), 20G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408143(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "2d14abf63cb7e55fef4daa143c8b13d0a6c77124fd5d52422f65528f2671db71",
+          "word_count": 13617
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 24.533779978752136,
+          "processing_seconds": 25.758273005485535,
+          "model_load_seconds": 0.42147397994995117,
+          "audio_load_seconds": 0.11336398124694824,
+          "punctuation_model_load_seconds": 0.2984400987625122,
+          "punctuation_inference_seconds": 1.1095330715179443,
+          "maximum_resident_bytes": 1612070912,
+          "peak_physical_footprint_bytes": 2112571144,
+          "process_wall_seconds": 26.57,
+          "backend": "coreml",
+          "model": "granite-speech-5.0-470m-turboctc-coreml-palette-uniform-q8-g1-macos15-16384.mlpackage",
+          "chunk_duration_seconds": 286.72,
+          "chunk_context_seconds": 20.48,
+          "coreml_chunk_count": 22,
+          "coreml_feature_extraction_seconds": 0.4328774579335004,
+          "coreml_input_copy_seconds": 0.05709187570028007,
+          "coreml_output_copy_seconds": 0.0016268747858703136,
+          "coreml_prediction_seconds": 23.868598833680153,
+          "mlx_peak_memory_bytes": 419547870,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:46:27+0100",
+            "load_average": [
+              6.86279296875,
+              7.69140625,
+              14.14013671875
+            ],
+            "top": [
+              "CPU usage: 45.52% user, 24.0% sys, 30.47% idle ",
+              "PhysMem: 40G used (7337M wired, 3372M compressor), 23G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408203(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:46:55+0100",
+            "load_average": [
+              9.50732421875,
+              8.28369140625,
+              14.16845703125
+            ],
+            "top": [
+              "CPU usage: 25.91% user, 15.66% sys, 58.41% idle ",
+              "PhysMem: 40G used (7257M wired, 3366M compressor), 23G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408203(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "2d14abf63cb7e55fef4daa143c8b13d0a6c77124fd5d52422f65528f2671db71",
+          "word_count": 13617
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 24.59730303287506,
+          "processing_seconds": 25.782848000526428,
+          "model_load_seconds": 0.42782700061798096,
+          "audio_load_seconds": 0.09112000465393066,
+          "punctuation_model_load_seconds": 0.2914680242538452,
+          "punctuation_inference_seconds": 1.0929219722747803,
+          "maximum_resident_bytes": 1615626240,
+          "peak_physical_footprint_bytes": 2114848544,
+          "process_wall_seconds": 26.59,
+          "backend": "coreml",
+          "model": "granite-speech-5.0-470m-turboctc-coreml-palette-uniform-q8-g1-macos15-16384.mlpackage",
+          "chunk_duration_seconds": 286.72,
+          "chunk_context_seconds": 20.48,
+          "coreml_chunk_count": 22,
+          "coreml_feature_extraction_seconds": 0.37120154104195535,
+          "coreml_input_copy_seconds": 0.030238458653911948,
+          "coreml_output_copy_seconds": 0.00034670811146497726,
+          "coreml_prediction_seconds": 24.05801820778288,
+          "mlx_peak_memory_bytes": 419547870,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:51:42+0100",
+            "load_average": [
+              6.69140625,
+              7.69140625,
+              12.2646484375
+            ],
+            "top": [
+              "CPU usage: 22.2% user, 17.24% sys, 60.72% idle ",
+              "PhysMem: 40G used (7213M wired, 3445M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408227(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:52:09+0100",
+            "load_average": [
+              8.216796875,
+              7.9716796875,
+              12.23193359375
+            ],
+            "top": [
+              "CPU usage: 23.9% user, 15.6% sys, 61.83% idle ",
+              "PhysMem: 40G used (7320M wired, 3445M compressor), 23G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408231(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "2d14abf63cb7e55fef4daa143c8b13d0a6c77124fd5d52422f65528f2671db71",
+          "word_count": 13617
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 24.59730303287506,
+          "minimum": 24.533779978752136,
+          "maximum": 25.266635060310364,
+          "mean": 24.79923935731252,
+          "sample_standard_deviation": 0.406020753148053,
+          "coefficient_of_variation_percent": 1.6372306718686929,
+          "range_relative_to_median_percent": 2.979412338737885
+        },
+        "processing_seconds": {
+          "median": 25.782848000526428,
+          "minimum": 25.758273005485535,
+          "maximum": 26.465906023979187,
+          "mean": 26.002342343330383,
+          "sample_standard_deviation": 0.40164592255843273,
+          "coefficient_of_variation_percent": 1.544652851866844,
+          "range_relative_to_median_percent": 2.7445882568101245
+        },
+        "model_load_seconds": {
+          "median": 0.42782700061798096,
+          "minimum": 0.42147397994995117,
+          "maximum": 0.43021297454833984,
+          "mean": 0.426504651705424,
+          "sample_standard_deviation": 0.00451707445506182,
+          "coefficient_of_variation_percent": 1.0590914863413141,
+          "range_relative_to_median_percent": 2.042646814194874
+        },
+        "audio_load_seconds": {
+          "median": 0.09601807594299316,
+          "minimum": 0.09112000465393066,
+          "maximum": 0.11336398124694824,
+          "mean": 0.10016735394795735,
+          "sample_standard_deviation": 0.011688071040147652,
+          "coefficient_of_variation_percent": 11.668543272312325,
+          "range_relative_to_median_percent": 23.16644691591616
+        },
+        "punctuation_model_load_seconds": {
+          "median": 0.2984400987625122,
+          "minimum": 0.2914680242538452,
+          "maximum": 0.42456305027008057,
+          "mean": 0.338157057762146,
+          "sample_standard_deviation": 0.07491094120153301,
+          "coefficient_of_variation_percent": 22.152706702997193,
+          "range_relative_to_median_percent": 44.59689785927445
+        },
+        "punctuation_inference_seconds": {
+          "median": 1.101633906364441,
+          "minimum": 1.0929219722747803,
+          "maximum": 1.1095330715179443,
+          "mean": 1.101362983385722,
+          "sample_standard_deviation": 0.00830886297647638,
+          "coefficient_of_variation_percent": 0.7544164005706765,
+          "range_relative_to_median_percent": 1.5078602017600575
+        },
+        "maximum_resident_bytes": {
+          "median": 1615003648.0,
+          "minimum": 1612070912.0,
+          "maximum": 1615626240.0,
+          "mean": 1614233600.0,
+          "sample_standard_deviation": 1898636.2839216995,
+          "coefficient_of_variation_percent": 0.11761843415486455,
+          "range_relative_to_median_percent": 0.22014365134115166
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 2113455904.0,
+          "minimum": 2112571144.0,
+          "maximum": 2114848544.0,
+          "mean": 2113625197.3333333,
+          "sample_standard_deviation": 1148099.67534763,
+          "coefficient_of_variation_percent": 0.05431898128372694,
+          "range_relative_to_median_percent": 0.10775715716091894
+        },
+        "process_wall_seconds": {
+          "median": 26.59,
+          "minimum": 26.57,
+          "maximum": 27.42,
+          "mean": 26.86,
+          "sample_standard_deviation": 0.48507731342539706,
+          "coefficient_of_variation_percent": 1.8059468109657375,
+          "range_relative_to_median_percent": 3.1966904851447966
+        }
+      }
+    },
+    "python-fp32-one-pass": {
+      "artifact_bytes": 946180704,
+      "transcript": "transcripts/python-fp32-one-pass.txt",
+      "transcript_sha256": "db622d1baa86da4f39c6d9c14c1c8470d240eb43058a288f9cae81bd09de89c0",
+      "word_count": 13595,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 31.18010733416304,
+          "processing_seconds": 32.916057999944314,
+          "model_load_seconds": 0.6236531250178814,
+          "audio_load_seconds": 0.2205767089035362,
+          "frontend_seconds": 0.4896399590652436,
+          "model_generate_seconds": 30.658512541092932,
+          "decode_seconds": 0.0319548340048641,
+          "maximum_resident_bytes": 1404436480,
+          "peak_physical_footprint_bytes": 27479082832,
+          "mps_driver_allocated_bytes": 26223099904,
+          "process_wall_seconds": 36.17,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:41:36+0100",
+            "load_average": [
+              5.189453125,
+              7.58837890625,
+              16.68310546875
+            ],
+            "top": [
+              "CPU usage: 23.97% user, 21.56% sys, 54.46% idle ",
+              "PhysMem: 43G used (7278M wired, 3252M compressor), 20G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408143(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:42:13+0100",
+            "load_average": [
+              6.8544921875,
+              7.72900390625,
+              16.3662109375
+            ],
+            "top": [
+              "CPU usage: 26.91% user, 16.76% sys, 56.32% idle ",
+              "PhysMem: 37G used (7278M wired, 3435M compressor), 26G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408147(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "db622d1baa86da4f39c6d9c14c1c8470d240eb43058a288f9cae81bd09de89c0",
+          "word_count": 13595
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 30.953783749137074,
+          "processing_seconds": 32.718346000183374,
+          "model_load_seconds": 0.6261219580192119,
+          "audio_load_seconds": 0.264704667031765,
+          "frontend_seconds": 0.49182366603054106,
+          "model_generate_seconds": 30.430977083044127,
+          "decode_seconds": 0.030983000062406063,
+          "maximum_resident_bytes": 1406746624,
+          "peak_physical_footprint_bytes": 27480590184,
+          "mps_driver_allocated_bytes": 26223099904,
+          "process_wall_seconds": 35.96,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:46:56+0100",
+            "load_average": [
+              9.54638671875,
+              8.31201171875,
+              14.1435546875
+            ],
+            "top": [
+              "CPU usage: 21.70% user, 16.93% sys, 61.36% idle ",
+              "PhysMem: 40G used (7253M wired, 3366M compressor), 23G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408203(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:47:32+0100",
+            "load_average": [
+              12.5400390625,
+              9.3046875,
+              14.2763671875
+            ],
+            "top": [
+              "CPU usage: 15.30% user, 17.88% sys, 66.80% idle ",
+              "PhysMem: 37G used (7263M wired, 3450M compressor), 26G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408203(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "db622d1baa86da4f39c6d9c14c1c8470d240eb43058a288f9cae81bd09de89c0",
+          "word_count": 13595
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 30.424460876034573,
+          "processing_seconds": 32.1319510419853,
+          "model_load_seconds": 0.6585502079688013,
+          "audio_load_seconds": 0.22154216608032584,
+          "frontend_seconds": 0.4836619170382619,
+          "model_generate_seconds": 29.90957137499936,
+          "decode_seconds": 0.03122758399695158,
+          "maximum_resident_bytes": 1404583936,
+          "peak_physical_footprint_bytes": 27480164200,
+          "mps_driver_allocated_bytes": 26223099904,
+          "process_wall_seconds": 35.71,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:52:10+0100",
+            "load_average": [
+              8.216796875,
+              7.9716796875,
+              12.23193359375
+            ],
+            "top": [
+              "CPU usage: 22.58% user, 17.18% sys, 60.22% idle ",
+              "PhysMem: 40G used (7292M wired, 3445M compressor), 23G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408231(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:52:46+0100",
+            "load_average": [
+              8.1767578125,
+              8.0029296875,
+              12.046875
+            ],
+            "top": [
+              "CPU usage: 14.74% user, 17.51% sys, 67.73% idle ",
+              "PhysMem: 37G used (7261M wired, 3445M compressor), 26G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408231(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "db622d1baa86da4f39c6d9c14c1c8470d240eb43058a288f9cae81bd09de89c0",
+          "word_count": 13595
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 30.953783749137074,
+          "minimum": 30.424460876034573,
+          "maximum": 31.18010733416304,
+          "mean": 30.852783986444894,
+          "sample_standard_deviation": 0.3878158151344934,
+          "coefficient_of_variation_percent": 1.2569880737663073,
+          "range_relative_to_median_percent": 2.4412086879347443
+        },
+        "processing_seconds": {
+          "median": 32.718346000183374,
+          "minimum": 32.1319510419853,
+          "maximum": 32.916057999944314,
+          "mean": 32.58878501403766,
+          "sample_standard_deviation": 0.40779341243848005,
+          "coefficient_of_variation_percent": 1.2513305183449537,
+          "range_relative_to_median_percent": 2.396536053364729
+        },
+        "model_load_seconds": {
+          "median": 0.6261219580192119,
+          "minimum": 0.6236531250178814,
+          "maximum": 0.6585502079688013,
+          "mean": 0.6361084303352982,
+          "sample_standard_deviation": 0.019474311839210494,
+          "coefficient_of_variation_percent": 3.0614767719625124,
+          "range_relative_to_median_percent": 5.57352804896344
+        },
+        "audio_load_seconds": {
+          "median": 0.22154216608032584,
+          "minimum": 0.2205767089035362,
+          "maximum": 0.264704667031765,
+          "mean": 0.23560784733854234,
+          "sample_standard_deviation": 0.025203208408553567,
+          "coefficient_of_variation_percent": 10.697100581857681,
+          "range_relative_to_median_percent": 19.91853691284622
+        },
+        "maximum_resident_bytes": {
+          "median": 1404583936.0,
+          "minimum": 1404436480.0,
+          "maximum": 1406746624.0,
+          "mean": 1405255680.0,
+          "sample_standard_deviation": 1293298.6222586026,
+          "coefficient_of_variation_percent": 0.09203297596766181,
+          "range_relative_to_median_percent": 0.1644717656802249
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 27480164200.0,
+          "minimum": 27479082832.0,
+          "maximum": 27480590184.0,
+          "mean": 27479945738.666668,
+          "sample_standard_deviation": 777059.5399307143,
+          "coefficient_of_variation_percent": 0.0028277331670175905,
+          "range_relative_to_median_percent": 0.005485236511068591
+        },
+        "process_wall_seconds": {
+          "median": 35.96,
+          "minimum": 35.71,
+          "maximum": 36.17,
+          "mean": 35.946666666666665,
+          "sample_standard_deviation": 0.23028967265887873,
+          "coefficient_of_variation_percent": 0.6406426353640914,
+          "range_relative_to_median_percent": 1.2791991101223605
+        }
+      },
+      "agreement_vs_swift_source": {
+        "reference_words": 13615,
+        "candidate_words": 13595,
+        "word_edits": 335,
+        "word_agreement_percent": 97.53947851634227,
+        "character_similarity_percent": 98.63437332909434,
+        "lexical_word_edits": 335,
+        "lexical_word_agreement_percent": 97.54074291587138
+      },
+      "agreement_vs_python_fp32": {
+        "reference_words": 13595,
+        "candidate_words": 13595,
+        "word_edits": 0,
+        "word_agreement_percent": 100.0,
+        "character_similarity_percent": 100.0,
+        "lexical_word_edits": 0,
+        "lexical_word_agreement_percent": 100.0
+      }
+    },
+    "swift-fp16-one-pass": {
+      "artifact_bytes": 946047608,
+      "transcript": "transcripts/swift-fp16-one-pass.txt",
+      "transcript_sha256": "cb13bbd818d8c045ce76d852fbdf09db4dd7e648a8f67bb0fbcfc3e7ec15bfd1",
+      "word_count": 13614,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 22.985463976860046,
+          "processing_seconds": 23.099418997764587,
+          "model_load_seconds": 0.46988701820373535,
+          "audio_load_seconds": 0.11278700828552246,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 9.059906005859375e-06,
+          "maximum_resident_bytes": 2192801792,
+          "peak_physical_footprint_bytes": 13250086880,
+          "process_wall_seconds": 23.7,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-fp16",
+          "chunk_duration_seconds": 0,
+          "chunk_context_seconds": 0,
+          "mlx_peak_memory_bytes": 12420339722,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:42:13+0100",
+            "load_average": [
+              6.8544921875,
+              7.72900390625,
+              16.3662109375
+            ],
+            "top": [
+              "CPU usage: 21.88% user, 18.69% sys, 59.42% idle ",
+              "PhysMem: 37G used (7243M wired, 3433M compressor), 26G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408147(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:42:38+0100",
+            "load_average": [
+              6.1357421875,
+              7.50537109375,
+              16.03515625
+            ],
+            "top": [
+              "CPU usage: 24.10% user, 15.92% sys, 59.97% idle ",
+              "PhysMem: 38G used (7248M wired, 3426M compressor), 25G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408147(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "cb13bbd818d8c045ce76d852fbdf09db4dd7e648a8f67bb0fbcfc3e7ec15bfd1",
+          "word_count": 13614
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 21.284555077552795,
+          "processing_seconds": 21.399012088775635,
+          "model_load_seconds": 0.44020795822143555,
+          "audio_load_seconds": 0.11323297023773193,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 1.895427703857422e-05,
+          "maximum_resident_bytes": 2191704064,
+          "peak_physical_footprint_bytes": 13249234816,
+          "process_wall_seconds": 21.94,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-fp16",
+          "chunk_duration_seconds": 0,
+          "chunk_context_seconds": 0,
+          "mlx_peak_memory_bytes": 12420339722,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:47:33+0100",
+            "load_average": [
+              12.5400390625,
+              9.3046875,
+              14.2763671875
+            ],
+            "top": [
+              "CPU usage: 15.69% user, 19.18% sys, 65.11% idle ",
+              "PhysMem: 37G used (7281M wired, 3450M compressor), 26G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408203(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:47:56+0100",
+            "load_average": [
+              9.98779296875,
+              8.9716796875,
+              14.01220703125
+            ],
+            "top": [
+              "CPU usage: 18.49% user, 20.80% sys, 60.69% idle ",
+              "PhysMem: 38G used (7263M wired, 3449M compressor), 25G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408203(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "cb13bbd818d8c045ce76d852fbdf09db4dd7e648a8f67bb0fbcfc3e7ec15bfd1",
+          "word_count": 13614
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 21.15685498714447,
+          "processing_seconds": 21.27119207382202,
+          "model_load_seconds": 0.4407989978790283,
+          "audio_load_seconds": 0.11307299137115479,
+          "punctuation_model_load_seconds": 0,
+          "punctuation_inference_seconds": 8.940696716308594e-06,
+          "maximum_resident_bytes": 2191507456,
+          "peak_physical_footprint_bytes": 13207996312,
+          "process_wall_seconds": 21.83,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-fp16",
+          "chunk_duration_seconds": 0,
+          "chunk_context_seconds": 0,
+          "mlx_peak_memory_bytes": 12420339722,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:52:47+0100",
+            "load_average": [
+              8.1767578125,
+              8.0029296875,
+              12.046875
+            ],
+            "top": [
+              "CPU usage: 21.3% user, 20.17% sys, 58.78% idle ",
+              "PhysMem: 37G used (7252M wired, 3445M compressor), 26G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408231(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:53:10+0100",
+            "load_average": [
+              7.17333984375,
+              7.77685546875,
+              11.87109375
+            ],
+            "top": [
+              "CPU usage: 17.65% user, 17.94% sys, 64.39% idle ",
+              "PhysMem: 38G used (7259M wired, 3444M compressor), 25G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408231(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "cb13bbd818d8c045ce76d852fbdf09db4dd7e648a8f67bb0fbcfc3e7ec15bfd1",
+          "word_count": 13614
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 21.284555077552795,
+          "minimum": 21.15685498714447,
+          "maximum": 22.985463976860046,
+          "mean": 21.808958013852436,
+          "sample_standard_deviation": 1.0208827253984267,
+          "coefficient_of_variation_percent": 4.681024763998312,
+          "range_relative_to_median_percent": 8.591248363204318
+        },
+        "processing_seconds": {
+          "median": 21.399012088775635,
+          "minimum": 21.27119207382202,
+          "maximum": 23.099418997764587,
+          "mean": 21.923207720120747,
+          "sample_standard_deviation": 1.0206317731180528,
+          "coefficient_of_variation_percent": 4.655485575595465,
+          "range_relative_to_median_percent": 8.543510870305647
+        },
+        "model_load_seconds": {
+          "median": 0.4407989978790283,
+          "minimum": 0.44020795822143555,
+          "maximum": 0.46988701820373535,
+          "mean": 0.4502979914347331,
+          "sample_standard_deviation": 0.016967168570115865,
+          "coefficient_of_variation_percent": 3.767986731643042,
+          "range_relative_to_median_percent": 6.733014395473931
+        },
+        "audio_load_seconds": {
+          "median": 0.11307299137115479,
+          "minimum": 0.11278700828552246,
+          "maximum": 0.11323297023773193,
+          "mean": 0.11303098996480306,
+          "sample_standard_deviation": 0.00022592831674286216,
+          "coefficient_of_variation_percent": 0.19988174642477644,
+          "range_relative_to_median_percent": 0.3944018344271369
+        },
+        "punctuation_model_load_seconds": {
+          "median": 0.0,
+          "minimum": 0.0,
+          "maximum": 0.0,
+          "mean": 0.0,
+          "sample_standard_deviation": 0.0,
+          "coefficient_of_variation_percent": 0,
+          "range_relative_to_median_percent": 0
+        },
+        "punctuation_inference_seconds": {
+          "median": 9.059906005859375e-06,
+          "minimum": 8.940696716308594e-06,
+          "maximum": 1.895427703857422e-05,
+          "mean": 1.2318293253580729e-05,
+          "sample_standard_deviation": 5.747239625220197e-06,
+          "coefficient_of_variation_percent": 46.656135772295954,
+          "range_relative_to_median_percent": 110.52631578947368
+        },
+        "maximum_resident_bytes": {
+          "median": 2191704064.0,
+          "minimum": 2191507456.0,
+          "maximum": 2192801792.0,
+          "mean": 2192004437.3333335,
+          "sample_standard_deviation": 697491.5947574804,
+          "coefficient_of_variation_percent": 0.0318198076097879,
+          "range_relative_to_median_percent": 0.059056148193554654
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 13249234816.0,
+          "minimum": 13207996312.0,
+          "maximum": 13250086880.0,
+          "mean": 13235772669.333334,
+          "sample_standard_deviation": 24058803.446904615,
+          "coefficient_of_variation_percent": 0.1817710537039348,
+          "range_relative_to_median_percent": 0.3176830102608697
+        },
+        "process_wall_seconds": {
+          "median": 21.94,
+          "minimum": 21.83,
+          "maximum": 23.7,
+          "mean": 22.49,
+          "sample_standard_deviation": 1.04933312155864,
+          "coefficient_of_variation_percent": 4.6657764409010225,
+          "range_relative_to_median_percent": 8.523245214220607
+        }
+      },
+      "agreement_vs_swift_source": {
+        "reference_words": 13615,
+        "candidate_words": 13614,
+        "word_edits": 32,
+        "word_agreement_percent": 99.76496511200882,
+        "character_similarity_percent": 99.83959305770314,
+        "lexical_word_edits": 32,
+        "lexical_word_agreement_percent": 99.7650858904713
+      }
+    },
+    "swift-q8-formatted": {
+      "artifact_bytes": 488666129,
+      "transcript": "transcripts/swift-q8-formatted.txt",
+      "transcript_sha256": "efaa62af8099896b39710bd202a866e3cc97d04a6e652144c5deb9d44a59429f",
+      "word_count": 13610,
+      "deterministic_across_rounds": true,
+      "runs": [
+        {
+          "round": 1,
+          "speech_inference_seconds": 38.32923996448517,
+          "processing_seconds": 39.53511893749237,
+          "model_load_seconds": 0.35926294326782227,
+          "audio_load_seconds": 0.1088639497756958,
+          "punctuation_model_load_seconds": 0.4221709966659546,
+          "punctuation_inference_seconds": 1.0954320430755615,
+          "maximum_resident_bytes": 1407746048,
+          "peak_physical_footprint_bytes": 1757038128,
+          "process_wall_seconds": 40.44,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 1303529188,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:42:39+0100",
+            "load_average": [
+              6.1357421875,
+              7.50537109375,
+              16.03515625
+            ],
+            "top": [
+              "CPU usage: 24.63% user, 17.10% sys, 58.26% idle ",
+              "PhysMem: 38G used (7242M wired, 3426M compressor), 25G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408147(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:43:20+0100",
+            "load_average": [
+              7.71826171875,
+              7.837890625,
+              15.77001953125
+            ],
+            "top": [
+              "CPU usage: 26.80% user, 20.0% sys, 53.19% idle ",
+              "PhysMem: 39G used (7329M wired, 3410M compressor), 24G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408167(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "efaa62af8099896b39710bd202a866e3cc97d04a6e652144c5deb9d44a59429f",
+          "word_count": 13610
+        },
+        {
+          "round": 2,
+          "speech_inference_seconds": 35.87900793552399,
+          "processing_seconds": 37.06043899059296,
+          "model_load_seconds": 0.3501940965652466,
+          "audio_load_seconds": 0.09198904037475586,
+          "punctuation_model_load_seconds": 0.416032075881958,
+          "punctuation_inference_seconds": 1.0878080129623413,
+          "maximum_resident_bytes": 1411219456,
+          "peak_physical_footprint_bytes": 1931314760,
+          "process_wall_seconds": 37.91,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 1303529188,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:47:56+0100",
+            "load_average": [
+              9.98779296875,
+              8.9716796875,
+              14.01220703125
+            ],
+            "top": [
+              "CPU usage: 16.66% user, 20.25% sys, 63.7% idle ",
+              "PhysMem: 38G used (7257M wired, 3449M compressor), 25G unused.",
+              "VM: 534T vsize, 6144M framework vsize, 5408203(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:48:35+0100",
+            "load_average": [
+              7.59326171875,
+              8.49560546875,
+              13.63525390625
+            ],
+            "top": [
+              "CPU usage: 15.83% user, 20.67% sys, 63.48% idle ",
+              "PhysMem: 38G used (7253M wired, 3448M compressor), 25G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408207(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "efaa62af8099896b39710bd202a866e3cc97d04a6e652144c5deb9d44a59429f",
+          "word_count": 13610
+        },
+        {
+          "round": 3,
+          "speech_inference_seconds": 35.386353969573975,
+          "processing_seconds": 36.569242000579834,
+          "model_load_seconds": 0.34834396839141846,
+          "audio_load_seconds": 0.10872900485992432,
+          "punctuation_model_load_seconds": 0.43265092372894287,
+          "punctuation_inference_seconds": 1.0725719928741455,
+          "maximum_resident_bytes": 1409024000,
+          "peak_physical_footprint_bytes": 1725187584,
+          "process_wall_seconds": 37.43,
+          "backend": "mlx",
+          "model": "granite-speech-5.0-470m-turboctc-mlx-q8-g128",
+          "chunk_duration_seconds": 122.88,
+          "chunk_context_seconds": 20.48,
+          "mlx_peak_memory_bytes": 1303529188,
+          "machine_before": {
+            "timestamp": "2026-08-27T08:53:10+0100",
+            "load_average": [
+              7.17333984375,
+              7.77685546875,
+              11.87109375
+            ],
+            "top": [
+              "CPU usage: 16.30% user, 19.35% sys, 64.33% idle ",
+              "PhysMem: 38G used (7258M wired, 3444M compressor), 25G unused.",
+              "VM: 533T vsize, 6144M framework vsize, 5408231(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "machine_after": {
+            "timestamp": "2026-08-27T08:53:48+0100",
+            "load_average": [
+              7.44775390625,
+              7.75830078125,
+              11.67431640625
+            ],
+            "top": [
+              "CPU usage: 21.35% user, 24.67% sys, 53.96% idle ",
+              "PhysMem: 41G used (7728M wired, 3415M compressor), 22G unused.",
+              "VM: 536T vsize, 6144M framework vsize, 5408418(0) swapins, 8788071(0) swapouts."
+            ]
+          },
+          "transcript_sha256": "efaa62af8099896b39710bd202a866e3cc97d04a6e652144c5deb9d44a59429f",
+          "word_count": 13610
+        }
+      ],
+      "summary": {
+        "speech_inference_seconds": {
+          "median": 35.87900793552399,
+          "minimum": 35.386353969573975,
+          "maximum": 38.32923996448517,
+          "mean": 36.53153395652771,
+          "sample_standard_deviation": 1.5762256027695798,
+          "coefficient_of_variation_percent": 4.314698650884132,
+          "range_relative_to_median_percent": 8.202250185399992
+        },
+        "processing_seconds": {
+          "median": 37.06043899059296,
+          "minimum": 36.569242000579834,
+          "maximum": 39.53511893749237,
+          "mean": 37.72159997622172,
+          "sample_standard_deviation": 1.5896404901472603,
+          "coefficient_of_variation_percent": 4.2141385602660275,
+          "range_relative_to_median_percent": 8.002811131474628
+        },
+        "model_load_seconds": {
+          "median": 0.3501940965652466,
+          "minimum": 0.34834396839141846,
+          "maximum": 0.35926294326782227,
+          "mean": 0.3526003360748291,
+          "sample_standard_deviation": 0.005843671322122022,
+          "coefficient_of_variation_percent": 1.6573073602748563,
+          "range_relative_to_median_percent": 3.11797799663063
+        },
+        "audio_load_seconds": {
+          "median": 0.10872900485992432,
+          "minimum": 0.09198904037475586,
+          "maximum": 0.1088639497756958,
+          "mean": 0.10319399833679199,
+          "sample_standard_deviation": 0.009704012815882965,
+          "coefficient_of_variation_percent": 9.403660069660438,
+          "range_relative_to_median_percent": 15.52015437157721
+        },
+        "punctuation_model_load_seconds": {
+          "median": 0.4221709966659546,
+          "minimum": 0.416032075881958,
+          "maximum": 0.43265092372894287,
+          "mean": 0.42361799875895184,
+          "sample_standard_deviation": 0.008403385462607445,
+          "coefficient_of_variation_percent": 1.9837177568531879,
+          "range_relative_to_median_percent": 3.9365205043051854
+        },
+        "punctuation_inference_seconds": {
+          "median": 1.0878080129623413,
+          "minimum": 1.0725719928741455,
+          "maximum": 1.0954320430755615,
+          "mean": 1.0852706829706829,
+          "sample_standard_deviation": 0.011639330153309618,
+          "coefficient_of_variation_percent": 1.0724817629321366,
+          "range_relative_to_median_percent": 2.1014783793661396
+        },
+        "maximum_resident_bytes": {
+          "median": 1409024000.0,
+          "minimum": 1407746048.0,
+          "maximum": 1411219456.0,
+          "mean": 1409329834.6666667,
+          "sample_standard_deviation": 1756784.5388997858,
+          "coefficient_of_variation_percent": 0.12465389546764961,
+          "range_relative_to_median_percent": 0.24651162790697675
+        },
+        "peak_physical_footprint_bytes": {
+          "median": 1757038128.0,
+          "minimum": 1725187584.0,
+          "maximum": 1931314760.0,
+          "mean": 1804513490.6666667,
+          "sample_standard_deviation": 110961866.04722539,
+          "coefficient_of_variation_percent": 6.1491292041397365,
+          "range_relative_to_median_percent": 11.731514115440982
+        },
+        "process_wall_seconds": {
+          "median": 37.91,
+          "minimum": 37.43,
+          "maximum": 40.44,
+          "mean": 38.593333333333334,
+          "sample_standard_deviation": 1.6171683070519691,
+          "coefficient_of_variation_percent": 4.190278909272679,
+          "range_relative_to_median_percent": 7.9398575573727195
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "coreml_vs_mlx_raw": {
+      "reference_words": 13610,
+      "candidate_words": 13617,
+      "word_edits": 36,
+      "word_agreement_percent": 99.7354886113152,
+      "character_similarity_percent": 99.83811519838115,
+      "lexical_word_edits": 36,
+      "lexical_word_agreement_percent": 99.73562458691342
+    },
+    "coreml_vs_mlx_formatted": {
+      "reference_words": 13610,
+      "candidate_words": 13617,
+      "word_edits": 297,
+      "word_agreement_percent": 97.81778104335048,
+      "character_similarity_percent": 99.45435880127691,
+      "lexical_word_edits": 39,
+      "lexical_word_agreement_percent": 99.71403431588209
+    }
+  }
+}

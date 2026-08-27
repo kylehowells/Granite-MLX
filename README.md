@@ -143,12 +143,12 @@ and performance metadata. All progress and benchmark records go to stderr.
 ### Optimized Core ML backend
 
 Granite-MLX also includes a native Swift Core ML recognizer for converted,
-fixed-shape ML Programs. On the development M1 Max, the published macOS 15 Q8
-palettized 16,384-frame graph transcribed the 101m59s lecture in 17.32 seconds
-of speech inference versus 24.41 seconds for the release MLX Q8 profile.
-Process wall was 22.09 versus 24.88 seconds. The Core ML transcript had 0.265%
-word disagreement with the MLX output, while peak footprint increased from
-1.64 to 2.10 GB.
+fixed-shape ML Programs. In the current three-round interleaved M1 Max
+benchmark, the published macOS 15 Q8 palettized 16,384-frame graph transcribed
+the 101m59s lecture in a median 24.50 seconds of speech inference versus 37.11
+seconds for bounded MLX Q8. Process wall was 26.16 versus 37.62 seconds. The
+Core ML transcript had 0.265% word disagreement with the MLX output, while peak
+footprint increased from 1.72 to 2.04 GB.
 
 The selected model is published at
 [`iky1e/granite-speech-5.0-470m-turboctc-coreml-q8`](https://huggingface.co/iky1e/granite-speech-5.0-470m-turboctc-coreml-q8)
@@ -177,7 +177,9 @@ CPU+GPU is the default and fastest compute policy measured on M1 Max. Use
 
 Conversion, quantization, reproducible commands, negative ANE/INT8 findings,
 checked JSON, and the benchmark PNG are in
-[`Benchmarks/coreml`](Benchmarks/coreml).
+[`Benchmarks/coreml`](Benchmarks/coreml). The current 27-run
+cross-backend data, stability statistics, and deterministic transcripts are in
+[`Benchmarks/backend-matrix`](Benchmarks/backend-matrix).
 
 ### Model downloads and disk usage
 
@@ -261,11 +263,13 @@ granite-mlx lecture.wav \
 ```
 
 The chunk and context durations are aligned to Granite's 10.24-second attention
-blocks. On the 101m59s test lecture this profile reduced macOS peak footprint
-from 34.67 GB to 1.64 GB, ran in 24.41 seconds, and had 0.169% word disagreement
+blocks. The original memory experiment reduced macOS peak footprint from 34.67
+GB to 1.64 GB and took 24.41 seconds. The current three-round interleaved
+matrix measured a 1.72 GB median peak and 37.11-second median inference under
+the newer, busier benchmark session. Both retained 0.169% word disagreement
 against the same Q8 one-pass transcript. These comparisons are diagnostics,
-not ground-truth WER. See
-[`Benchmarks/memory-optimization`](Benchmarks/memory-optimization).
+not ground-truth WER. See [`Benchmarks/memory-optimization`](Benchmarks/memory-optimization)
+and [`Benchmarks/backend-matrix`](Benchmarks/backend-matrix).
 
 Run the complete recording through the encoder in one pass with:
 
