@@ -33,23 +33,15 @@ let audio = try GraniteAudioInput.load(
     cancellationToken: cancellation
 )
 
-let recognizer = try GraniteRecognizer(
-    modelSource: GraniteModelLoader.defaultModelID,
-    cancellationToken: cancellation
-)
-let raw = try recognizer.transcribe(
-    audio,
-    activationPrecision: .fp16,
-    audioChunkDuration: 122.88,
-    audioChunkContext: 10.24,
-    cancellationToken: cancellation
-)
+let recognizer = try GraniteRecognizer(cancellationToken: cancellation)
+let raw = try recognizer.transcribe(audio, cancellationToken: cancellation)
 ```
 
 Library calls are synchronous. Run model loading and inference away from an
-application's main actor. For long recordings, specify the block-aligned chunk
-profile shown above; unlike the CLI, the lower-level recognizer API uses a
-single pass when `audioChunkDuration` is omitted.
+application's main actor. The MLX recognizer uses the same recommended FP16,
+122.88-second chunk, and 10.24-second context defaults as the CLI. Advanced
+callers can override those values; pass zero for both chunk values only when a
+complete single-pass input fits in memory.
 
 ### Use the published Core ML backend
 

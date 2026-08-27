@@ -263,6 +263,13 @@ public enum GraniteRecognizerError: Error, GraniteDiagnosticError {
 /// Public runtime façade. The model graph is intentionally added behind this
 /// stable API after the conversion manifest and tensor mapping are finalized.
 public final class GraniteRecognizer: @unchecked Sendable {
+    /// Default encoder activation precision used by the recommended runtime profile.
+    public static let defaultActivationPrecision: GraniteActivationPrecision = .fp16
+    /// Default central audio duration for bounded-memory transcription.
+    public static let defaultAudioChunkDuration = 122.88
+    /// Default context retained on each side of a bounded-memory audio chunk.
+    public static let defaultAudioChunkContext = 10.24
+
     /// Materialized checkpoint directory.
     public let modelURL: URL
     /// Loaded checkpoint artifact and configuration.
@@ -308,7 +315,7 @@ public final class GraniteRecognizer: @unchecked Sendable {
 
     /// Creates a recognizer from a local path, catalog alias, or Hugging Face ID.
     public convenience init(
-        modelSource: String,
+        modelSource: String = GraniteModelLoader.defaultModelID,
         hfToken: String? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil,
         cancellationToken: GraniteCancellationToken? = nil
@@ -324,14 +331,17 @@ public final class GraniteRecognizer: @unchecked Sendable {
         featureExtractor(audio.samples)
     }
 
-    /// Transcribes prepared audio with optional chunk progress and cancellation.
+    /// Transcribes prepared audio using the recommended bounded-memory profile.
+    ///
+    /// Pass zero for `audioChunkDuration` and `audioChunkContext` to request a
+    /// single inference pass when the complete input fits in memory.
     public func transcribe(
         _ audio: GraniteAudio,
-        activationPrecision: GraniteActivationPrecision = .baseline,
+        activationPrecision: GraniteActivationPrecision = GraniteRecognizer.defaultActivationPrecision,
         ctcVocabularyTileSize: Int = 0,
         middleCTCVocabularyTileSize: Int = 0,
-        audioChunkDuration: Double = 0,
-        audioChunkContext: Double = 0,
+        audioChunkDuration: Double = GraniteRecognizer.defaultAudioChunkDuration,
+        audioChunkContext: Double = GraniteRecognizer.defaultAudioChunkContext,
         cancellationToken: GraniteCancellationToken? = nil,
         progressHandler: GraniteOperationProgressHandler? = nil
     ) throws -> GraniteTranscription {

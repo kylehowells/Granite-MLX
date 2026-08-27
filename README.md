@@ -391,17 +391,8 @@ let audio = try GraniteAudioInput.load(
     cancellationToken: cancellation
 )
 
-let recognizer = try GraniteRecognizer(
-    modelSource: GraniteModelLoader.defaultModelID,
-    cancellationToken: cancellation
-)
-let raw = try recognizer.transcribe(
-    audio,
-    activationPrecision: .fp16,
-    audioChunkDuration: 122.88,
-    audioChunkContext: 10.24,
-    cancellationToken: cancellation
-)
+let recognizer = try GraniteRecognizer(cancellationToken: cancellation)
+let raw = try recognizer.transcribe(audio, cancellationToken: cancellation)
 
 let formatter = try GraniteTranscriptFormatterFactory.load(
     cancellationToken: cancellation

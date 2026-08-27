@@ -371,7 +371,7 @@ struct TranscribeCommand: ParsableCommand {
         } else if let coreMLRecognizer {
             chunkContext = min(20.48, coreMLRecognizer.maximumAudioDuration / 4)
         } else {
-            chunkContext = 10.24
+            chunkContext = GraniteRecognizer.defaultAudioChunkContext
         }
         let chunkDuration: Double
         if noChunking {
@@ -382,7 +382,7 @@ struct TranscribeCommand: ParsableCommand {
             chunkDuration = max(
                 0, coreMLRecognizer.maximumAudioDuration - 2 * chunkContext)
         } else {
-            chunkDuration = 122.88
+            chunkDuration = GraniteRecognizer.defaultAudioChunkDuration
         }
         let speechModelDescription = coremlModel ?? selectedModel
         let speechWeightBits = mlxRecognizer?.artifact.configuration.quantization?.bits
