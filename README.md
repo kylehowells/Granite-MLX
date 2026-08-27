@@ -406,6 +406,29 @@ let transcript = raw.applyingFormatting(formatting)
 print(transcript.text)
 ```
 
+The short `transcribe` call uses the recommended Q8-weight/FP16-activation
+bounded-memory profile. The equivalent fully explicit call is available when
+an application needs runtime tuning or progress reporting:
+
+```swift
+let raw = try recognizer.transcribe(
+    audio,
+    activationPrecision: .fp16,
+    ctcVocabularyTileSize: 0,
+    middleCTCVocabularyTileSize: 0,
+    audioChunkDuration: 122.88,
+    audioChunkContext: 10.24,
+    cancellationToken: cancellation,
+    progressHandler: { progress in
+        print("\(progress.message): \(Int(progress.fractionCompleted * 100))%")
+    }
+)
+```
+
+Pass zero for both chunk values only to request one-pass inference when the
+complete input fits in memory. Q8 describes the downloaded model weights;
+FP16 describes temporary encoder activations.
+
 Applications on macOS 15 or newer can select the published Core ML speech
 backend while retaining the same audio, transcript, timing, and formatting
 types:

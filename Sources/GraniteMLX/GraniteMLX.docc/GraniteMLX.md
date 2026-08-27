@@ -37,11 +37,29 @@ let recognizer = try GraniteRecognizer(cancellationToken: cancellation)
 let raw = try recognizer.transcribe(audio, cancellationToken: cancellation)
 ```
 
+The equivalent fully explicit call exposes performance tuning and progress:
+
+```swift
+let raw = try recognizer.transcribe(
+    audio,
+    activationPrecision: .fp16,
+    ctcVocabularyTileSize: 0,
+    middleCTCVocabularyTileSize: 0,
+    audioChunkDuration: 122.88,
+    audioChunkContext: 10.24,
+    cancellationToken: cancellation,
+    progressHandler: { progress in
+        print("\(progress.message): \(Int(progress.fractionCompleted * 100))%")
+    }
+)
+```
+
 Library calls are synchronous. Run model loading and inference away from an
 application's main actor. The MLX recognizer uses the same recommended FP16,
 122.88-second chunk, and 10.24-second context defaults as the CLI. Advanced
 callers can override those values; pass zero for both chunk values only when a
-complete single-pass input fits in memory.
+complete single-pass input fits in memory. Q8 refers to checkpoint weights;
+FP16 refers to temporary encoder activations.
 
 ### Use the published Core ML backend
 
