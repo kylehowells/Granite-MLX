@@ -141,7 +141,7 @@ final class GraniteMLXCLITests: XCTestCase {
 
         let version = try runCLI(["--version"])
         XCTAssertEqual(version.status, 0)
-        XCTAssertEqual(version.stdout.trimmingCharacters(in: .whitespacesAndNewlines), "0.1.0")
+        XCTAssertEqual(version.stdout.trimmingCharacters(in: .whitespacesAndNewlines), "0.1.1")
         XCTAssertEqual(version.stderr, "")
 
         let invalid = try runCLI(["file.wav", "--output-format", "xml"])

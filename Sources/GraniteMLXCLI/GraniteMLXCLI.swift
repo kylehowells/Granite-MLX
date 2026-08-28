@@ -155,7 +155,7 @@ struct GraniteMLXCLI: ParsableCommand {
         `granite-mlx config set backend coreml` to save it as your default.
         The published Core ML model requires macOS 15 or newer.
         """,
-        version: "0.1.0",
+        version: "0.1.1",
         subcommands: [TranscribeCommand.self, ModelsCommand.self, ConfigCommand.self],
         defaultSubcommand: TranscribeCommand.self
     )
