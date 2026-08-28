@@ -306,6 +306,7 @@ struct TranscribeCommand: ParsableCommand {
         }
         let resolver = OutputPathResolver()
         let effectiveHFToken = hfToken ?? ProcessInfo.processInfo.environment["HF_TOKEN"]
+        let modelStorage = GraniteModelStorage.default
 
         Memory.cacheLimit = mlxCacheLimitMB * 1_024 * 1_024
         Memory.clearCache()
@@ -336,6 +337,7 @@ struct TranscribeCommand: ParsableCommand {
                 } else {
                     let artifact = try GraniteCoreMLModelLoader.load(
                         source: selectedModel,
+                        storage: modelStorage,
                         hfToken: effectiveHFToken,
                         progressHandler: downloadReporter.handler,
                         cancellationToken: cancellationToken)
@@ -354,7 +356,8 @@ struct TranscribeCommand: ParsableCommand {
             coreMLArtifact = nil
             do {
                 mlxRecognizer = try GraniteRecognizer(
-                    modelSource: selectedModel, hfToken: effectiveHFToken,
+                    modelSource: selectedModel, storage: modelStorage,
+                    hfToken: effectiveHFToken,
                     progressHandler: downloadReporter.handler,
                     cancellationToken: cancellationToken)
             } catch {
@@ -395,7 +398,8 @@ struct TranscribeCommand: ParsableCommand {
             let start = Date()
             do {
                 formatter = try GraniteTranscriptFormatterFactory.load(
-                    modelSource: punctuationModel, hfToken: effectiveHFToken,
+                    modelSource: punctuationModel, storage: modelStorage,
+                    hfToken: effectiveHFToken,
                     progressHandler: downloadReporter.handler,
                     cancellationToken: cancellationToken)
             } catch {

@@ -104,15 +104,11 @@ public struct GraniteCoreMLPerformance: Codable, Sendable, Equatable {
 /// ``GraniteRecognizer`` and returns one greedy CTC token ID per output frame.
 public final class GraniteCoreMLRecognizer: @unchecked Sendable {
     /// Default directory used for persistent, OS-specific compiled Core ML models.
-    /// Set `GRANITE_MLX_COREML_CACHE_DIRECTORY` before process launch to use an
-    /// isolated location for an application or test.
+    /// This compatibility property follows ``GraniteModelStorage/default``.
     public static var defaultCompiledModelCacheURL: URL {
-        if let path = ProcessInfo.processInfo.environment[
-            "GRANITE_MLX_COREML_CACHE_DIRECTORY"] {
-            return URL(fileURLWithPath: path).standardizedFileURL
-        }
-        return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("GraniteMLX/CoreML", isDirectory: true)
+        GraniteModelStorage.default.compiledCoreMLDirectory
+            ?? FileManager.default.temporaryDirectory.appendingPathComponent(
+                "GraniteMLX/CoreML", isDirectory: true)
     }
 
     /// Core ML model package used for speech inference.
@@ -167,7 +163,7 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
         do {
             let modelConfiguration = MLModelConfiguration()
             modelConfiguration.computeUnits = computeUnits.coreMLValue
-            if #available(macOS 15.0, *) {
+            if #available(macOS 15.0, iOS 18.0, tvOS 18.0, visionOS 2.0, *) {
                 modelConfiguration.optimizationHints.specializationStrategy = .fastPrediction
             }
             let loadURL: URL
@@ -210,23 +206,56 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
     /// - Parameters:
     ///   - modelSource: Catalog alias, Hugging Face repository ID, or local
     ///     repository directory containing `coreml_config.json`.
+    ///   - storage: Explicit model, transfer-cache, and compiled-model locations.
     ///   - computeUnits: Core ML device-placement policy.
     ///   - hfToken: Optional Hugging Face token for private or gated models.
-    ///   - compiledModelCacheURL: Persistent compiled-model cache directory.
     ///   - progressHandler: Optional model-download progress callback.
     ///   - cancellationToken: Optional cooperative cancellation token.
     /// - Throws: Errors from ``GraniteCoreMLModelLoader`` or the designated
     ///   initializer when acquisition, validation, compilation, or loading fails.
     public convenience init(
         modelSource: String = GraniteCoreMLModelLoader.defaultModelID,
+        storage: GraniteModelStorage = .default,
         computeUnits: GraniteCoreMLComputeUnits = .cpuAndGPU,
         hfToken: String? = nil,
-        compiledModelCacheURL: URL? = GraniteCoreMLRecognizer.defaultCompiledModelCacheURL,
         progressHandler: GraniteModelDownloadProgressHandler? = nil,
         cancellationToken: GraniteCancellationToken? = nil
     ) throws {
         let artifact = try GraniteCoreMLModelLoader.load(
             source: modelSource,
+            storage: storage,
+            hfToken: hfToken,
+            progressHandler: progressHandler,
+            cancellationToken: cancellationToken)
+        try self.init(
+            artifact: artifact,
+            computeUnits: computeUnits,
+            compiledModelCacheURL: storage.compiledCoreMLDirectory)
+    }
+
+    /// Downloads or loads a Core ML model while overriding compiled-model storage.
+    /// - Parameters:
+    ///   - modelSource: Catalog alias, Hugging Face repository ID, or local repository.
+    ///   - storage: Explicit model and transfer-cache locations.
+    ///   - computeUnits: Core ML device-placement policy.
+    ///   - hfToken: Optional Hugging Face token for private or gated models.
+    ///   - compiledModelCacheURL: Persistent compilation directory, or `nil` for
+    ///     temporary compilation output.
+    ///   - progressHandler: Optional model-download progress callback.
+    ///   - cancellationToken: Optional cooperative cancellation token.
+    /// - Throws: Model acquisition, validation, compilation, and loading errors.
+    public convenience init(
+        modelSource: String = GraniteCoreMLModelLoader.defaultModelID,
+        storage: GraniteModelStorage = .default,
+        computeUnits: GraniteCoreMLComputeUnits = .cpuAndGPU,
+        hfToken: String? = nil,
+        compiledModelCacheURL: URL?,
+        progressHandler: GraniteModelDownloadProgressHandler? = nil,
+        cancellationToken: GraniteCancellationToken? = nil
+    ) throws {
+        let artifact = try GraniteCoreMLModelLoader.load(
+            source: modelSource,
+            storage: storage,
             hfToken: hfToken,
             progressHandler: progressHandler,
             cancellationToken: cancellationToken)
@@ -436,12 +465,15 @@ public final class GraniteCoreMLRecognizer: @unchecked Sendable {
             let input = try MLMultiArray(
                 shape: [1, NSNumber(value: featureFrameCount), 320],
                 dataType: .float16)
-            let values = features.asArray(Float16.self)
-            let pointer = input.dataPointer.bindMemory(
-                to: Float16.self, capacity: input.count)
-            pointer.initialize(repeating: 0, count: input.count)
-            values.withUnsafeBufferPointer {
-                pointer.update(from: $0.baseAddress!, count: $0.count)
+            let featureData = features.asData()
+            let inputBytes = input.count * MemoryLayout<Float16>.stride
+            input.dataPointer.initializeMemory(
+                as: UInt8.self, repeating: 0, count: inputBytes)
+            featureData.data.withUnsafeBytes { source in
+                guard let baseAddress = source.baseAddress else { return }
+                input.dataPointer.copyMemory(
+                    from: baseAddress,
+                    byteCount: min(source.count, inputBytes))
             }
             lastPerformance.inputCopySeconds +=
                 ProcessInfo.processInfo.systemUptime - inputStart

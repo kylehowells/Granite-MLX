@@ -1,5 +1,6 @@
 import Foundation
 import Hub
+import HuggingFace
 
 /// Functional role of a managed GraniteMLX checkpoint.
 public enum GraniteManagedModelKind: String, Codable, Sendable {
@@ -138,6 +139,8 @@ public struct GraniteCachedModel: Codable, Sendable {
     public let sizeBytes: Int64
     /// Logical size of the compiled Core ML cache associated with this model.
     public let compiledCacheBytes: Int64
+    /// Logical size of the repository's shared Hugging Face transfer cache.
+    public let downloadCacheBytes: Int64
     /// Matching catalog alias, if this is a published GraniteMLX checkpoint.
     public let catalogAlias: String?
     /// Completeness state of the materialized checkpoint.
@@ -310,51 +313,67 @@ public enum GraniteModelCatalog {
 
 /// Inspects, downloads, validates, and removes GraniteMLX model cache entries.
 public enum GraniteModelCache {
-    private static var hubDirectory: URL? {
-        ProcessInfo.processInfo.environment["GRANITE_MLX_HUB_DIRECTORY"].map {
-            URL(fileURLWithPath: $0).standardizedFileURL
-        }
-    }
-
-    private static func hub(hfToken: String? = nil) -> HubApi {
-        HubApi(downloadBase: hubDirectory, hfToken: hfToken)
+    private static func hub(
+        storage: GraniteModelStorage,
+        hfToken: String? = nil
+    ) -> HubApi {
+        HubApi(
+            downloadBase: storage.hubDirectory,
+            cache: storage.downloadCacheDirectory.map(HubCache.init(cacheDirectory:)),
+            hfToken: hfToken)
     }
 
     /// Root of the Swift Hub materialized model cache.
     ///
-    /// Set `GRANITE_MLX_HUB_DIRECTORY` to override the parent Hugging Face
-    /// directory. This is useful for isolated application and test caches.
+    /// This compatibility property uses ``GraniteModelStorage/default``. Use
+    /// ``rootDirectory(storage:)`` when an application owns explicit storage.
     public static var rootDirectory: URL {
-        let hub = hub()
-        return hub.localRepoLocation(.init(id: "placeholder/repository"))
-            .deletingLastPathComponent().deletingLastPathComponent()
+        rootDirectory(storage: .default)
+    }
+
+    /// Returns the materialized model root for an explicit storage configuration.
+    /// - Parameter storage: Locations owned or selected by the calling application.
+    /// - Returns: Directory containing model-owner subdirectories.
+    public static func rootDirectory(
+        storage: GraniteModelStorage
+    ) -> URL {
+        storage.modelsDirectory
     }
 
     /// Returns the materialized cache directory for a Hugging Face repository ID.
-    /// - Parameter repositoryID: Full `owner/repository` identifier.
+    /// - Parameters:
+    ///   - repositoryID: Full `owner/repository` identifier.
+    ///   - storage: Explicit model and transfer-cache locations.
     /// - Returns: Standardized local Hub materialization directory. The directory
     ///   is not created by this lookup.
     /// - Throws: ``GraniteModelManagementError/invalidRepositoryID(_:)`` when the
     ///   identifier does not have a safe `owner/repository` form.
-    public static func directory(for repositoryID: String) throws -> URL {
+    public static func directory(
+        for repositoryID: String,
+        storage: GraniteModelStorage = .default
+    ) throws -> URL {
         guard isValidRepositoryID(repositoryID) else {
             throw GraniteModelManagementError.invalidRepositoryID(repositoryID)
         }
-        return hub().localRepoLocation(.init(id: repositoryID)).standardizedFileURL
+        return hub(storage: storage).localRepoLocation(
+            .init(id: repositoryID)).standardizedFileURL
     }
 
     /// Returns the current completeness state for a model cache entry.
     /// - Parameters:
     ///   - repositoryID: Full Hugging Face repository identifier.
     ///   - kind: Expected checkpoint role, or `nil` to accept any recognized role.
+    ///   - storage: Explicit model and cache locations to inspect.
     /// - Returns: ``GraniteModelCacheState/absent``,
     ///   ``GraniteModelCacheState/partial``, or
     ///   ``GraniteModelCacheState/downloaded`` after local validation.
     public static func state(
         of repositoryID: String,
-        kind: GraniteManagedModelKind? = nil
+        kind: GraniteManagedModelKind? = nil,
+        storage: GraniteModelStorage = .default
     ) -> GraniteModelCacheState {
-        guard let directory = try? directory(for: repositoryID) else { return .absent }
+        guard let directory = try? directory(
+            for: repositoryID, storage: storage) else { return .absent }
         return state(at: directory, kind: kind)
     }
 
@@ -372,17 +391,25 @@ public enum GraniteModelCache {
     /// - Parameters:
     ///   - repositoryID: Full Hugging Face repository identifier.
     ///   - kind: Expected checkpoint role, or `nil` for any recognized role.
+    ///   - storage: Explicit model and cache locations to inspect.
     /// - Returns: `true` only when all required files and configuration validate.
-    public static func isDownloaded(_ repositoryID: String, kind: GraniteManagedModelKind? = nil) -> Bool {
-        state(of: repositoryID, kind: kind) == .downloaded
+    public static func isDownloaded(
+        _ repositoryID: String,
+        kind: GraniteManagedModelKind? = nil,
+        storage: GraniteModelStorage = .default
+    ) -> Bool {
+        state(of: repositoryID, kind: kind, storage: storage) == .downloaded
     }
 
     /// Lists complete and partial catalog checkpoints plus compatible custom checkpoints.
+    /// - Parameter storage: Explicit model and compiled-cache locations to inspect.
     /// - Returns: Cached model records sorted case-insensitively by repository ID.
-    public static func downloadedModels() -> [GraniteCachedModel] {
+    public static func downloadedModels(
+        storage: GraniteModelStorage = .default
+    ) -> [GraniteCachedModel] {
         let manager = FileManager.default
         guard let owners = try? manager.contentsOfDirectory(
-            at: rootDirectory, includingPropertiesForKeys: [.isDirectoryKey],
+            at: rootDirectory(storage: storage), includingPropertiesForKeys: [.isDirectoryKey],
             options: [.skipsHiddenFiles]) else { return [] }
         var result: [GraniteCachedModel] = []
         for owner in owners where isDirectory(owner) {
@@ -398,7 +425,9 @@ public enum GraniteModelCache {
                     directory: repository,
                     sizeBytes: directorySize(repository),
                     compiledCacheBytes: compiledCacheSize(
-                        at: repository, kind: kind),
+                        at: repository, kind: kind, storage: storage),
+                    downloadCacheBytes: downloadCacheSize(
+                        for: repositoryID, storage: storage),
                     catalogAlias: GraniteModelCatalog.model(for: repositoryID)?.alias,
                     state: .downloaded,
                     stateDetails: nil))
@@ -406,13 +435,16 @@ public enum GraniteModelCache {
         }
         let existingIDs = Set(result.map { $0.repositoryID.lowercased() })
         for model in GraniteModelCatalog.models where !existingIDs.contains(model.repositoryID.lowercased()) {
-            guard let directory = try? directory(for: model.repositoryID),
+            guard let directory = try? directory(
+                for: model.repositoryID, storage: storage),
                   FileManager.default.fileExists(atPath: directory.path) else { continue }
             result.append(GraniteCachedModel(
                 repositoryID: model.repositoryID, kind: model.kind,
                 directory: directory, sizeBytes: directorySize(directory),
                 compiledCacheBytes: compiledCacheSize(
-                    at: directory, kind: model.kind),
+                    at: directory, kind: model.kind, storage: storage),
+                downloadCacheBytes: downloadCacheSize(
+                    for: model.repositoryID, storage: storage),
                 catalogAlias: model.alias, state: .partial,
                 stateDetails: cacheValidationDetails(at: directory, kind: model.kind)))
         }
@@ -424,6 +456,7 @@ public enum GraniteModelCache {
     /// - Parameters:
     ///   - aliasOrID: Catalog alias or Hugging Face repository ID.
     ///   - requestedKind: Explicit model role for custom repositories.
+    ///   - storage: Explicit materialization, transfer-cache, and Core ML locations.
     ///   - hfToken: Optional Hugging Face token. When `nil`, Hub environment-token resolution applies.
     ///   - cancellationToken: Optional cooperative cancellation token.
     ///   - progressHandler: Optional download progress callback.
@@ -435,6 +468,7 @@ public enum GraniteModelCache {
     public static func download(
         _ aliasOrID: String,
         kind requestedKind: GraniteManagedModelKind? = nil,
+        storage: GraniteModelStorage = .default,
         hfToken: String? = nil,
         cancellationToken: GraniteCancellationToken? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil
@@ -443,7 +477,7 @@ public enum GraniteModelCache {
         let id = resolved.id
         let kind = requestedKind ?? resolved.model?.kind ?? inferredKind(from: id)
         let expectedBytes = resolved.model?.expectedBytes
-        let destination = try directory(for: id)
+        let destination = try directory(for: id, storage: storage)
         let event: @Sendable (GraniteModelDownloadPhase, Double, Double?) -> Void = { phase, fraction, speed in
             progressHandler?(GraniteModelDownloadProgress(
                 repositoryID: id, kind: kind, cacheDirectory: destination,
@@ -451,13 +485,13 @@ public enum GraniteModelCache {
                 estimatedTotalBytes: expectedBytes, bytesPerSecond: speed))
         }
         try cancellationToken?.checkCancellation(operation: "Model download")
-        if isDownloaded(id, kind: kind) {
+        if isDownloaded(id, kind: kind, storage: storage) {
             event(.cacheHit, 1, nil)
             return destination
         }
         event(.checking, 0, nil)
         try preflightDiskSpace(at: destination, expectedBytes: expectedBytes)
-        let hub = hub(hfToken: hfToken)
+        let hub = hub(storage: storage, hfToken: hfToken)
         let patterns: [String] = switch kind {
         case .punctuation:
             ["*.safetensors", "*.json", "*.model", "*.yaml"]
@@ -501,32 +535,44 @@ public enum GraniteModelCache {
 
     /// Permanently removes one exact materialized Hub repository directory.
     /// It can be restored by downloading the repository again.
-    /// - Parameter aliasOrID: Catalog alias or exact repository ID to remove.
+    /// - Parameters:
+    ///   - aliasOrID: Catalog alias or exact repository ID to remove.
+    ///   - storage: Explicit model and compiled-cache locations to modify.
     /// - Returns: Metadata and reclaimed-size information captured before removal.
     /// - Throws: ``GraniteModelManagementError`` when resolution fails, no cache
     ///   exists, or the model and associated compiled Core ML cache cannot be removed.
     @discardableResult
-    public static func remove(_ aliasOrID: String) throws -> GraniteCachedModel {
+    public static func remove(
+        _ aliasOrID: String,
+        storage: GraniteModelStorage = .default
+    ) throws -> GraniteCachedModel {
         let resolved = try GraniteModelCatalog.resolve(aliasOrID)
-        let destination = try directory(for: resolved.id)
+        let destination = try directory(for: resolved.id, storage: storage)
         guard FileManager.default.fileExists(atPath: destination.path) else {
             throw GraniteModelManagementError.notDownloaded(resolved.id)
         }
         let kind = detectedKind(at: destination) ?? resolved.model?.kind ?? inferredKind(from: resolved.id)
-        let cacheState = state(of: resolved.id, kind: kind)
+        let cacheState = state(of: resolved.id, kind: kind, storage: storage)
         let record = GraniteCachedModel(
             repositoryID: resolved.id, kind: kind, directory: destination,
             sizeBytes: directorySize(destination),
-            compiledCacheBytes: compiledCacheSize(at: destination, kind: kind),
+            compiledCacheBytes: compiledCacheSize(
+                at: destination, kind: kind, storage: storage),
+            downloadCacheBytes: downloadCacheSize(
+                for: resolved.id, storage: storage),
             catalogAlias: resolved.model?.alias,
             state: cacheState,
             stateDetails: cacheState == .partial ? cacheValidationDetails(at: destination, kind: kind) : nil)
         do {
             if kind == .coreMLSpeech,
                let package = coreMLPackageURL(at: destination) {
-                try GraniteCoreMLRecognizer.removeCompiledModelCache(for: package)
+                if let compiledDirectory = storage.compiledCoreMLDirectory {
+                    try GraniteCoreMLRecognizer.removeCompiledModelCache(
+                        for: package, cacheDirectory: compiledDirectory)
+                }
             }
             try FileManager.default.removeItem(at: destination)
+            try removeDownloadCache(for: resolved.id, storage: storage)
         }
         catch {
             throw GraniteModelManagementError.removalFailed(
@@ -534,6 +580,42 @@ public enum GraniteModelCache {
                 details: String(reflecting: error))
         }
         return record
+    }
+
+    /// Returns the logical size of one repository's shared transfer cache.
+    /// - Parameters:
+    ///   - repositoryID: Full `owner/repository` identifier.
+    ///   - storage: Explicit transfer-cache location to inspect.
+    /// - Returns: Bytes used by blobs, references, snapshots, and metadata.
+    public static func downloadCacheSize(
+        for repositoryID: String,
+        storage: GraniteModelStorage = .default
+    ) -> Int64 {
+        guard let locations = try? downloadCacheLocations(
+            for: repositoryID, storage: storage) else { return 0 }
+        return locations.reduce(0) { $0 + directorySize($1) }
+    }
+
+    /// Removes one repository's shared Hugging Face transfer-cache entries.
+    /// - Parameters:
+    ///   - repositoryID: Full `owner/repository` identifier.
+    ///   - storage: Explicit transfer-cache location to modify.
+    /// - Returns: Number of logical bytes present before removal.
+    /// - Throws: ``GraniteModelManagementError/invalidRepositoryID(_:)`` or an
+    ///   underlying filesystem error when an entry cannot be removed.
+    @discardableResult
+    public static func removeDownloadCache(
+        for repositoryID: String,
+        storage: GraniteModelStorage = .default
+    ) throws -> Int64 {
+        let locations = try downloadCacheLocations(
+            for: repositoryID, storage: storage)
+        let bytes = locations.reduce(0) { $0 + directorySize($1) }
+        for location in locations where FileManager.default.fileExists(
+            atPath: location.path) {
+            try FileManager.default.removeItem(at: location)
+        }
+        return bytes
     }
 
     /// Recursively computes logical file size without following symbolic links.
@@ -748,11 +830,32 @@ public enum GraniteModelCache {
     }
 
     private static func compiledCacheSize(
-        at directory: URL, kind: GraniteManagedModelKind
+        at directory: URL,
+        kind: GraniteManagedModelKind,
+        storage: GraniteModelStorage
     ) -> Int64 {
         guard kind == .coreMLSpeech,
+              let compiledDirectory = storage.compiledCoreMLDirectory,
               let package = coreMLPackageURL(at: directory) else { return 0 }
-        return GraniteCoreMLRecognizer.compiledModelCacheSize(for: package)
+        return GraniteCoreMLRecognizer.compiledModelCacheSize(
+            for: package, cacheDirectory: compiledDirectory)
+    }
+
+    private static func downloadCacheLocations(
+        for repositoryID: String,
+        storage: GraniteModelStorage
+    ) throws -> [URL] {
+        guard isValidRepositoryID(repositoryID) else {
+            throw GraniteModelManagementError.invalidRepositoryID(repositoryID)
+        }
+        guard let cacheDirectory = storage.downloadCacheDirectory else { return [] }
+        let parts = repositoryID.split(separator: "/", omittingEmptySubsequences: false)
+        let cache = HubCache(cacheDirectory: cacheDirectory)
+        let id = Repo.ID(namespace: String(parts[0]), name: String(parts[1]))
+        let repository = cache.repoDirectory(repo: id, kind: .model)
+        let metadata = cacheDirectory.appendingPathComponent(
+            ".metadata/models--\(parts[0])--\(parts[1])", isDirectory: true)
+        return [repository, metadata]
     }
 
     static func weightedDownloadFraction(

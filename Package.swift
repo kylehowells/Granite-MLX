@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Granite-MLX",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "GraniteMLX", targets: ["GraniteMLX"]),
         .executable(name: "granite-mlx", targets: ["GraniteMLXCLI"]),
@@ -11,6 +11,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/ml-explore/mlx-swift.git", exact: "0.31.4"),
         .package(url: "https://github.com/huggingface/swift-transformers.git", exact: "1.3.3"),
+        .package(url: "https://github.com/huggingface/swift-huggingface.git", exact: "0.9.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.8.2"),
         .package(url: "https://github.com/swiftlang/swift-docc-plugin", exact: "1.5.0"),
     ],
@@ -21,6 +22,7 @@ let package = Package(
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift"),
                 .product(name: "Hub", package: "swift-transformers"),
+                .product(name: "HuggingFace", package: "swift-huggingface"),
                 .product(name: "Tokenizers", package: "swift-transformers"),
             ]
         ),

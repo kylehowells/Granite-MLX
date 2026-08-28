@@ -28,6 +28,7 @@ public enum GraniteModelLoader {
     ///   - source: Local converted checkpoint directory, catalog alias, or
     ///     Hugging Face repository ID. The recommended Q8 checkpoint is used
     ///     when omitted.
+    ///   - storage: Explicit model and transfer-cache locations.
     ///   - hfToken: Optional Hugging Face token for private or gated repositories.
     ///   - progressHandler: Receives model cache and byte-weighted download events.
     ///   - cancellationToken: Cooperatively cancels model acquisition.
@@ -37,6 +38,7 @@ public enum GraniteModelLoader {
     ///   ``GraniteOperationError`` for cancellation and wrapped loading errors.
     public static func load(
         source: String = defaultModelID,
+        storage: GraniteModelStorage = .default,
         hfToken: String? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil,
         cancellationToken: GraniteCancellationToken? = nil
@@ -47,7 +49,7 @@ public enum GraniteModelLoader {
             return try load(from: localURL)
         }
         let directory = try GraniteModelCache.download(
-            source, kind: .speech, hfToken: hfToken,
+            source, kind: .speech, storage: storage, hfToken: hfToken,
             cancellationToken: cancellationToken, progressHandler: progressHandler)
         try cancellationToken?.checkCancellation(operation: "Speech model loading")
         return try load(from: directory)

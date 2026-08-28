@@ -137,6 +137,7 @@ public enum GraniteAudioInput {
                 message: "Loaded \(url.lastPathComponent)"))
             return audio
         } catch let directError {
+            #if os(macOS)
             try cancellationToken?.checkCancellation(operation: "Audio loading")
             let audio = try loadWithFFmpeg(
                 url: url, targetSampleRate: targetSampleRate,
@@ -146,6 +147,9 @@ public enum GraniteAudioInput {
                 phase: .loadingAudio, fractionCompleted: 1,
                 message: "Loaded \(url.lastPathComponent) with ffmpeg"))
             return audio
+            #else
+            throw directError
+            #endif
         }
     }
 
@@ -217,6 +221,7 @@ public enum GraniteAudioInput {
         return Array(UnsafeBufferPointer(start: outputData, count: Int(outputBuffer.frameLength)))
     }
 
+    #if os(macOS)
     private static func loadWithFFmpeg(
         url: URL,
         targetSampleRate: Int,
@@ -299,4 +304,5 @@ public enum GraniteAudioInput {
             return data
         }
     }
+    #endif
 }

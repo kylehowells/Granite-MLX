@@ -470,6 +470,14 @@ corruption without depending on the public service.
   cache-safe model detection, confirmation, `--yes`, and `remove --all`.
 - [x] Display `[ ]` for absent, `[x]` for complete, and `[-]` for partial cache
   entries, with repair and removal commands for partial entries.
+- [x] Add a platform-independent `GraniteModelStorage` API covering materialized
+  repositories, the shared Hugging Face transfer cache, and compiled Core ML
+  artifacts. Thread it through model browsing, download, removal, MLX loading,
+  formatting, and Core ML loading; retain environment variables only as optional
+  CLI defaults.
+- [x] Add a storage-bound `GraniteModelManager` suitable for macOS, iOS, and
+  iPadOS model-management interfaces, with catalog browsing, state inspection,
+  progress/cancellation-aware download, installed-model listing, and removal.
 
 ### CLI polish and stable behavior
 
@@ -519,14 +527,14 @@ corruption without depending on the public service.
 - [x] Add and validate a DocC catalog, document every exported Swift declaration,
   and add a repeatable warnings-as-errors documentation check.
 - [x] Create local implementation and release-hardening commits.
-- [ ] Create the `kylehowells/Granite-MLX` GitHub remote and push the repository.
+- [x] Create the `kylehowells/Granite-MLX` GitHub remote and push the repository.
 
 ### CI and GitHub Releases
 
-- [ ] Add GitHub Actions for `swift test`, `swift build -c release`, and macOS
-  Apple Silicon validation.
-- [ ] Build/package the required MLX Metal library as part of the release workflow.
-- [ ] Add a repeatable release script that produces a versioned archive containing
+- [x] Add GitHub Actions for `swift test`, `swift build -c release`, macOS
+  Apple Silicon validation, and an iOS Simulator library build.
+- [x] Build/package the required MLX Metal library as part of the release workflow.
+- [x] Add a repeatable release script that produces a versioned archive containing
   the executable, required runtime assets, license, and concise installation notes.
 - [ ] Create the first semantic-version tag, provisionally `0.1.0`.
 - [ ] Publish the archive and SHA-256 checksum in a GitHub Release.

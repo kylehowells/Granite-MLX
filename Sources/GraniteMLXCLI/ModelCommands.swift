@@ -113,6 +113,7 @@ private struct ModelListRecord: Encodable {
     let expectedBytes: Int64?
     let downloadedBytes: Int64?
     let compiledCacheBytes: Int64?
+    let downloadCacheBytes: Int64?
     let cacheDirectory: String
 }
 
@@ -149,6 +150,9 @@ struct ModelsListCommand: ParsableCommand {
                 expectedBytes: model.expectedBytes,
                 downloadedBytes: installed?.sizeBytes,
                 compiledCacheBytes: installed?.compiledCacheBytes,
+                downloadCacheBytes: installed?.downloadCacheBytes
+                    ?? GraniteModelCache.downloadCacheSize(
+                        for: model.repositoryID),
                 cacheDirectory: (try? GraniteModelCache.directory(for: model.repositoryID).path) ?? "")
         }
         let catalogIDs = Set(GraniteModelCatalog.models.map { $0.repositoryID.lowercased() })
@@ -163,6 +167,7 @@ struct ModelsListCommand: ParsableCommand {
                 expectedBytes: nil,
                 downloadedBytes: installed.sizeBytes,
                 compiledCacheBytes: installed.compiledCacheBytes,
+                downloadCacheBytes: installed.downloadCacheBytes,
                 cacheDirectory: installed.directory.path)
         })
 
@@ -184,21 +189,27 @@ struct ModelsListCommand: ParsableCommand {
             default: "[ ]"
             }
             let defaultMarker = record.isDefault ? "yes" : ""
-            let bytes = (record.downloadedBytes ?? record.expectedBytes ?? 0)
+            let actualBytes = (record.downloadedBytes ?? 0)
                 + (record.compiledCacheBytes ?? 0)
+                + (record.downloadCacheBytes ?? 0)
+            let bytes = actualBytes > 0 ? actualBytes : (record.expectedBytes ?? 0)
             let size = bytes > 0 ? formatBytes(bytes) : "unknown"
             let name = record.alias.map { "\($0)  [\(record.repositoryID)]" } ?? record.repositoryID
             print("\(padded(status, to: 7)) \(padded(defaultMarker, to: 4)) \(padded(record.kind, to: 14)) \(padded(record.precision ?? "custom", to: 11)) \(padded(size, to: 10)) \(name)")
             if let compiled = record.compiledCacheBytes, compiled > 0 {
                 print("        Includes \(formatBytes(compiled)) compiled Core ML cache.")
             }
+            if let transfer = record.downloadCacheBytes, transfer > 0 {
+                print("        Includes \(formatBytes(transfer)) shared download cache.")
+            }
             if record.cacheState == GraniteModelCacheState.partial.rawValue,
                let details = record.stateDetails {
                 print("        Repair with `granite-mlx models download \(record.alias ?? record.repositoryID)`. Details: \(details)")
             }
         }
-        let total = cached.values.reduce(Int64(0)) {
-            $0 + $1.sizeBytes + $1.compiledCacheBytes
+        let total = records.reduce(Int64(0)) {
+            $0 + ($1.downloadedBytes ?? 0) + ($1.compiledCacheBytes ?? 0)
+                + ($1.downloadCacheBytes ?? 0)
         }
         print("")
         let completeCount = cached.values.filter { $0.state == .downloaded }.count
@@ -298,7 +309,7 @@ struct ModelsRemoveCommand: ParsableCommand {
             return
         }
         let bytes = targets.reduce(Int64(0)) {
-            $0 + $1.sizeBytes + $1.compiledCacheBytes
+            $0 + $1.sizeBytes + $1.compiledCacheBytes + $1.downloadCacheBytes
         }
         if !yes {
             guard isatty(STDIN_FILENO) != 0 else {
@@ -313,6 +324,7 @@ struct ModelsRemoveCommand: ParsableCommand {
         for target in targets {
             let removed = try GraniteModelCache.remove(target.repositoryID)
             let removedBytes = removed.sizeBytes + removed.compiledCacheBytes
+                + removed.downloadCacheBytes
             print("Removed \(removed.repositoryID) (\(formatBytes(removedBytes))).")
         }
         print("Reclaimed \(formatBytes(bytes)). Models can be downloaded again at any time.")

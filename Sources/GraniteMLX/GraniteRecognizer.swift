@@ -380,6 +380,7 @@ public final class GraniteRecognizer: @unchecked Sendable {
     ///   - modelSource: Local checkpoint directory, a catalog alias such as
     ///     `apache-q8`, or a Hugging Face repository ID. The recommended Q8
     ///     checkpoint is downloaded and cached when omitted.
+    ///   - storage: Explicit model and transfer-cache locations.
     ///   - hfToken: Optional Hugging Face token for private or gated repositories.
     ///     Avoid embedding long-lived tokens in application source.
     ///   - progressHandler: Receives byte-weighted model-download progress. It
@@ -390,12 +391,13 @@ public final class GraniteRecognizer: @unchecked Sendable {
     ///   cancellation errors produced while acquiring and initializing the model.
     public convenience init(
         modelSource: String = GraniteModelLoader.defaultModelID,
+        storage: GraniteModelStorage = .default,
         hfToken: String? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil,
         cancellationToken: GraniteCancellationToken? = nil
     ) throws {
         let artifact = try GraniteModelLoader.load(
-            source: modelSource, hfToken: hfToken,
+            source: modelSource, storage: storage, hfToken: hfToken,
             progressHandler: progressHandler, cancellationToken: cancellationToken)
         try self.init(modelURL: artifact.directory)
     }

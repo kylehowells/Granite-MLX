@@ -54,6 +54,7 @@ public enum GraniteTranscriptFormatterFactory {
     /// - Parameters:
     ///   - modelSource: Local checkpoint directory, catalog alias, or Hugging
     ///     Face repository ID. The recommended Q8 formatter is used when omitted.
+    ///   - storage: Explicit model and transfer-cache locations.
     ///   - hfToken: Optional Hugging Face token for private or gated repositories.
     ///   - progressHandler: Receives model cache and download events.
     ///   - cancellationToken: Cooperatively cancels model acquisition.
@@ -62,12 +63,14 @@ public enum GraniteTranscriptFormatterFactory {
     ///   cancellation errors produced while constructing the formatter.
     public static func load(
         modelSource: String = PunctuationModelLoader.defaultModelID,
+        storage: GraniteModelStorage = .default,
         hfToken: String? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil,
         cancellationToken: GraniteCancellationToken? = nil
     ) throws -> any GraniteTranscriptFormatter {
         try PunctuationFormatter(
             modelSource: modelSource,
+            storage: storage,
             hfToken: hfToken,
             progressHandler: progressHandler,
             cancellationToken: cancellationToken)

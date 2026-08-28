@@ -68,3 +68,25 @@ jobs:
             echo "Model-free CI unexpectedly downloaded model data." >&2
             exit 1
           fi
+
+  ios-library:
+    name: iOS library build
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+          test "$(uname -m)" = arm64
+
+      - name: Build GraniteMLX for iOS Simulator
+        run: |
+          xcodebuild \
+            -scheme GraniteMLX \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/granite-mlx-ios-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            build

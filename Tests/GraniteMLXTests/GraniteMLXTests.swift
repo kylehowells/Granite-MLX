@@ -192,6 +192,89 @@ final class GraniteMLXTests: XCTestCase {
         XCTAssertThrowsError(try GraniteModelCatalog.resolve("not-a-model"))
     }
 
+    func testExplicitModelStorageRoutesEveryManagementOperation() throws {
+        let temporary = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        let storage = GraniteModelStorage(
+            hubDirectory: temporary.appendingPathComponent("materialized"),
+            downloadCacheDirectory: temporary.appendingPathComponent("transfers"),
+            compiledCoreMLDirectory: temporary.appendingPathComponent("compiled"))
+        let manager = GraniteModelManager(storage: storage)
+        let repositoryID = "example/granite-fixture"
+        let repository = try manager.directory(for: repositoryID)
+
+        XCTAssertEqual(
+            manager.modelsDirectory.resolvingSymlinksInPath().path,
+            storage.hubDirectory.appendingPathComponent("models")
+                .resolvingSymlinksInPath().path)
+        XCTAssertEqual(
+            repository,
+            storage.hubDirectory.appendingPathComponent(
+                "models/example/granite-fixture"))
+        XCTAssertEqual(manager.availableModels, GraniteModelCatalog.models)
+        XCTAssertEqual(manager.state(of: repositoryID, kind: .speech), .absent)
+
+        try FileManager.default.createDirectory(
+            at: repository, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(
+            to: repository.appendingPathComponent("tokenizer.json"))
+        try Data(#"{"model_type":"granite_speech5_ctc"}"#.utf8).write(
+            to: repository.appendingPathComponent("config.json"))
+        try writeMinimalSafetensors(
+            to: repository.appendingPathComponent("model.safetensors"),
+            tensors: ["encoder.input_linear.weight", "encoder.out.weight"])
+        let transferRepository = try XCTUnwrap(storage.downloadCacheDirectory)
+            .appendingPathComponent(
+                "models--example--granite-fixture", isDirectory: true)
+        let transferMetadata = try XCTUnwrap(storage.downloadCacheDirectory)
+            .appendingPathComponent(
+                ".metadata/models--example--granite-fixture", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: transferRepository, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: transferMetadata, withIntermediateDirectories: true)
+        try Data(repeating: 1, count: 512).write(
+            to: transferRepository.appendingPathComponent("blob"))
+        try Data(repeating: 2, count: 256).write(
+            to: transferMetadata.appendingPathComponent("metadata"))
+
+        XCTAssertTrue(manager.isDownloaded(repositoryID, kind: .speech))
+        XCTAssertEqual(manager.downloadCacheSize(for: repositoryID), 768)
+        let cached = try XCTUnwrap(manager.downloadedModels().first)
+        XCTAssertEqual(cached.repositoryID, repositoryID)
+        XCTAssertEqual(
+            cached.directory.resolvingSymlinksInPath().path,
+            repository.resolvingSymlinksInPath().path)
+        XCTAssertEqual(cached.downloadCacheBytes, 768)
+
+        let isolated = GraniteModelManager(storage: GraniteModelStorage(
+            hubDirectory: temporary.appendingPathComponent("other-materialized"),
+            downloadCacheDirectory: nil,
+            compiledCoreMLDirectory: nil))
+        XCTAssertEqual(isolated.state(of: repositoryID, kind: .speech), .absent)
+        XCTAssertTrue(isolated.downloadedModels().isEmpty)
+
+        let removed = try manager.remove(repositoryID)
+        XCTAssertEqual(removed.repositoryID, repositoryID)
+        XCTAssertEqual(manager.state(of: repositoryID, kind: .speech), .absent)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: repository.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: transferRepository.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: transferMetadata.path))
+    }
+
+    func testModelStorageCanDisableSharedAndCompiledCaches() {
+        let root = URL(fileURLWithPath: "/tmp/granite-storage", isDirectory: true)
+        let storage = GraniteModelStorage(
+            hubDirectory: root,
+            downloadCacheDirectory: nil,
+            compiledCoreMLDirectory: nil)
+        XCTAssertNil(storage.downloadCacheDirectory)
+        XCTAssertNil(storage.compiledCoreMLDirectory)
+        XCTAssertEqual(
+            storage.modelsDirectory.path,
+            root.appendingPathComponent("models").path)
+    }
+
     func testCoreMLRepositoryDetectionAndArtifactLoading() throws {
         let directory = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

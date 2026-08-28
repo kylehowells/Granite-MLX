@@ -68,6 +68,7 @@ public enum PunctuationModelLoader {
     /// - Parameters:
     ///   - source: Local checkpoint directory, catalog alias, or Hugging Face
     ///     repository ID. The recommended Q8 formatter is used when omitted.
+    ///   - storage: Explicit model and transfer-cache locations.
     ///   - hfToken: Optional Hugging Face token for private or gated repositories.
     ///   - progressHandler: Receives model cache and byte-weighted download events.
     ///   - cancellationToken: Cooperatively cancels model acquisition.
@@ -77,6 +78,7 @@ public enum PunctuationModelLoader {
     ///   ``GraniteOperationError`` for cancellation and wrapped loading errors.
     public static func load(
         source: String = defaultModelID,
+        storage: GraniteModelStorage = .default,
         hfToken: String? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil,
         cancellationToken: GraniteCancellationToken? = nil
@@ -87,7 +89,7 @@ public enum PunctuationModelLoader {
             return try load(from: localURL)
         }
         let directory = try GraniteModelCache.download(
-            source, kind: .punctuation, hfToken: hfToken,
+            source, kind: .punctuation, storage: storage, hfToken: hfToken,
             cancellationToken: cancellationToken, progressHandler: progressHandler)
         try cancellationToken?.checkCancellation(operation: "Punctuation model loading")
         return try load(from: directory)
@@ -335,6 +337,7 @@ public final class PunctuationFormatter: GraniteTranscriptFormatter, @unchecked 
     /// - Parameters:
     ///   - modelSource: Local checkpoint directory, catalog alias, or Hugging
     ///     Face repository ID. The recommended Q8 formatter is used when omitted.
+    ///   - storage: Explicit model and transfer-cache locations.
     ///   - hfToken: Optional Hugging Face token for private or gated repositories.
     ///   - progressHandler: Receives model cache and download progress.
     ///   - cancellationToken: Cooperatively cancels model acquisition.
@@ -342,12 +345,13 @@ public final class PunctuationFormatter: GraniteTranscriptFormatter, @unchecked 
     ///   cancellation errors produced while constructing the formatter.
     public init(
         modelSource: String = PunctuationModelLoader.defaultModelID,
+        storage: GraniteModelStorage = .default,
         hfToken: String? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil,
         cancellationToken: GraniteCancellationToken? = nil
     ) throws {
         let artifact = try PunctuationModelLoader.load(
-            source: modelSource, hfToken: hfToken,
+            source: modelSource, storage: storage, hfToken: hfToken,
             progressHandler: progressHandler, cancellationToken: cancellationToken)
         self.artifact = artifact
         do {

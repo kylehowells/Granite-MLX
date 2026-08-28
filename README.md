@@ -29,15 +29,22 @@ Swift library; transcription runs locally after the selected model is cached.
 
 ## Requirements
 
+For the command-line tool:
+
 - Apple Silicon Mac (`arm64`)
 - macOS 14 Sonoma or newer
 - macOS 15 or newer for the optional published Core ML model
 - Swift 6.2 and the full Xcode 26 toolchain or newer when building from source
 - `ffmpeg` for containers that AVFoundation cannot decode directly
 
+The `GraniteMLX` library product declares macOS 14 and iOS/iPadOS 17 support.
+Sandboxed applications use AVFoundation for media input;
+the command-line-only `ffmpeg` fallback is available on macOS.
+
 The SwiftPM dependencies are pinned to MLX Swift 0.31.4, Swift Transformers
-1.3.3, and Swift Argument Parser 1.8.2. `Package.resolved` pins their complete
-transitive dependency graph. Python is used only by conversion and benchmark
+1.3.3, Swift Hugging Face 0.9.0, and Swift Argument Parser 1.8.2.
+`Package.resolved` pins their complete transitive dependency graph. Python is
+used only by conversion and benchmark
 tools; the native CLI and distributed release do not require Python.
 
 Install the media fallback with:
@@ -225,10 +232,17 @@ granite-mlx models remove punctuation-q4 --yes
 granite-mlx models remove --all
 ```
 
-The materialized cache is under `~/Documents/huggingface/models`. Removed
-models are permanently deleted from the local cache but can be downloaded
-again at any time. `--hf-token` is available for private or gated repository
-IDs and takes precedence over the standard `HF_TOKEN` environment variable:
+By default, inference-ready repositories are under
+`~/Documents/huggingface/models`, reusable Hugging Face transfer data is under
+`~/.cache/huggingface/hub` in a nonsandboxed CLI process, and compiled Core ML
+artifacts are under `~/Library/Caches/GraniteMLX/CoreML`. `models list` includes
+all three in its per-model and total disk usage. Removing a model deletes its
+materialized repository, exact repository-specific transfer entry, and matching
+compiled Core ML artifact; it never targets another repository. Models can be
+downloaded again at any time.
+
+`--hf-token` is available for private or gated repository IDs and takes
+precedence over the standard `HF_TOKEN` environment variable:
 
 ```bash
 HF_TOKEN=hf_... granite-mlx models download owner/private-model
@@ -239,9 +253,10 @@ granite-mlx models download owner/private-model --hf-token hf_...
 incomplete or interrupted downloads as `[-]`. Running `models download` again
 repairs or resumes a partial entry; `models remove` deletes it to reclaim space.
 
-Applications and isolated tests can set `GRANITE_MLX_HUB_DIRECTORY` to use a
-different Hugging Face materialization directory without touching the normal
-user cache.
+The CLI accepts `GRANITE_MLX_HUB_DIRECTORY`, `HF_HUB_CACHE`/`HF_HOME`, and
+`GRANITE_MLX_COREML_CACHE_DIRECTORY` as optional shell overrides. These are
+not the library configuration API: Apple-platform applications use
+`GraniteModelStorage` and `GraniteModelManager`, described below.
 
 When `ffmpeg` is unavailable, Granite-MLX still accepts media AVFoundation can
 decode directly. Other containers produce a coded error explaining that
@@ -387,15 +402,30 @@ import Foundation
 import GraniteMLX
 
 let cancellation = GraniteCancellationToken()
+let caches = FileManager.default.urls(
+    for: .cachesDirectory, in: .userDomainMask)[0]
+let applicationSupport = FileManager.default.urls(
+    for: .applicationSupportDirectory, in: .userDomainMask)[0]
+let storage = GraniteModelStorage(
+    hubDirectory: applicationSupport.appendingPathComponent(
+        "MyApp/HuggingFace", isDirectory: true),
+    downloadCacheDirectory: caches.appendingPathComponent(
+        "MyApp/HuggingFaceTransferCache", isDirectory: true),
+    compiledCoreMLDirectory: caches.appendingPathComponent(
+        "MyApp/CompiledCoreML", isDirectory: true))
+
 let audio = try GraniteAudioInput.load(
     url: URL(fileURLWithPath: "/path/to/recording.m4a"),
     cancellationToken: cancellation
 )
 
-let recognizer = try GraniteRecognizer(cancellationToken: cancellation)
+let recognizer = try GraniteRecognizer(
+    storage: storage,
+    cancellationToken: cancellation)
 let raw = try recognizer.transcribe(audio, cancellationToken: cancellation)
 
 let formatter = try GraniteTranscriptFormatterFactory.load(
+    storage: storage,
     cancellationToken: cancellation
 )
 let formatting = try formatter.format(
@@ -406,6 +436,33 @@ let formatting = try formatter.format(
 let transcript = raw.applyingFormatting(formatting)
 print(transcript.text)
 ```
+
+The same explicit storage value powers a graphical model-management screen:
+
+```swift
+let models = GraniteModelManager(storage: storage)
+
+for model in models.availableModels {
+    let state = models.state(of: model.repositoryID, kind: model.kind)
+    print(model.alias, state)
+}
+
+let localDirectory = try models.download(
+    "apache-q8",
+    cancellationToken: cancellation,
+    progressHandler: { progress in
+        print(progress.repositoryID, progress.fractionCompleted)
+    })
+
+let installed = models.downloadedModels()
+let removed = try models.remove("apache-q8")
+```
+
+No environment variable is required. Apps choose all materialized-model,
+shared-transfer-cache, and compiled-Core-ML locations with URLs. Passing `nil`
+for either cache URL disables that persistent cache. Keep one storage value for
+the app and pass it to speech and formatter construction so model listing,
+downloads, inference, and removal always use the same directories.
 
 The short `transcribe` call uses the recommended Q8-weight/FP16-activation
 bounded-memory profile. The equivalent fully explicit call is available when
@@ -437,6 +494,7 @@ types:
 ```swift
 let coreMLRecognizer = try GraniteCoreMLRecognizer(
     modelSource: GraniteCoreMLModelLoader.defaultModelID,
+    storage: storage,
     computeUnits: .cpuAndGPU,
     cancellationToken: cancellation
 )
@@ -514,6 +572,14 @@ model exporter tests, the generated media-container matrix, isolated network
 interruption/resume test, and the 101-minute bounded-memory release gate are
 documented in [`Tests/README.md`](Tests/README.md). Large model and audio paths
 are supplied through environment variables and are never committed.
+
+Pull requests and pushes to `master` run the model-free suite, build the
+release executable, compile the library for iOS Simulator, and exercise offline
+CLI commands against isolated empty model and configuration directories. CI
+fails if those checks unexpectedly download model data. Full-checkpoint and
+long-audio tests remain explicit local release gates. Tags such as `0.1.0`
+additionally build `mlx.metallib`, create and validate the macOS ARM64 archive,
+publish its SHA-256 checksum, and create the corresponding GitHub Release.
 
 `Scripts/check_documentation.sh` builds the DocC catalog with warnings treated
 as errors and enforces the source documentation contract. Every source-defined

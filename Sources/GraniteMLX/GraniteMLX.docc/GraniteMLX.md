@@ -28,12 +28,20 @@ import Foundation
 import GraniteMLX
 
 let cancellation = GraniteCancellationToken()
+let caches = FileManager.default.urls(
+    for: .cachesDirectory, in: .userDomainMask)[0]
+let storage = GraniteModelStorage(
+    hubDirectory: caches.appendingPathComponent("Models/HuggingFace"),
+    downloadCacheDirectory: caches.appendingPathComponent("Downloads/HuggingFace"),
+    compiledCoreMLDirectory: caches.appendingPathComponent("Compiled/CoreML"))
 let audio = try GraniteAudioInput.load(
     url: URL(fileURLWithPath: "/path/to/recording.m4a"),
     cancellationToken: cancellation
 )
 
-let recognizer = try GraniteRecognizer(cancellationToken: cancellation)
+let recognizer = try GraniteRecognizer(
+    storage: storage,
+    cancellationToken: cancellation)
 let raw = try recognizer.transcribe(audio, cancellationToken: cancellation)
 ```
 
@@ -74,6 +82,7 @@ with the MLX path:
 ```swift
 let coreML = try GraniteCoreMLRecognizer(
     modelSource: GraniteCoreMLModelLoader.defaultModelID,
+    storage: storage,
     computeUnits: .cpuAndGPU,
     cancellationToken: cancellation
 )
@@ -97,6 +106,7 @@ formatter and apply its result without rerunning recognition:
 
 ```swift
 let formatter = try GraniteTranscriptFormatterFactory.load(
+    storage: storage,
     cancellationToken: cancellation
 )
 let formatting = try formatter.format(
@@ -146,10 +156,35 @@ logs and support requests.
 
 ### Model management
 
-Use ``GraniteModelCatalog`` to resolve published aliases and
-``GraniteModelCache`` to inspect, download, or remove compatible checkpoints.
-The default cache is the Swift Hugging Face materialization directory. Set
-`GRANITE_MLX_HUB_DIRECTORY` before launching a process to isolate that cache.
+Create ``GraniteModelStorage`` with application-owned URLs, then retain a
+``GraniteModelManager`` for a model-management interface. The manager exposes
+the published catalog, absent/partial/downloaded state, progress-aware and
+cancellable downloads, local sizes and directories, and removal:
+
+```swift
+let manager = GraniteModelManager(storage: storage)
+let catalog = manager.availableModels
+let installed = manager.downloadedModels()
+
+try manager.download(
+    "apache-q8",
+    cancellationToken: cancellation,
+    progressHandler: { progress in
+        updateDownloadUI(progress)
+    })
+
+try manager.remove("apache-q8")
+```
+
+Pass the same `storage` value to ``GraniteRecognizer``,
+``GraniteCoreMLRecognizer``, and ``GraniteTranscriptFormatterFactory``. This
+ensures browsing, downloading, inference, formatting, compiled Core ML caching,
+and removal all address the same files. No environment variable is required.
+
+``GraniteModelCache`` retains equivalent static operations for compatibility
+and accepts explicit storage on each operation. Its defaults recognize optional
+command-line environment overrides, but those overrides are not needed by
+sandboxed macOS, iOS, or iPadOS applications.
 
 ## Topics
 
@@ -185,6 +220,8 @@ The default cache is the Swift Hugging Face materialization directory. Set
 - ``GraniteCoreMLModelConfiguration``
 - ``GraniteSpeechBackend``
 - ``GraniteModelCatalog``
+- ``GraniteModelStorage``
+- ``GraniteModelManager``
 - ``GraniteModelCache``
 - ``GranitePublishedModel``
 - ``GraniteCachedModel``

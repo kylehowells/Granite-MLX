@@ -304,6 +304,9 @@ final class GraniteMLXCLITests: XCTestCase {
         XCTAssertEqual(states["punctuation-q8"], "partial")
         XCTAssertEqual(states["apache-q6"], "absent")
         XCTAssertEqual(states["apache-coreml-q8"], "absent")
+        let apacheQ8 = try XCTUnwrap(
+            records.first { ($0["alias"] as? String) == "apache-q8" })
+        XCTAssertNotNil(apacheQ8["download_cache_bytes"])
 
         let warm = try runCLI(
             ["models", "download", "apache-q8"], environment: environment)

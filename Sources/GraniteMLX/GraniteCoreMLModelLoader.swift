@@ -79,6 +79,7 @@ public enum GraniteCoreMLModelLoader {
     /// - Parameters:
     ///   - source: Local repository directory, catalog alias, or Hugging Face
     ///     repository ID. The published Core ML Q8 model is used when omitted.
+    ///   - storage: Explicit model and transfer-cache locations.
     ///   - hfToken: Optional Hugging Face token for private or gated repositories.
     ///   - progressHandler: Receives model cache and byte-weighted download events.
     ///   - cancellationToken: Cooperatively cancels before, during, or after download.
@@ -88,6 +89,7 @@ public enum GraniteCoreMLModelLoader {
     ///   contents; ``GraniteOperationError`` when cancelled.
     public static func load(
         source: String = defaultModelID,
+        storage: GraniteModelStorage = .default,
         hfToken: String? = nil,
         progressHandler: GraniteModelDownloadProgressHandler? = nil,
         cancellationToken: GraniteCancellationToken? = nil
@@ -98,7 +100,7 @@ public enum GraniteCoreMLModelLoader {
             return try load(from: localURL)
         }
         let directory = try GraniteModelCache.download(
-            source, kind: .coreMLSpeech, hfToken: hfToken,
+            source, kind: .coreMLSpeech, storage: storage, hfToken: hfToken,
             cancellationToken: cancellationToken,
             progressHandler: progressHandler)
         try cancellationToken?.checkCancellation(operation: "Core ML model loading")
