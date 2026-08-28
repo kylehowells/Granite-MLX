@@ -29,9 +29,10 @@ separate Hugging Face repositories and downloaded and cached by the CLI.
 
 This section is the authoritative checklist for the first public release. The
 phase sections below preserve implementation history and longer-term ideas;
-unchecked post-release items in those sections do not block `0.1.0`.
+unchecked post-release items in those sections do not block the first public
+release.
 
-### Final `0.1.0` verification
+### Final release verification
 
 - [x] Run a final short transcription from the current commit with the default
   MLX Q8 speech and punctuation models and inspect the formatted output. The raw
@@ -39,17 +40,22 @@ unchecked post-release items in those sections do not block `0.1.0`.
   deliberately mid-sentence 20-second cut.
 - [x] Run the short Core ML parity fixture from the current commit. The direct
   FP16 input-copy path produces the exact fixed reference transcript.
-- [ ] Create and push the `0.1.0` semantic-version tag.
-- [ ] Confirm the release workflow publishes the macOS ARM64 archive and its
-  SHA-256 checksum without bundling model weights.
-- [ ] Download the published archive onto a clean Mac with no Python runtime and
-  verify `--version`, `--help`, model listing, first-run Q8 download, cache reuse,
-  formatted transcription, and model removal.
+- [x] Create and push the first semantic-version tag. `0.1.0` validated the
+  release machinery; `0.1.1` supersedes it with corrected installation
+  documentation and is the release intended for Homebrew.
+- [x] Confirm the `0.1.1` release workflow publishes the macOS ARM64 archive and
+  its SHA-256 checksum without bundling model weights.
+- [x] Download the public `0.1.1` archive independently, verify its checksum and
+  contents, and run the downloaded binary with an empty `PATH`. The complete
+  release lifecycle was exercised with isolated model/config/cache directories:
+  `--version`, `--help`, model listing, first-run Q8 speech and punctuation
+  downloads, cache reuse, formatted transcription, and model removal. A separate
+  physical clean-Mac test remains part of Homebrew formula validation.
 
 ### Homebrew distribution
 
 - [ ] Create or update `kylehowells/homebrew-tap`.
-- [ ] Add a binary `Formula/granite-mlx.rb` referencing the `0.1.0` archive and
+- [ ] Add a binary `Formula/granite-mlx.rb` referencing the `0.1.1` archive and
   checksum, declaring Apple Silicon, minimum macOS, and `ffmpeg` requirements.
 - [ ] Add model-free formula tests for `--version`, `--help`, and `models list`.
 - [ ] Test tap installation, upgrade, uninstall, reinstall, and first-run model
@@ -551,7 +557,9 @@ corruption without depending on the public service.
   WebM, and MP4 ffmpeg-backed format tests.
 - [x] Add an opt-in long-form bounded-memory regression test with exact
   checkpoint-matched transcript comparison and an MLX peak-memory threshold.
-- [ ] Test a clean Mac installation and transcription without Python installed.
+- [x] Test the published archive in an isolated clean-install environment with
+  no Python or ffmpeg on `PATH`; retain a separate physical clean-Mac test for
+  the Homebrew formula.
 - [x] Verify machine-readable stdout never contains progress or diagnostic text.
 
 ## Phase 10: GitHub repository and releases
@@ -581,10 +589,12 @@ corruption without depending on the public service.
 - [x] Build/package the required MLX Metal library as part of the release workflow.
 - [x] Add a repeatable release script that produces a versioned archive containing
   the executable, required runtime assets, license, and concise installation notes.
-- [ ] Create the first semantic-version tag, provisionally `0.1.0`.
-- [ ] Publish the archive and SHA-256 checksum in a GitHub Release.
-- [ ] Download and test the published release archive on a clean Mac.
-- [ ] Confirm the release runs without Python and downloads the default model
+- [x] Create and push semantic-version tags `0.1.0` and the documentation-fix
+  release `0.1.1`.
+- [x] Publish the ARM64 archive and SHA-256 checksum in the `0.1.1` GitHub Release.
+- [x] Independently download, checksum, inspect, and exercise the published
+  `0.1.1` archive in an isolated clean-install environment.
+- [x] Confirm the release runs without Python and downloads the default model
   separately rather than bundling model weights.
 
 ## Phase 11: Homebrew distribution
@@ -623,9 +633,11 @@ Before calling the project complete:
   Max, including exact long-form bounded regression coverage.
 - [x] The CLI has deterministic TXT and JSON output for fixed model/audio
   fixtures.
-- [ ] A clean Mac can install and run the CLI without a Python runtime.
+- [x] The published archive installs and runs in an isolated clean-install
+  environment without a Python runtime; the Homebrew formula will additionally
+  be tested on a separate clean Mac.
 - [x] The Granite-MLX software license is documented separately from any model/checkpoint license.
-- [ ] GitHub release installation works.
+- [x] GitHub release installation works.
 
 ## Current implementation checkpoint (2026-08-28)
 
