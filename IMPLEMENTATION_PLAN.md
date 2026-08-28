@@ -33,10 +33,12 @@ unchecked post-release items in those sections do not block `0.1.0`.
 
 ### Final `0.1.0` verification
 
-- [ ] Run a final short transcription from the current commit with the default
-  MLX Q8 speech and punctuation models and inspect the formatted output.
-- [ ] Run the short Core ML parity fixture from the current commit. This is the
-  only inference path changed during the final iOS/model-storage merge.
+- [x] Run a final short transcription from the current commit with the default
+  MLX Q8 speech and punctuation models and inspect the formatted output. The raw
+  transcript matches the fixed reference and formatting is sensible for the
+  deliberately mid-sentence 20-second cut.
+- [x] Run the short Core ML parity fixture from the current commit. The direct
+  FP16 input-copy path produces the exact fixed reference transcript.
 - [ ] Create and push the `0.1.0` semantic-version tag.
 - [ ] Confirm the release workflow publishes the macOS ARM64 archive and its
   SHA-256 checksum without bundling model weights.
