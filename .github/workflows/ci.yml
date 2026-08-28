@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Model-free tests and release build
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      GRANITE_MLX_HUB_DIRECTORY: ${{ runner.temp }}/granite-mlx-model-cache
+      GRANITE_MLX_COREML_CACHE_DIRECTORY: ${{ runner.temp }}/granite-mlx-coreml-cache
+      GRANITE_MLX_TEST_CONFIG_PATH: ${{ runner.temp }}/granite-mlx-config.json
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+          uname -m
+          test "$(uname -m)" = arm64
+
+      - name: Cache SwiftPM repositories
+        uses: actions/cache@v5
+        with:
+          path: |
+            .build/repositories
+            .build/checkouts
+          key: ${{ runner.os }}-${{ runner.arch }}-swiftpm-${{ hashFiles('Package.resolved') }}
+
+      - name: Install ffmpeg fallback
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            brew install ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+
+      - name: Run model-free tests
+        run: swift test
+
+      - name: Build release executable
+        run: swift build -c release
+
+      - name: Smoke-test release CLI without models
+        run: |
+          BINARY="$(swift build -c release --show-bin-path)/granite-mlx"
+          "$BINARY" --version
+          "$BINARY" --help >/dev/null
+          "$BINARY" transcribe --help >/dev/null
+          "$BINARY" models list --json >/dev/null
+          "$BINARY" config show >/dev/null
+
+      - name: Confirm CI did not download models
+        run: |
+          if find "$GRANITE_MLX_HUB_DIRECTORY" -type f -print -quit 2>/dev/null | grep -q .; then
+            echo "Model-free CI unexpectedly downloaded model data." >&2
+            exit 1
+          fi

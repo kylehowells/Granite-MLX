@@ -10,15 +10,21 @@ on:
       - 'Scripts/check_documentation.sh'
       - 'Scripts/check_public_api_documentation.swift'
       - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'Sources/**'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - 'Scripts/check_documentation.sh'
+      - 'Scripts/check_public_api_documentation.swift'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: documentation-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,11 +46,16 @@ jobs:
             --output-path ./docs
 
       - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:
           path: ./docs
 
   deploy:
+    if: github.event_name != 'pull_request'
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
