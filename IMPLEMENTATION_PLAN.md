@@ -25,6 +25,47 @@ and users can select its compatible non-commercial counterpart when those
 weight terms are appropriate. Converted MLX checkpoints are published in
 separate Hugging Face repositories and downloaded and cached by the CLI.
 
+## Active remaining work (2026-08-28)
+
+This section is the authoritative checklist for the first public release. The
+phase sections below preserve implementation history and longer-term ideas;
+unchecked post-release items in those sections do not block `0.1.0`.
+
+### Final `0.1.0` verification
+
+- [ ] Run a final short transcription from the current commit with the default
+  MLX Q8 speech and punctuation models and inspect the formatted output.
+- [ ] Run the short Core ML parity fixture from the current commit. This is the
+  only inference path changed during the final iOS/model-storage merge.
+- [ ] Create and push the `0.1.0` semantic-version tag.
+- [ ] Confirm the release workflow publishes the macOS ARM64 archive and its
+  SHA-256 checksum without bundling model weights.
+- [ ] Download the published archive onto a clean Mac with no Python runtime and
+  verify `--version`, `--help`, model listing, first-run Q8 download, cache reuse,
+  formatted transcription, and model removal.
+
+### Homebrew distribution
+
+- [ ] Create or update `kylehowells/homebrew-tap`.
+- [ ] Add a binary `Formula/granite-mlx.rb` referencing the `0.1.0` archive and
+  checksum, declaring Apple Silicon, minimum macOS, and `ffmpeg` requirements.
+- [ ] Add model-free formula tests for `--version`, `--help`, and `models list`.
+- [ ] Test tap installation, upgrade, uninstall, reinstall, and first-run model
+  download/transcription on a clean Mac.
+
+### Post-release engineering (not `0.1.0` blockers)
+
+- [ ] Add portable frontend/intermediate-tensor numerical fixtures and broader
+  frontend unit coverage.
+- [ ] Stream audio decoding/resampling into inference windows to reduce long-file
+  memory, and implement exact layer-wise streaming if exact one-pass parity is
+  eventually required.
+- [ ] Validate MLX Q8/Q6 and Core ML on physical iPhone/iPad hardware and newer
+  Apple Silicon generations.
+- [ ] Obtain independently verified transcripts or a curated evaluation corpus
+  before publishing WER claims.
+- [ ] Pursue the separate post-`0.1.0` Linux/CUDA plan in `LINUX_SUPPORT.md`.
+
 ## Reference projects
 
 - `moonshine-mlx` — native Swift speech-recognition runtime and CLI.
@@ -58,13 +99,10 @@ separate Hugging Face repositories and downloaded and cached by the CLI.
 - [x] Validate model loading and JSON output against the local Granite checkpoint.
 - [x] Load audio at 16 kHz mono and run the official processor/model path.
 - [x] Verify manual greedy CTC decoding produces the same token IDs and transcript as the official `model.generate()` path.
-- [ ] Save deterministic intermediate artifacts for a short fixture:
-  - [ ] frontend features
-  - [ ] encoder outputs
-  - [ ] middle self-conditioned output
-  - [ ] final logits
-  - [ ] greedy CTC token IDs
-  - [ ] decoded transcription
+- [-] Save deterministic intermediate artifacts for a short fixture. Final
+  transcript/token parity is complete; frontend features, encoder outputs,
+  middle self-conditioned output, and logits remain an optional post-`0.1.0`
+  diagnostic fixture.
 - [x] Record the exact Transformers version and source-model revision in the
   checked benchmark metadata, conversion manifests, and published model cards.
 
@@ -89,7 +127,9 @@ separate Hugging Face repositories and downloaded and cached by the CLI.
 
 ## Phase 4: MLX numerical parity
 
-- [ ] Implement an MLX Python model matching the Granite 5.0 architecture.
+- [-] Implement an MLX Python model matching the Granite 5.0 architecture.
+  Superseded by the native Swift/MLX implementation and its established output
+  parity; a second complete MLX runtime is not required for `0.1.0`.
 - [x] Match the frontend exactly:
   - [x] 16 kHz input
   - [x] 80 mel bins
@@ -105,8 +145,11 @@ separate Hugging Face repositories and downloaded and cached by the CLI.
   - [x] first two block subsampling behavior
   - [x] self-conditioned middle CTC path
   - [x] final CTC projection
-- [ ] Add `Scripts/compare_pytorch_mlx.py`.
-- [ ] Compare PyTorch and MLX intermediate tensors with tolerances appropriate to BF16/FP16.
+- [-] Add a dedicated PyTorch-to-MLX intermediate comparison script. Existing
+  conversion, frontend-dump, transcript-parity, and quantization tooling cover
+  the release gates; intermediate tensor comparison remains optional follow-up.
+- [-] Compare PyTorch and MLX intermediate tensors with tolerances appropriate
+  to BF16/FP16 as part of that optional diagnostic work.
 - [x] Compare final decoded text with the Python reference on the fixed 20-second fixture.
 - [x] Treat transcript parity as a release gate.
 
@@ -546,16 +589,16 @@ corruption without depending on the public service.
 
 - [ ] Create or update the `kylehowells/homebrew-tap` repository.
 - [ ] Add `Formula/granite-mlx.rb` referencing the tagged GitHub release and checksum.
-- [ ] Decide whether the formula builds from the tagged SwiftPM source archive or
-  installs a release binary; validate the selected approach on a clean machine.
-- [ ] Build the MLX Metal library during formula installation or package the
-  compatible compiled runtime asset with the release.
+- [x] Select a binary formula using the tagged macOS ARM64 release archive.
+- [x] Package the compatible MLX Metal library inside the release archive.
 - [ ] Declare Apple Silicon, minimum macOS, Swift/Xcode build requirements, and
   the `ffmpeg` runtime dependency.
-- [ ] Add formula tests for `granite-mlx --version` and `granite-mlx --help`.
-- [ ] Add a small offline transcription formula test where practical, without
-  requiring the default model download during `brew test`.
-- [ ] Test `brew install --build-from-source`.
+- [ ] Add formula tests for `granite-mlx --version`, `granite-mlx --help`, and
+  offline `granite-mlx models list`.
+- [-] Do not put real transcription in `brew test`: model weights are deliberately
+  downloaded separately, and formula tests must remain model-free.
+- [-] A `--build-from-source` formula path is not part of the binary `0.1.0`
+  distribution; source builds remain available directly through SwiftPM.
 - [ ] Test normal tap installation, upgrade, uninstall, and reinstall behavior.
 - [ ] Verify end-to-end installation and first transcription:
 
@@ -582,7 +625,7 @@ Before calling the project complete:
 - [x] The Granite-MLX software license is documented separately from any model/checkpoint license.
 - [ ] GitHub release installation works.
 
-## Current implementation checkpoint (2026-08-27)
+## Current implementation checkpoint (2026-08-28)
 
 Completed: native 16-layer Granite 5.0 Conformer/CTC inference, exact
 torchaudio-compatible frontend, original and converted checkpoint loading,
