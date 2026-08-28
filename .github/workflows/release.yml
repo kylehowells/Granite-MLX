@@ -18,9 +18,9 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 45
     env:
-      GRANITE_MLX_HUB_DIRECTORY: ${{ runner.temp }}/granite-mlx-model-cache
-      GRANITE_MLX_COREML_CACHE_DIRECTORY: ${{ runner.temp }}/granite-mlx-coreml-cache
-      GRANITE_MLX_TEST_CONFIG_PATH: ${{ runner.temp }}/granite-mlx-config.json
+      GRANITE_MLX_HUB_DIRECTORY: /tmp/granite-mlx-${{ github.run_id }}/model-cache
+      GRANITE_MLX_COREML_CACHE_DIRECTORY: /tmp/granite-mlx-${{ github.run_id }}/coreml-cache
+      GRANITE_MLX_TEST_CONFIG_PATH: /tmp/granite-mlx-${{ github.run_id }}/config.json
       HOMEBREW_NO_AUTO_UPDATE: '1'
       GH_TOKEN: ${{ github.token }}
     steps:
