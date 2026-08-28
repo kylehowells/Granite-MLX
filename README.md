@@ -4,9 +4,8 @@ Native Swift/MLX speech recognition with IBM Granite Speech 5.0 TurboCTC on
 Apple Silicon. Granite-MLX provides both a command-line tool and a reusable
 Swift library; transcription runs locally after the selected model is cached.
 
-> Granite-MLX is available from
+> Install Granite-MLX with Homebrew, or download it from
 > [GitHub Releases](https://github.com/kylehowells/Granite-MLX/releases).
-> Homebrew distribution is the next packaging step.
 
 [CLI guide](#cli-guide) ·
 [Swift library](#using-granitemlx-as-a-swift-library) ·
@@ -47,11 +46,17 @@ The SwiftPM dependencies are pinned to MLX Swift 0.31.4, Swift Transformers
 used only by conversion and benchmark
 tools; the native CLI and distributed release do not require Python.
 
-Install the media fallback with:
+## Install with Homebrew
 
-```bash
-brew install ffmpeg
+The recommended installation includes the `ffmpeg` media fallback:
+
+```zsh
+brew install kylehowells/tap/granite-mlx
 ```
+
+Then run `granite-mlx recording.m4a`. Model weights are not part of the
+Homebrew package; the CLI downloads the default Q8 speech and punctuation
+models on first use. Use `granite-mlx models list` to inspect the model cache.
 
 ## Install a GitHub release
 
@@ -59,7 +64,7 @@ Download the current Apple Silicon archive and its checksum from
 [GitHub Releases](https://github.com/kylehowells/Granite-MLX/releases/latest),
 verify it, and keep the executable beside `mlx.metallib`:
 
-```bash
+```zsh
 curl -LO https://github.com/kylehowells/Granite-MLX/releases/download/0.1.1/granite-mlx-0.1.1-macos-arm64.tar.gz
 curl -LO https://github.com/kylehowells/Granite-MLX/releases/download/0.1.1/granite-mlx-0.1.1-macos-arm64.tar.gz.sha256
 shasum -a 256 -c granite-mlx-0.1.1-macos-arm64.tar.gz.sha256

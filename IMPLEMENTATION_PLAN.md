@@ -54,12 +54,15 @@ release.
 
 ### Homebrew distribution
 
-- [ ] Create or update `kylehowells/homebrew-tap`.
-- [ ] Add a binary `Formula/granite-mlx.rb` referencing the `0.1.1` archive and
+- [x] Create the public `kylehowells/homebrew-tap` repository.
+- [x] Add a binary `Formula/granite-mlx.rb` referencing the `0.1.1` archive and
   checksum, declaring Apple Silicon, minimum macOS, and `ffmpeg` requirements.
-- [ ] Add model-free formula tests for `--version`, `--help`, and `models list`.
-- [ ] Test tap installation, upgrade, uninstall, reinstall, and first-run model
-  download/transcription on a clean Mac.
+- [x] Add and run model-free formula tests for `--version`, `--help`, and
+  `models list`.
+- [-] Public-tap install, no-op upgrade, uninstall, reinstall, model-cache
+  preservation, WAV transcription, and ffmpeg-backed WebM transcription pass
+  on the release-development Mac. A separate physical clean-Mac install and
+  first model download remain the final distribution check.
 
 ### Post-release engineering (not `0.1.0` blockers)
 
@@ -599,20 +602,22 @@ corruption without depending on the public service.
 
 ## Phase 11: Homebrew distribution
 
-- [ ] Create or update the `kylehowells/homebrew-tap` repository.
-- [ ] Add `Formula/granite-mlx.rb` referencing the tagged GitHub release and checksum.
+- [x] Create the public `kylehowells/homebrew-tap` repository.
+- [x] Add `Formula/granite-mlx.rb` referencing the tagged GitHub release and checksum.
 - [x] Select a binary formula using the tagged macOS ARM64 release archive.
 - [x] Package the compatible MLX Metal library inside the release archive.
-- [ ] Declare Apple Silicon, minimum macOS, Swift/Xcode build requirements, and
-  the `ffmpeg` runtime dependency.
-- [ ] Add formula tests for `granite-mlx --version`, `granite-mlx --help`, and
+- [x] Declare Apple Silicon, minimum macOS, and the `ffmpeg` runtime dependency;
+  the binary formula does not require a local Swift/Xcode toolchain.
+- [x] Add formula tests for `granite-mlx --version`, `granite-mlx --help`, and
   offline `granite-mlx models list`.
 - [-] Do not put real transcription in `brew test`: model weights are deliberately
   downloaded separately, and formula tests must remain model-free.
 - [-] A `--build-from-source` formula path is not part of the binary `0.1.0`
   distribution; source builds remain available directly through SwiftPM.
-- [ ] Test normal tap installation, upgrade, uninstall, and reinstall behavior.
-- [ ] Verify end-to-end installation and first transcription:
+- [x] Test public-tap installation, no-op upgrade, uninstall, and reinstall
+  behavior while preserving the separately managed model cache.
+- [x] Verify end-to-end Homebrew installation and transcription with both a WAV
+  fixture and an ffmpeg-backed WebM fixture:
 
 ```bash
 brew install kylehowells/tap/granite-mlx
