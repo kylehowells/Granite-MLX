@@ -9,6 +9,7 @@ on:
       - 'Package.resolved'
       - 'Scripts/check_documentation.sh'
       - 'Scripts/check_public_api_documentation.swift'
+      - 'Documentation/GitHubPages/**'
       - '.github/workflows/docs.yml'
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - 'Package.resolved'
       - 'Scripts/check_documentation.sh'
       - 'Scripts/check_public_api_documentation.swift'
+      - 'Documentation/GitHubPages/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -44,6 +46,11 @@ jobs:
             --transform-for-static-hosting \
             --hosting-base-path Granite-MLX \
             --output-path ./docs
+
+      - name: Add Pages landing page
+        run: |
+          cp Documentation/GitHubPages/index.html ./docs/index.html
+          grep -F './documentation/granitemlx/' ./docs/index.html
 
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
